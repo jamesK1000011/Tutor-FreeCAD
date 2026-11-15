@@ -1,5 +1,6 @@
 # Agent Link for FreeCAD's tool names (tools/gen_agentlink_tools.py)
 addon
+addon_test
 app_extensions
 app_force_restart
 app_install
