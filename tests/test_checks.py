@@ -151,6 +151,8 @@ class Vocabulary(unittest.TestCase):
         self.assertTrue(checks.needs_window({"workbench": "X"}))
         self.assertTrue(checks.needs_window({"all": [{"exists": "Pad"}, {"selected": "Pad"}]}))
         self.assertFalse(checks.needs_window({"any": [{"file": "a.stl"}, {"used": "Std_Export"}]}))
+        self.assertFalse(checks.needs_window({"all": [{"prop": "Pad"}, {"task_open": None}, {"editing": None}]}))
+        self.assertTrue(checks.needs_window({"task_open": "PartDesign_Pad"}))
 
 
 class Problems(unittest.TestCase):

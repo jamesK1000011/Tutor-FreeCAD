@@ -507,6 +507,9 @@ def evaluate(check, ctx):
 def needs_window(check):
     """True when every way the check can pass needs the window or watching."""
     kind = kind_of(check)
+    if kind in ("task_open", "editing") and check.get(kind) is None:
+        # "No task open" / "nothing in edit" pass without a window too.
+        return False
     if kind in GUI_KINDS + EVENT_KINDS:
         return True
     if kind == "all":
