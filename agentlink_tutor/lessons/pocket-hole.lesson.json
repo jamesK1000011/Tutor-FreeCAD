@@ -42,7 +42,7 @@
   {"id": "depth", "say": "Set the pocket's **Length** to 4 mm, then press **OK**.",
    "targets": [{"task": {"name": "lengthEdit", "label": "Length"}}, {"task": {"button": "ok"}}],
    "check": {"all": [{"prop": "$pocket", "name": "Length", "eq": "$depth", "tol": 0.01, "unit": "mm"}, {"task_open": null}, {"valid": "$pocket"}]},
-   "hints": ["The Length box is in the Tasks panel.", "Type 4 and press OK.", "Length = 4 mm."],
+   "hints": ["The Length box is in the Tasks panel.", "This box sets how deep the pocket cuts; OK finishes.", "Length = 4 mm."],
    "do": [{"tool": "feature_edit", "args": {"feature": "$pocket", "set": {"Length": "$depth"}}}]},
   {"id": "corner", "say": "Make a new sketch on the top face again, for the hole.",
    "targets": [{"face": {"normal": [0, 0, 1], "largest": true}, "of": "$body"}, {"cmd": "PartDesign_NewSketch"}],

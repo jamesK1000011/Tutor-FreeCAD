@@ -54,7 +54,11 @@ workbench: when a toolbar is hidden it says so, and the agent may call
 A lesson is a data file (`agentlink_tutor/lessons/*.lesson.json`, checked
 against `agentlink_tutor/data/lesson.schema.json`): steps with what to say,
 what to point at, how to check the step is done, and how to do it for you.
-Lessons hold no code. A menu is named by its command (`{menu:
+Lessons hold no code. Hints climb a fixed ladder for every lesson: the
+first says where to look, the second rings only the field, the third gives
+the value; a lesson whose first or second hint gives the value away is not
+loaded. A lesson may set its 3D view (`view`: isometric by default, or
+front, top, …, or keep), and a step its own. A menu is named by its command (`{menu:
 "PartDesign_Pad"}`), never by titles, which change between FreeCAD releases
 and languages. Other add-ons can ship their own lessons.
 

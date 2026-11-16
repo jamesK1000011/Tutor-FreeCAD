@@ -114,7 +114,7 @@ def _detach(c):
         gui_run.detach(c)
     except Exception:  # noqa: BLE001
         pass
-    if c.show is not None and c.e.state in ("done", "stopped"):
+    if c.show is not None and c.e.state == "stopped":  # done: the last rings are held (run.HOLD_MS)
         try:
             c.show(None)
         except Exception:  # noqa: BLE001

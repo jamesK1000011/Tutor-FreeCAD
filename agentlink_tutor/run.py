@@ -32,6 +32,9 @@ from . import engine as engine_mod
 
 DEBOUNCE_MS = 300
 ADVANCE_MS = 600
+HOLD_MS = 10000  # the last step's rings stay this long after the lesson is done
+VIEWS = ("isometric", "front", "top", "right", "left", "rear", "bottom")
+SPATIAL = ("face", "edge", "sub")
 ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do")
 NO_WINDOW = "no window: nothing ringed"
 
@@ -40,16 +43,38 @@ EDIT_KEYS = ("feature", "object", "sketch")
 
 
 def edit_target(engine):
-    """The object a step's do works on (its feature, object or sketch
-    argument, bindings resolved), whose task panel holds the step's task
-    targets; None when the do names none."""
+    """The object whose task panel holds a step's task targets: what its do
+    works on (a feature, object or sketch argument), else the object its
+    check reads a property of; bindings resolved. None when neither names one."""
     s = engine.step or {}
     for c in s.get("do") or ():
         args = engine_mod.resolve(c.get("args") or {}, engine.bindings)
         for k in EDIT_KEYS:
             if isinstance(args.get(k), str) and args[k]:
                 return args[k]
+    found = _prop_object(engine_mod.resolve(s.get("check") or {}, engine.bindings))
+    return found
+
+
+def _prop_object(check):
+    if isinstance(check, dict):
+        if isinstance(check.get("prop"), str):
+            return check["prop"]
+        for k in ("all", "any"):
+            for c in check.get(k) or ():
+                got = _prop_object(c)
+                if got:
+                    return got
     return None
+
+
+def step_view(lesson, step):
+    """The view a step comes up in: its own view, else the lesson's (default
+    isometric) when it lights faces or edges; None: the camera stays."""
+    v = (step or {}).get("view")
+    if v is None and any(isinstance(t, dict) and any(k in t for k in SPATIAL) for t in (step or {}).get("targets") or ()):
+        v = (lesson or {}).get("view", "isometric")
+    return v if v in VIEWS else None
 
 
 def task_targets(step):
@@ -71,6 +96,8 @@ class Controller:
         self.passed_note = None  # "3/5" passed since the rider last spoke
         self.said = None  # the rider's last line
         self.last_by = None
+        self._framed = None  # the step the view was last set for
+        self._holding = False
 
     # ---- reading ----------------------------------------------------------------
 
@@ -90,6 +117,30 @@ class Controller:
             st["targets"] = {"resolved": t.get("resolved", 0), "missing": list(t.get("missing") or [])[:3]}
         return engine_mod._fit(st)
 
+    def panel_closed(self):
+        """True when the window shows no task dialog (known only with one)."""
+        try:
+            g = self.e._gui()
+        except Exception:  # noqa: BLE001
+            g = None
+        return g is not None and g.task is None
+
+    def shown(self):
+        """(targets, words) to ring for the step in front at its hint rung.
+        Guided, a step whose controls are in a task panel that is closed
+        while its feature exists (OK pressed with another value): the
+        feature's tree row instead, and how to open it again."""
+        e = self.e
+        tg = e.hint_targets()
+        if e.mode == "guided" and task_targets(e.step) and not e.passed and self.panel_closed():
+            name = edit_target(e)
+            doc = e._doc()
+            obj = doc.getObject(name) if (doc is not None and name and hasattr(doc, "getObject")) else None
+            if obj is not None:
+                rest = [t for t in tg if not (isinstance(t, dict) and "task" in t)]
+                return [{"tree": obj.Name}] + rest, f"Double-click {obj.Label} in the tree to change it."
+        return tg, None
+
     def callout(self):
         """The callout's words for the step in front: what to do, in demo
         why, and the hint or why not yet."""
@@ -105,6 +156,9 @@ class Controller:
             lines.append(f"Not yet: {e.result.why}.")
         if e.passed and e.mode == "demo":
             lines.append("Done. Next goes on.")
+        again = self.shown()[1]
+        if again:
+            lines.insert(1, again)
         return "\n".join(x for x in lines if x)
 
     # ---- after each change ---------------------------------------------------------
@@ -117,9 +171,22 @@ class Controller:
                 self.ui.open_task(self.e)
             except Exception:  # noqa: BLE001
                 pass
+        if self.ui is not None and self.stepping and self.e.index != self._framed:
+            self._framed = self.e.index
+            v = step_view(self.e.lesson, self.e.step)
+            if v:
+                try:
+                    self.ui.frame(v, self.e._doc())
+                except Exception:  # noqa: BLE001
+                    pass
         if self.show is not None:
             try:
-                self.targets = self.show(self) if self.stepping else self.show(None)
+                if self.stepping:
+                    self.targets = self.show(self)
+                elif self.e.state == "done":
+                    self._hold()
+                else:
+                    self.show(None)
             except Exception as err:  # noqa: BLE001  (pointing is a nicety; the lesson goes on)
                 self.targets = {"resolved": 0, "missing": [f"not drawn: {err}"[:80]]}
         for fn in list(self.listeners):
@@ -127,6 +194,19 @@ class Controller:
                 fn(self)
             except Exception:  # noqa: BLE001
                 pass
+
+    def _hold(self):
+        """Lesson done: the last step's rings and lit faces stay up for
+        HOLD_MS, or until Stop or another lesson takes them."""
+        if self._holding:
+            return
+        self._holding = True
+
+        def clear():
+            if self.e.state == "done" and self.show is not None:
+                self.show(None)
+
+        self._later(HOLD_MS, clear)
 
     def _later(self, ms, fn):
         if self.timer is None:
@@ -143,8 +223,11 @@ class Controller:
             self.e.start(mode, fixtures=fixtures)
             if self.ui is not None:
                 # The person starts from a quiet window: setup's sketch closed,
-                # no task dialog, nothing selected.
+                # no task dialog, nothing selected, the part in view.
                 self.ui.settle()
+                v = (self.e.lesson or {}).get("view", "isometric")
+                if v in VIEWS:
+                    self.ui.frame(v, self.e._doc())
         finally:
             self.busy = False
         self._changed()

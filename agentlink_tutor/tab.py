@@ -73,7 +73,7 @@ def buttons_on(engine):
     step = getattr(engine, "step", None) if stepping else None
     do = bool(stepping and isinstance(step, dict) and step.get("do"))
     return {"start": not stepping, "back": back, "next": stepping, "hint": stepping, "skip": stepping,
-            "stop": stepping, "do": do, "ask": True, "mode": True}
+            "stop": stepping or state == "done", "do": do, "ask": True, "mode": True}
 
 
 def question_note(text, status=None):

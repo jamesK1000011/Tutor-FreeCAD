@@ -40,7 +40,7 @@
   {"id": "length", "say": "Set **Length** to 15 mm, then press **OK**.",
    "targets": [{"task": {"name": "lengthEdit", "label": "Length"}}, {"task": {"button": "ok"}}],
    "check": {"all": [{"prop": "$pad", "name": "Length", "eq": "$length", "tol": 0.01, "unit": "mm"}, {"task_open": null}, {"valid": "$pad"}]},
-   "hints": ["The Length box is in the Tasks panel.", "Type 15 and press OK.", "Length = 15 mm."],
+   "hints": ["The Length box is in the Tasks panel.", "This box sets how far the sketch is pushed out; OK finishes.", "Length = 15 mm."],
    "do": [{"tool": "feature_edit", "args": {"feature": "$pad", "set": {"Length": "$length"}}}]},
   {"id": "see", "say": "Done: a 40 × 20 × 15 mm block. Its top face is lit.",
    "targets": [{"face": {"normal": [0, 0, 1], "largest": true}, "of": "$pad"}],
