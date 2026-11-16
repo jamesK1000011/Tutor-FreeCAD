@@ -104,6 +104,7 @@ class Controller:
         self.step_seq = 0  # the event number when the step in front began (observe.BUF)
         self._seq_at = None
         self._holding = False
+        self.acted = False  # the person acted since the step in front began (verdict_due)
 
     # ---- reading ----------------------------------------------------------------
 
@@ -147,26 +148,51 @@ class Controller:
                 return [{"tree": obj.Name}] + rest, f"Double-click {obj.Label} in the tree to change it."
         return tg, None
 
-    def callout(self):
-        """The callout's words for the step in front: the instruction, its
-        why line under it when explanations are on, then the hint or why it
-        is not done yet."""
+    def verdict_due(self):
+        """True when the step's check may be told to the person: they acted
+        since the step began (an event of theirs, a call that changed the
+        document, Next or Do) or asked for a hint. At the step's start the
+        callout and the tab show only what to do and why."""
+        return bool(self.acted or self.e.hint)
+
+    def parts(self):
+        """The callout for the step in front (callout.Callout): the
+        instruction a line a sentence, its why line when explanations are
+        on, then the hint, or why it is not done yet once the person has
+        acted. None when no step is in front."""
+        from . import callout as callout_mod
+
         if not self.stepping:
             return None
         e, s = self.e, self.e.step
-        lines = [e.said or s.get("say")]
-        if e.explain and s.get("why") and not e.said:
-            lines.append(s["why"])
-        if e.hint:
-            lines.append(e.hint_text())
-        elif e.result is not None and e.result.status == "fail" and e.result.why:
-            lines.append(f"Not yet: {e.result.why}.")
-        if e.passed and e.mode == "demo":
-            lines.append("Done. Push Next.")
+        steps = [e.say()]
         again = self.shown()[1]
+        notes = []
+        if e.hint:
+            notes.append(e.hint_text())
+        elif self.verdict_due() and e.result is not None and e.result.status == "fail" and e.result.why:
+            notes.append(f"Not yet: {e.result.why}.")
+        if e.passed and e.mode == "demo":
+            notes.append("Done. Push Next.")
+        why = e.why() if e.explain and s.get("why") and not e.said else None
+        c = callout_mod.build(" ".join(x for x in steps if x), why=why, notes=notes)
         if again:
-            lines.insert(1, again)
-        return "\n".join(x for x in lines if x)
+            c = callout_mod.Callout([again] + c.steps, c.why, c.notes, True if len(c.steps) else None)
+        return c
+
+    def callout(self):
+        """The callout's words as plain text (parts().text())."""
+        c = self.parts()
+        return c.text() if c is not None else None
+
+    def person_state(self):
+        """state() as the person is shown it (the Tutor tab): the check's
+        verdict held back until verdict_due."""
+        st = dict(self.state())
+        if self.stepping and not self.verdict_due() and st.get("check") == "fail":
+            st["check"] = "pending"
+            st.pop("why", None)
+        return st
 
     # ---- after each change ---------------------------------------------------------
 
@@ -185,6 +211,7 @@ class Controller:
 
             self._seq_at = self.e.index
             self.step_seq = observe.BUF.seq
+            self.acted = False
         if self.ui is not None and self.stepping and self.e.mode == "demo" and not self.e.passed and task_targets(self.e.step):
             # Demo: the feature's task panel opened, so its field and OK are
             # ringed and the person sees them change.
@@ -288,6 +315,7 @@ class Controller:
         elif action == "hint":
             self.e.raise_hint()
         elif action == "do":
+            self.acted = True
             self._do()
             if self.e.passed and self.e.mode == "guided":
                 self._advance_later()
@@ -365,10 +393,16 @@ class Controller:
 
         self._later(ADVANCE_MS, go)
 
-    def poke(self):
+    def poke(self, ev=None):
         """A window signal (recompute, selection, workbench): the check is run
-        once the signals have settled for DEBOUNCE_MS."""
-        if self._poked or self.busy or not self.stepping:
+        once the signals have settled for DEBOUNCE_MS. ev: the person's event
+        (observe.py), which counts as acting when it came after the step
+        began; a signal without one counts too."""
+        if self.busy or not self.stepping:
+            return
+        if ev is None or not isinstance(ev.get("n"), int) or ev["n"] > self.step_seq:
+            self.acted = True
+        if self._poked:
             return
         self._poked = True
 
@@ -385,6 +419,8 @@ class Controller:
             return
         by = getattr(session, "by", "agent")
         self.last_by = by
+        if by != "agent" or changed:
+            self.acted = True  # a read-only call of the agent's is no act of the person's
         self.recheck(by=by)
 
     # ---- the rider line ----------------------------------------------------------------

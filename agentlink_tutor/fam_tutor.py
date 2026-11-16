@@ -59,7 +59,9 @@ def tools(session):
     follow()
 
     def tutor_point(a):
-        return point.point(a, Window(session), hooks=hooks, bindings=live.bindings(), timer=_timer)
+        from . import bubble
+
+        return point.point(a, Window(session), hooks=hooks, bindings=live.bindings(), timer=_timer, bubble=bubble)
 
     def tutor(a):
         return tool.tutor(a, session, library())

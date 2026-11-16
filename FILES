@@ -5,6 +5,8 @@ README.md
 REUSE.toml
 agentlink_tutor/__init__.py
 agentlink_tutor/agentlink_families.py
+agentlink_tutor/bubble.py
+agentlink_tutor/callout.py
 agentlink_tutor/checks.py
 agentlink_tutor/data/lesson.schema.json
 agentlink_tutor/data/ste_rules.json
@@ -26,11 +28,13 @@ agentlink_tutor/tab.py
 agentlink_tutor/targets.py
 agentlink_tutor/tool.py
 agentlink_tutor/window.py
+agentlink_tutor/words.py
 docs/core-hooks-needed.md
 package.xml
 tests/_fc.py
 tests/data/agentlink_tools.txt
 tests/fakes.py
+tests/test_callout.py
 tests/test_checks.py
 tests/test_engine.py
 tests/test_files.py

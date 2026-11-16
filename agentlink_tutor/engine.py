@@ -33,7 +33,7 @@ back to the step that branched.
 import os
 import shutil
 
-from . import checks, lessons
+from . import checks, lessons, words
 
 MODES = ("demo", "guided", "watch")
 HINT_MAX = 3
@@ -282,7 +282,21 @@ class Engine:
         self.hint = min(self.hint + 1, HINT_MAX)
         return self.status()
 
+    def say(self):
+        """The step's words as the person reads them: a branch's words once,
+        else the step's; each command named by its live menu text."""
+        s = self.step
+        return words.ui_text(self.said or s["say"]) if s is not None else None
+
+    def why(self):
+        s = self.step
+        return words.ui_text(s.get("why")) if s is not None else None
+
     def hint_text(self):
+        """The hint at this rung, commands named as the window names them."""
+        return words.ui_text(self._hint_text())
+
+    def _hint_text(self):
         if self.hint == 0:
             return None
         hints = self.step.get("hints") or []
@@ -327,9 +341,9 @@ class Engine:
             return _fit(out)
         s = self.step
         r = self.result
-        out.update(step=self.position(), id=s["id"], say=self.said or s["say"])
+        out.update(step=self.position(), id=s["id"], say=self.say())
         if s.get("why") and (self.explain or detail):
-            out["because"] = s["why"]
+            out["because"] = words.ui_text(s["why"])
         out["check"] = r.status if r is not None else "pending"
         if r is not None and r.why:
             out["why"] = r.why

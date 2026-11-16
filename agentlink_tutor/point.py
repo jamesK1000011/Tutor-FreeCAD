@@ -10,9 +10,7 @@ a call with no targets clears them. A target that cannot be shown comes back
 with why, and its words (a menu path, a command's name) join the callout.
 """
 
-import re
-
-from . import lessons, targets
+from . import callout as callout_mod, lessons, targets
 
 OWNER = "tutor"
 MS_MAX = 120000
@@ -33,31 +31,30 @@ def _services(hooks):
     return hooks.service("overlay"), hooks.service("annotations")
 
 
-_MARK = re.compile(r"(\*\*|__)(.+?)\1|`([^`]+)`")
+plain = callout_mod.plain
 
 
-def plain(text):
-    """Markdown emphasis taken off (the callout is painted text): **Pad**,
-    __Pad__ and `Pad` read as Pad."""
-    return _MARK.sub(lambda m: m.group(2) if m.group(2) is not None else m.group(3), str(text))
+def parts(say, found):
+    """The callout (callout.Callout): say (words, or a Callout already
+    built for a lesson's step), then each missed or native target's words
+    as the next numbered lines (callout.py lays them out)."""
+    c = say if isinstance(say, callout_mod.Callout) else callout_mod.build(say)
+    return c.add_steps([f.text for f in found if f.text])
 
 
 def callout(say, found):
-    """The callout's words: say, then each missed or native target's words
-    with its badge number. Markdown emphasis is taken off."""
-    say = plain(say) if say else say
-    lines = [str(say).strip()] if say and str(say).strip() else []
-    for f in found:
-        if f.text:
-            lines.append(f"{f.n}. {f.text}")
-    return "\n".join(lines) or None
+    """The callout's words as plain text (parts().text()), or None."""
+    return parts(say, found).text()
 
 
 _gen = {"n": 0}
 
 
-def point(args, win, hooks=None, bindings=None, timer=None):
-    """The tool's answer for args ({targets?, say?, ms?, clear?})."""
+def point(args, win, hooks=None, bindings=None, timer=None, bubble=None):
+    """The tool's answer for args ({targets?, say?, ms?, clear?}). say may
+    be a callout.Callout. bubble: bubble.py's show(callout, found) -> True
+    when it showed the words itself (over the 3D view) and hide(); without
+    it, or when it cannot, the overlay's own callout has them."""
     tg = args.get("targets") or []
     say = args.get("say")
     ms = args.get("ms")
@@ -76,6 +73,11 @@ def point(args, win, hooks=None, bindings=None, timer=None):
     ov, ann = _services(hooks)
     keep = args.get("clear") is False and tg
     if not keep:
+        if bubble is not None:
+            try:
+                bubble.hide()
+            except Exception:  # noqa: BLE001
+                pass
         if ov is not None:
             ov.clear(OWNER)
         if ann is not None:
@@ -94,7 +96,16 @@ def point(args, win, hooks=None, bindings=None, timer=None):
         for m in f.marks:
             specs.append({**m, "badge": f.n})
             owners.append(f)
-    got = ov.show(specs, say=callout(say, found), ms=ms, owner=OWNER) or {}
+    words = parts(say, found)
+    drawn = False
+    if bubble is not None and not words.empty():
+        try:
+            drawn = bool(bubble.show(words, found))
+        except Exception:  # noqa: BLE001  (the overlay's callout instead)
+            drawn = False
+    if drawn and ms and hasattr(bubble, "hide_after"):
+        bubble.hide_after(ms)
+    got = ov.show(specs, say=None if drawn else words.text(), ms=ms, owner=OWNER) or {}
     hidden = dict(got.get("hidden") or [])
     for f in found:
         mine = [i for i, g in enumerate(owners) if g is f]

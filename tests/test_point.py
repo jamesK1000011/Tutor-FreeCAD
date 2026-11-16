@@ -206,7 +206,7 @@ class Commands(unittest.TestCase):
         out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Press Pad."})
         m = out["missing"][0]
         self.assertEqual(m["why"], "toolbar hidden: Part Design is not the active workbench; call workbench activate first")
-        self.assertIn("1. Pad", ov.shows[0]["say"])  # the callout says it instead
+        self.assertEqual(ov.shows[0]["say"], "1. Press Pad.\n2. Pad")  # the callout says it instead
         self.assertEqual(out["note"], "nothing ringed; any words for them are in the callout")
 
     def test_unknown_command(self):
@@ -239,10 +239,10 @@ class Menus(unittest.TestCase):
         out, ov, _ = run({"targets": [{"menu": ["Edit", "Undo"]}], "say": "Undo."}, w)
         got = out["shown"][0]
         self.assertEqual(got["note"], "menu: native")
-        self.assertEqual(got["text"], "Menu: Edit › Undo (Ctrl+Z), or the toolbar button ringed here")
+        self.assertEqual(got["text"], "Menu: Edit › Undo (Ctrl+Z), or the ringed toolbar button ①")
         self.assertEqual(ov.menus, [])  # never drawn over the system menubar
         self.assertEqual(ov.shows[0]["specs"], [{"widget": "undo-btn", "badge": 1}])
-        self.assertIn("1. Menu: Edit › Undo", ov.shows[0]["say"])
+        self.assertIn("2. Menu: Edit › Undo", ov.shows[0]["say"])
 
     def test_native_menubar_without_a_button(self):
         w = Win(native=True, menus={tuple(self.PATH): "PartDesign_Pad"})
@@ -312,7 +312,7 @@ class Dropdowns(unittest.TestCase):
                 self.assertEqual((got["kind"], got["note"]), ("cmd", "in the ▾ menu of this button"))
                 self.assertEqual(ov.shows[0]["specs"], [{"widget": btn, "badge": 1}])
                 self.assertEqual(ov.watched, [(f"{btn}-menu", f"{cmd}-act", "tutor", 7, 1)])
-                self.assertIn("Open the ▾ menu of the ringed button.", ov.shows[0]["say"])
+                self.assertIn("\n2. Open the ▾ menu of the ringed button ①. Select ", ov.shows[0]["say"])
 
     def test_own_button_first_and_hidden_dropdown_not_used(self):
         w = Win(commands={"Sketcher_CreateLine": [("line-btn", None)]}, groups={"Sketcher_CreateLine": [("x", None, "m", "a")]})
@@ -480,7 +480,10 @@ class Surface(unittest.TestCase):
     def test_callout_words(self):
         f1, f2 = targets.Found(1, "cmd"), targets.Found(2, "menu")
         f2.text = "Menu: Edit › Undo"
-        self.assertEqual(point.callout("Undo it.", [f1, f2]), "Undo it.\n2. Menu: Edit › Undo")
+        # A target's words go on as the next number; no "2." without a "1.".
+        self.assertEqual(point.callout("Undo it.", [f1, f2]), "1. Undo it.\n2. Menu: Edit › Undo")
+        self.assertEqual(point.callout("Undo it.", [f1]), "Undo it.")
+        self.assertEqual(point.callout(None, [f2]), "Menu: Edit › Undo")
         self.assertIsNone(point.callout("  ", [f1]))
 
 

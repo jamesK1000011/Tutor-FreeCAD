@@ -336,6 +336,32 @@ def hint_problems(lesson):
     return out
 
 
+_BOLD_TOKEN = re.compile(r"\*\*\{[^{}]*\}\*\*")
+
+
+def word_problems(lesson):
+    """The person's words carry no internal names: a command is named by a
+    token inside bold (**{PartDesign_Pad}** or **{PartDesign_Pad|Pad}**,
+    words.ui_text), never as PartDesign_Pad or Sketcher::SketchObject."""
+    from . import words
+
+    out = []
+    for s in lesson.get("steps") or []:
+        texts = [("say", s.get("say")), ("why", s.get("why"))]
+        texts += [(f"hints[{i}]", h) for i, h in enumerate(s.get("hints") or [])]
+        texts += [(f"branches[{i}].say", b.get("say")) for i, b in enumerate(s.get("branches") or [])]
+        for where, t in texts:
+            if not isinstance(t, str):
+                continue
+            w = f"steps.{s.get('id')}.{where}"
+            rest = _BOLD_TOKEN.sub("", t)
+            if "{" in rest or "}" in rest:
+                out.append(f"{w}: a command goes in bold as **{{Command_Name}}** or **{{Command_Name|words}}**")
+            for name in words.internal_names(words.TOKEN.sub("", t)):
+                out.append(f"{w}: {name} is FreeCAD's internal name; write what the window shows, or **{{{name}}}** for a command")
+    return out
+
+
 def check(lesson, tools=None, extra_kinds=(), inline=False):
     """What is wrong with a lesson, as a list ([] when fine). tools: the tool
     names there are (None: not checked). extra_kinds: check kinds installed
@@ -382,6 +408,7 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
             if c["tool"] not in tools:
                 out.append(f"{where}: no tool {c['tool']}")
     out += hint_problems(lesson)
+    out += word_problems(lesson)
     from . import ste
 
     out += ste.lesson_problems(lesson)

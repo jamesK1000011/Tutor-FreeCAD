@@ -76,7 +76,7 @@
  "steps": [
   {
    "id": "top",
-   "say": "Select the top face of the block. Push **Create sketch**.",
+   "say": "Select the top face of the block. Push **{PartDesign_NewSketch|New Sketch}**.",
    "why": "A sketch on this face sets where the pocket starts.",
    "targets": [
     {
@@ -174,7 +174,7 @@
   },
   {
    "id": "pocket",
-   "say": "Select the sketch. Push **Pocket**.",
+   "say": "Select the sketch. Push **{PartDesign_Pocket|Pocket}**.",
    "why": "Pocket cuts the shape of the sketch into the part.",
    "targets": [
     {
@@ -346,7 +346,7 @@
   },
   {
    "id": "hole",
-   "say": "Push **Hole**. Set **Diameter** to 6 mm. Set **Depth** to **Through all**. Push **OK**.",
+   "say": "Push **{PartDesign_Hole|Hole}**. Set **Diameter** to 6 mm. Set **Depth** to **Through all**. Push **OK**.",
    "targets": [
     {
      "cmd": "PartDesign_Hole"
@@ -413,7 +413,7 @@
   },
   {
    "id": "undo-pad",
-   "say": "Push **Undo** (⌘Z).",
+   "say": "Push **{Std_Undo|Undo}** (⌘Z).",
    "targets": [
     {
      "cmd": "Std_Undo"

@@ -40,7 +40,7 @@ def step_words(status):
     """(heading, say, hint) for the tab from the engine's compact state."""
     st = status or {}
     if "lesson" not in st:
-        return ("No lesson running.", "Pick a lesson and press Start, or ask Claude to show you something.", "")
+        return ("No lesson running.", "Select a lesson and push Start, or ask Claude to show you something.", "")
     if st.get("step") == "done":
         skipped = st.get("skipped") or []
         return ("Lesson done.", "Well done." + (f" Skipped: {', '.join(skipped)}." if skipped else ""), "")
@@ -284,8 +284,9 @@ def _make():
 
         def _show(self, status=None):
             c = live.controller()
-            if status is None:
-                status = c.state() if c is not None else None
+            if c is not None and (status is None or "lesson" in status):
+                # As the person is shown it: no "not yet" before they act.
+                status = c.person_state()
             head, say, hint = step_words(status)
             if status and status.get("mode") and "lesson" in status:
                 head += " · " + ("demo" if status["mode"] == "demo" else "guided")
