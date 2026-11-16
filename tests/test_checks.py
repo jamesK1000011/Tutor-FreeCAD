@@ -318,6 +318,33 @@ class Parameters(unittest.TestCase):
         self.assertTrue(checks.problems({"sketch": "S", "radii": [-1]}, "c"))
         self.assertTrue(checks.problems({"sketch": "S", "external": 0}, "c"))
 
+    def test_sketch_progress_count_and_dimensions(self):
+        doc = Doc()
+        con = lambda t, v, driving=True: type("C", (), {"Type": t, "Value": v, "Driving": driving})()  # noqa: E731
+        sk = doc.add("Base", "Sketcher::SketchObject", DoF=3,
+                     Geometry=[type("Circle", (), {"Radius": 10.5})(), type("Line", (), {})(), type("Point", (), {})()],
+                     Constraints=[con("Coincident", 0), con("DistanceY", 47.0), con("DistanceX", -27.0), con("Distance", 9.0, False)])
+        sk.solve = lambda: 0
+        sk.getConstruction = lambda i: False
+        st = lambda c: self.st(c, doc)  # noqa: E731
+        self.assertEqual(st({"sketch": "Base", "dof_max": 3}).status, "pass")
+        self.assertEqual(st({"sketch": "Base", "dof_max": 2}).why, "Base has 3 degrees of freedom; the step wants 2 or fewer")
+        self.assertEqual(st({"sketch": "Base", "count": 2}).status, "pass")  # the point is not a line or curve
+        self.assertIn("has 2 lines or curves", st({"sketch": "Base", "count": 3}).why)
+        self.assertEqual(st({"sketch": "Base", "dims": [47, 27]}).status, "pass")  # its sign does not matter
+        self.assertEqual(st({"sketch": "Base", "dims": [9]}).why, "Base has no dimension of 9 mm yet")  # a reference one does not count
+        self.assertTrue(checks.problems({"sketch": "S", "dof_max": -1}, "c"))
+        self.assertTrue(checks.problems({"sketch": "S", "dims": ["a"]}, "c"))
+
+    def test_where_set(self):
+        doc = Doc()
+        doc.add("GroundedJoint", "App::FeaturePython", ObjectToGround=object())
+        doc.add("Fixed", "App::FeaturePython", JointType="Fixed", ObjectToGround=None)
+        self.assertEqual(len(checks.find(Context(doc=doc), {"type": "App::FeaturePython", "where": {"ObjectToGround": {"set": True}}})), 1)
+        self.assertEqual(self.st({"exists": {"type": "App::FeaturePython", "where": {"JointType": "Fixed"}}}, doc).status, "pass")
+        self.assertEqual(checks.problems({"exists": {"type": "A::B", "where": {"X": {"set": True}}}}, "c"), [])
+        self.assertTrue(checks.problems({"exists": {"type": "A::B", "where": {"X": {"set": "yes"}}}}, "c"))
+
     def test_trial_signals_are_not_the_persons(self):
         from agentlink_tutor import observe
 
