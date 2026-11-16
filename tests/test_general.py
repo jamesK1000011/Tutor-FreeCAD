@@ -38,17 +38,17 @@ PART_BOX = {
     "setup": {"calls": [{"tool": "doc_new", "args": {"name": "BoxLesson"}}]},
     "vars": {"len": 30},
     "steps": [
-        {"id": "bench", "say": "Switch to the **Part** workbench.", "targets": [{"wb": "PartWorkbench"}],
+        {"id": "bench", "say": "Select the **Part** workbench.", "targets": [{"wb": "PartWorkbench"}],
          "check": {"workbench": "PartWorkbench"}, "do": [{"tool": "workbench", "args": {"activate": "Part"}}]},
-        {"id": "box", "say": "Press **Cube**.", "targets": [{"cmd": "Part_Box"}, {"menu": "Part_Box"}],
+        {"id": "box", "say": "Push **Cube**.", "targets": [{"cmd": "Part_Box"}, {"menu": "Part_Box"}],
          "check": {"new": "Part::Box"}, "bind": {"box": {"new": "Part::Box"}},
          "do": [{"tool": "part_box", "args": {}}]},
-        {"id": "size", "say": "Set the box's Length to 30 mm in the Property view.",
+        {"id": "size", "say": "Set the **Length** of the box to 30 mm in the Property view.",
          "targets": [{"dock": "Property view"}, {"tree": "$box"}],
          "check": {"prop": "$box", "name": "Length", "eq": "$len", "tol": 0.01, "unit": "mm"},
-         "hints": ["The Property view is below the tree.", "Its Length row sets the size along X.", "Length = 30 mm."],
+         "hints": ["Find the Property view below the tree.", "Its Length row sets the size along X.", "Length = 30 mm."],
          "do": [{"tool": "obj_set", "args": {"object": "$box", "set": {"Length": "$len"}}}]},
-        {"id": "see", "say": "A 30 mm box; its top is lit.", "targets": [{"face": {"normal": [0, 0, 1]}, "of": "$box"}],
+        {"id": "see", "say": "Done: a 30 mm box. Its top face shows in colour.", "targets": [{"face": {"normal": [0, 0, 1]}, "of": "$box"}],
          "check": {"bbox": "$box", "size": [30, 10, 10], "tol": 0.01}},
     ],
 }
@@ -57,10 +57,10 @@ TD_PAGE = {
     "schema": 1, "id": "test.td.page", "version": "1.0.0", "title": "A TechDraw page", "view": "keep",
     "setup": {"calls": [{"tool": "doc_new", "args": {"name": "PageLesson"}}]},
     "steps": [
-        {"id": "bench", "say": "Switch to **TechDraw**.", "targets": [{"wb": "TechDrawWorkbench"}],
+        {"id": "bench", "say": "Select the **TechDraw** workbench.", "targets": [{"wb": "TechDrawWorkbench"}],
          "check": {"workbench": "TechDrawWorkbench"}, "do": [{"tool": "workbench", "args": {"activate": "TechDraw"}}]},
-        {"id": "page", "say": "Press **Insert Default Page**.", "targets": [{"cmd": "TechDraw_PageDefault"}, {"menu": "TechDraw_PageDefault"}],
-         "check": {"exists": "TechDraw::DrawPage"}, "hints": ["It is the first button of the TechDraw toolbar.", "It is ringed."],
+        {"id": "page", "say": "Push **Insert Default Page**.", "targets": [{"cmd": "TechDraw_PageDefault"}, {"menu": "TechDraw_PageDefault"}],
+         "check": {"exists": "TechDraw::DrawPage"}, "hints": ["Look at the first button of the TechDraw toolbar.", "The ring shows the button."],
          "do": [{"tool": "td_page", "args": {}}]},
     ],
 }
@@ -71,11 +71,11 @@ CONSTRAINT = {
               "bind": {"sketch": {"exists": "Sketcher::SketchObject"}}},
     "vars": {"d": 12},
     "steps": [
-        {"id": "datum", "say": "Give the line a length of 12 mm, then **OK**.",
+        {"id": "datum", "say": "Set the length of the line to 12 mm. Push **OK**.",
          # OK listed first, the field second and named its own way.
          "targets": [{"task": {"button": "ok"}}, {"task": {"name": "labelEdit", "label": "Datum"}}],
          "check": {"all": [{"prop": "$sketch", "name": "Datum", "eq": "$d", "tol": 0.01, "unit": "mm"}, {"task_open": None}]},
-         "hints": ["The constraint's dialog is open.", "Its Datum box holds the length.", "Datum = 12 mm."],
+         "hints": ["Look at the dialog of the constraint.", "Its Datum box holds the length.", "Datum = 12 mm."],
          "do": [{"tool": "sketch_constrain", "args": {"sketch": "$sketch", "value": "$d"}}]},
     ],
 }
@@ -335,7 +335,7 @@ class TreeInLessonDoc(unittest.TestCase):
         out = point.point({"targets": [{"tree": "Sketch"}], "say": "Click it."}, w, hooks=Hooks(Overlay(), Ann()))
         self.assertEqual(out["shown"][0]["kind"], "tree")
         f = targets.resolve({"tree": "Sketch"}, 1, w, {})
-        self.assertEqual(f.text, "Open the Model tab, then Sketch")
+        self.assertEqual(f.text, "Open the Model tab.")
 
 
 class NoPadShortcuts(unittest.TestCase):

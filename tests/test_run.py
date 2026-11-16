@@ -293,8 +293,8 @@ class Hints(unittest.TestCase):
         self.assertEqual(c.e.step["id"], "length")
         self.assertEqual(len(shown[-1][0]), 2)  # the Length field and OK
         st = c.act("hint")
-        self.assertEqual((st["hint"], st["hint_text"]), (1, "The Length box is in the Tasks panel."))
-        self.assertIn("The Length box", shown[-1][1])
+        self.assertEqual((st["hint"], st["hint_text"]), (1, "Find the Length box in the Tasks panel."))
+        self.assertIn("Find the Length box", shown[-1][1])
         c.act("hint")
         self.assertEqual(shown[-1][0], [{"task": {"name": "lengthEdit", "label": "Length"}}])  # the exact field only
         st = c.act("hint")

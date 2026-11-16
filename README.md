@@ -30,8 +30,8 @@ next.
 
 `tool_groups enable: ["tutor"]` lists `tutor` and `tutor_point`.
 
-`tutor`: `{action: list|start|next|back|hint|skip|do|stop|status, lesson?,
-mode?: demo|guided, query?, detail?}`. `start` takes a lesson's id (or its
+`tutor`: `{action: list|start|next|back|hint|skip|do|stop|status|explain,
+lesson?, mode?: demo|guided, query?, detail?, on?}`. `start` takes a lesson's id (or its
 last part, `pad-sketch`) or an inline lesson of 8 steps or fewer
 (`{id: "inline.x", title, steps}`, schema-checked, its calls checked against
 the tools there are); `mode` with another action switches mid-lesson; `do`
@@ -54,7 +54,11 @@ workbench: when a toolbar is hidden it says so, and the agent may call
 A lesson is a data file (`agentlink_tutor/lessons/*.lesson.json`, checked
 against `agentlink_tutor/data/lesson.schema.json`): steps with what to say,
 what to point at, how to check the step is done, and how to do it for you.
-Lessons hold no code. Hints climb a fixed ladder for every lesson: the
+Lessons hold no code. Their words are Simplified Technical English
+(short imperative sentences, one instruction each; the rules are in
+`agentlink_tutor/data/ste_rules.json`, after ASD-STE100 Issue 9), with an
+optional one-line "why" per step that "Show explanations" turns on or off.
+Hints climb a fixed ladder for every lesson: the
 first says where to look, the second rings only the field, the third gives
 the value; a lesson whose first or second hint gives the value away is not
 loaded. A lesson may set its 3D view (`view`: isometric by default, or

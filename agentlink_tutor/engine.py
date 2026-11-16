@@ -90,6 +90,7 @@ class Engine:
         self.return_to = None  # where a detour goes back to
         self.said = None  # a branch's words, shown once
         self.skipped = set()
+        self.explain = True  # the step's why line in answers (prefs.ShowExplainers)
         self.done_for = set()  # steps done for the person (do, or the agent's own calls)
         self.did = None  # the step do() last ran
         if lesson is not None:
@@ -318,7 +319,7 @@ class Engine:
         check, why, hint and the number of targets."""
         if self.state in ("idle", "watch", "stopped") or self.lesson is None:
             return {"state": self.state, **({"mode": self.mode} if self.mode else {})}
-        out = {"lesson": self.lesson["id"], "mode": self.mode}
+        out = {"lesson": self.lesson["id"], "mode": self.mode, "explain": "on" if self.explain else "off"}
         if self.state == "done":
             out.update(step="done", skipped=sorted(self.skipped))
             if self.done_for:
@@ -326,8 +327,10 @@ class Engine:
             return _fit(out)
         s = self.step
         r = self.result
-        out.update(step=self.position(), id=s["id"], say=self.said or s["say"],
-                   check=r.status if r is not None else "pending")
+        out.update(step=self.position(), id=s["id"], say=self.said or s["say"])
+        if s.get("why") and (self.explain or detail):
+            out["because"] = s["why"]
+        out["check"] = r.status if r is not None else "pending"
         if r is not None and r.why:
             out["why"] = r.why
         out["hint"] = self.hint
@@ -349,7 +352,7 @@ def _fit(out):
     """Text fields cut so the answer stays under STATE_MAX characters."""
     import json
 
-    for key in ("remaining", "missing", "hint_text", "why", "say"):
+    for key in ("remaining", "missing", "because", "hint_text", "why", "say"):
         if len(json.dumps(out, ensure_ascii=False)) <= STATE_MAX:
             break
         v = out.get(key) if key != "missing" else (out.get("targets") or {}).get("missing") if isinstance(out.get("targets"), dict) else None

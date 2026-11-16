@@ -7,6 +7,7 @@ agentlink_tutor/__init__.py
 agentlink_tutor/agentlink_families.py
 agentlink_tutor/checks.py
 agentlink_tutor/data/lesson.schema.json
+agentlink_tutor/data/ste_rules.json
 agentlink_tutor/data/tools.json
 agentlink_tutor/engine.py
 agentlink_tutor/fam_tutor.py
@@ -17,7 +18,9 @@ agentlink_tutor/lessons/pad-sketch.lesson.json
 agentlink_tutor/lessons/pocket-hole.lesson.json
 agentlink_tutor/live.py
 agentlink_tutor/point.py
+agentlink_tutor/prefs.py
 agentlink_tutor/run.py
+agentlink_tutor/ste.py
 agentlink_tutor/tab.py
 agentlink_tutor/targets.py
 agentlink_tutor/tool.py
@@ -36,5 +39,6 @@ tests/test_point.py
 tests/test_replay_fc.py
 tests/test_replay_t3_fc.py
 tests/test_run.py
+tests/test_ste.py
 tests/test_tool.py
 tools/gen_agentlink_tools.py
