@@ -347,7 +347,10 @@ class TreeInLessonDoc(unittest.TestCase):
                 # Not in the lesson's document at all: not found, never the other one's row.
                 gone = types.SimpleNamespace(Name="X", Label=label, Document=types.SimpleNamespace(Label="Lesson"))
                 mine.t = "Renamed"
-                self.assertEqual(win.tree_row(gone), (None, f"{label} is not in the Model tree under Lesson (Lesson holds: Body)"))
+                got, why = win.tree_row(gone)
+                self.assertIsNone(got)
+                self.assertTrue(why.startswith(f"{label} is not in the Model tree under Lesson (Lesson holds: Body); searched: "), why)
+                self.assertIn("shown, Lesson row 'Lesson'", why)
 
     def test_hidden_tree_rings_the_model_tab(self):
         tree = self.FakeTree(self.Item("Application"), visible=False)

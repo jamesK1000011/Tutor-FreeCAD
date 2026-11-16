@@ -126,8 +126,14 @@ arrow, then the item once the menu opens; a button in a short toolbar's
 overflow rings its » button. `{dock: "Property view"}` finds the panel
 inside another dock (FreeCAD 1.1's Combo View, Model tab) and rings that
 tab when it is not in front. A tree row is matched by its label under its
-document's row; when FreeCAD has not filled in a folded branch yet, the
-nearest folded parent's row is ringed with "Unfold the ringed row".
+document's row (which may read the document's Label or Name, with a * or a
+" : 1" at its end); when the Model tab is not in front (during a lesson the
+Agent Link or Tasks tab is) that tab is ringed with "Open the Model tab."
+first, and in demo mode it is brought to the front before the row is
+unfolded or looked for. When FreeCAD has not filled in a folded branch yet,
+the nearest folded parent's row is ringed with "Unfold the ringed row". A
+row not found says which trees were searched, whether each showed and
+whether it held the document's row.
 
 ## Lessons
 

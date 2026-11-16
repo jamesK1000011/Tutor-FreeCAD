@@ -181,8 +181,9 @@ class UI:
                    tab, its dock), the field scrolled into view
             dock   the panel brought to the front (FreeCAD 1.1's Property
                    view: the Combo View's Model tab)
-            tree   the object's parents unfolded in the tree, its
-                   document's row too, the Model tab in front
+            tree   the Model tab brought to the front first (Qt let
+                   run, so the tree is laid out), then the object's
+                   parents unfolded in the tree, its document's row too
         """
         from . import targets as targets_mod
         from .window import Window, ancestors
@@ -295,6 +296,14 @@ class UI:
         got, note = win.tree_row(obj)
         if got is not None and note is None:
             return None  # its row shows already
+        # The Model tab in front first (the Tutor's own Agent Link tab or
+        # the Tasks tab is, during a lesson), Qt let run, so the tree is
+        # laid out before any row is unfolded or looked for.
+        front = win.model_tree(obj)
+        brought = bool(front is not None and self.bring(front))
+        if brought:
+            self._update()
+            win.pump()
         doc = getattr(obj, "Document", None)
         try:
             gd = FreeCADGui.getDocument(doc.Name) if doc is not None else None
@@ -311,15 +320,16 @@ class UI:
             if moved:
                 win.pump()
                 moved = unfold_to(win, obj, ancestors) or moved
-        trees = win.trees()
-        if trees:
-            moved = self.bring(trees[0]) or moved
+        front = win.model_tree(obj)
+        if front is not None:
+            moved = self.bring(front) or moved
+        moved = moved or brought
         if moved:
             self._update()
             win.pump()
         got, note = win.tree_row(obj)
         if got is None:
-            return f"{obj.Label} not shown in the tree: {note}"[:160]
+            return f"{obj.Label} not shown in the tree: {note}"[:600]
         return f"{obj.Label} shown in the tree" if moved else None
 
     def close_task(self):
@@ -387,9 +397,9 @@ def unfold_to(win, obj, ancestors):
     that hold it, letting Qt fill each branch in before the next; a row
     unfolded before its children were filled in is folded and unfolded
     again. True when a row was unfolded."""
-    from .window import _child_row, _doc_item
+    from .window import _child_row, _doc_item, _doc_key
 
-    doc = getattr(getattr(obj, "Document", None), "Label", None)
+    doc = _doc_key(getattr(obj, "Document", None))
     path = list(reversed(ancestors(obj)))
     moved = False
     for t in win.trees():

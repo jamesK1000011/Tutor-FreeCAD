@@ -7,6 +7,8 @@ Read only: nothing here switches a workbench, opens a menu, unfolds a tree
 branch, scrolls, selects, clicks or takes focus.
 """
 
+import re
+
 TASKVIEW = "Gui::TaskView::TaskView"
 TREE = "Gui::TreeWidget"
 VIEW3D = "View3DInventor"
@@ -365,23 +367,47 @@ class Window:
         except Exception:  # noqa: BLE001
             pass
 
+    def model_tree(self, obj=None):
+        """The Model tree a step's row is looked for in first, and the one
+        demo brings to the front: a tree holding the object's document row
+        (the Combo View's, inside its Model tab, before a Tree view dock),
+        else the first tree inside a tab, else the first tree; None when
+        the window has none."""
+        trees = self.trees()
+        if not trees:
+            return None
+        key = _doc_key(getattr(obj, "Document", None)) if obj is not None else None
+        mine = [t for t in trees if key and _safe(lambda t=t: _doc_item(t, key))] or trees
+        tabbed = [t for t in mine if _safe(lambda t=t: tab_of_any(t, self.mw()))]
+        shown = [t for t in mine if _shown(t)]
+        return (shown or tabbed or mine)[0]
+
     def tree_row(self, obj):
         label = obj.Label
-        doc = getattr(getattr(obj, "Document", None), "Label", None)
+        d = getattr(obj, "Document", None)
+        doc = getattr(d, "Label", None)
+        key = _doc_key(d)
         trees = self.trees()
         if not trees:
             return None, "no Model tree in this window"
-        if not any(_shown(t) for t in trees):
-            # The Combo View shows its Tasks tab (FreeCAD flips to it on a
-            # workbench switch): the Model tab's header is ringed instead.
-            for t in trees:
-                head = self._tab_header(t)
+        rows = {id(t): _safe(lambda t=t: _doc_item(t, key)) for t in trees}
+        # The trees that hold the document's row come first; any other
+        # tree is still searched (a row found by label under no document).
+        mine = [t for t in trees if rows[id(t)] is not None]
+        order = mine + [t for t in trees if t not in mine]
+        if not any(_shown(t) for t in (mine or trees)):
+            # The Combo View shows its Tasks or Agent Link tab (the Tutor
+            # lives in Agent Link's; FreeCAD flips to Tasks on a workbench
+            # switch): the Model tab's header is ringed first, before any
+            # row is looked for in a tree that is not laid out.
+            for t in mine or trees:
+                head = _safe(lambda t=t: self._tab_header(t))
                 if head is not None:
                     return head, MODEL_TAB
         tree = item = None
-        for t in trees:
+        for t in order:
             try:
-                item = _find_obj(t, obj, doc)
+                item = _find_obj(t, obj, key)
             except RuntimeError:  # deleted while read
                 item = None
             if item is not None:
@@ -393,9 +419,9 @@ class Window:
             # rows that hold the object, the deepest one found; a folded
             # one is ringed. Unfolded without it: the object has no row.
             seen = []
-            for t in trees:
+            for t in order:
                 try:
-                    row = _doc_item(t, doc)
+                    row = rows[id(t)]
                     for nxt in list(reversed(ancestors(obj))) + [obj]:
                         if row is None or not row.isExpanded():
                             break
@@ -418,6 +444,7 @@ class Window:
                         why += f" ({seen[0].text(0)} holds: {', '.join(kids) or 'nothing'})"
                     except (RuntimeError, AttributeError):
                         pass
+                why += "; searched: " + "; ".join(self._tree_said(t, rows[id(t)], doc) for t in trees)
                 return None, why
         note = None
         # A folded branch is never unfolded: its nearest shown parent's row is ringed.
@@ -441,13 +468,27 @@ class Window:
             if not (alive(t) and alive(it)):
                 fresh = self.trees()
                 t = fresh[0] if fresh else None
-                it = _find_item(t, row_label, doc) if t is not None else None
+                it = _find_item(t, row_label, key) if t is not None else None
                 if it is None:
                     return None
                 box["tree"], box["item"] = t, it
             return _r(t.visualItemRect(it))
 
         return {"widget": tree, "viewport": tree.viewport(), "rect": rect}, note
+
+    def _tree_said(self, t, doc_row, doc):
+        """One searched tree in a not-found message: where it is (its dock,
+        its tab), whether it shows, whether it holds the document's row
+        (and else the rows it does hold)."""
+        where = _safe(lambda: _tree_place(t)) or "a Model tree"
+        bits = [where, "shown" if _shown(t) else "hidden"]
+        if doc:
+            if doc_row is not None:
+                bits.append(f"{doc} row {doc_row.text(0)!r}")
+            else:
+                tops = _safe(lambda: _top_texts(t)) or []
+                bits.append(f"no {doc} row (rows: {', '.join(tops) or 'none'})")
+        return ", ".join(bits)
 
     # ---- docks and views ---------------------------------------------------------
     def dock(self, title):
@@ -624,7 +665,7 @@ def _find_item(tree, label, doc_label=None, strict=False):
     def in_doc(it):
         p = it.parent()
         while p is not None:
-            if _same(p.text(0), doc_label):
+            if _doc_is(p.text(0), doc_label):
                 return True
             p = p.parent()
         return False
@@ -689,19 +730,103 @@ def _label_taken(obj, text):
 
 
 def _doc_item(tree, doc_label):
-    """The document's own row (the application's child), or None."""
+    """The document's own row (the application's child, or a top row), or
+    None. doc_label: the document's Label, or (Label, Name); the row may
+    read either, with a changed document's * or a " : 1" view number."""
     if not doc_label:
         return None
     for i in range(tree.topLevelItemCount()):
         top = tree.topLevelItem(i)
         if top is None:
             continue
-        if _same(top.text(0), doc_label):
+        if _doc_is(top.text(0), doc_label):
             return top
         for j in range(top.childCount()):
             c = top.child(j)
-            if c is not None and _same(c.text(0), doc_label):
+            if c is not None and _doc_is(c.text(0), doc_label):
                 return c
+    return None
+
+
+def _doc_key(d):
+    """(Label, Name) of a document, what its tree row may read; None."""
+    if d is None:
+        return None
+    key = tuple(dict.fromkeys(str(x) for x in (getattr(d, "Label", None), getattr(d, "Name", None)) if x))
+    return key or None
+
+
+_VIEWNO = re.compile(r"\s*:\s*\d+\s*$")
+
+
+def _doc_text(text):
+    """A document row's text without a changed document's * and a view
+    number (" : 1") at its end."""
+    a = str(text or "").strip()
+    for _ in range(2):
+        a = _VIEWNO.sub("", a).rstrip("*").strip()
+    return a
+
+
+def _doc_is(text, doc):
+    """The row text is the document's row: doc a Label or (Label, Name)."""
+    if not doc:
+        return False
+    names = [doc] if isinstance(doc, str) else [n for n in doc if n]
+    a = _doc_text(text)
+    return any(_same(text, n) or a == str(n).strip() for n in names)
+
+
+def _safe(fn):
+    try:
+        return fn()
+    except Exception:  # noqa: BLE001  (a widget deleted while read; a stand-in)
+        return None
+
+
+def _top_texts(tree, most=6):
+    """The texts of a tree's top rows and their children (the documents
+    under Application), for a not-found message."""
+    out = []
+    for i in range(tree.topLevelItemCount()):
+        top = tree.topLevelItem(i)
+        if top is None:
+            continue
+        out.append(str(top.text(0)))
+        out += [str(top.child(j).text(0)) for j in range(min(top.childCount(), most))]
+    return out[:most]
+
+
+def _tree_place(t):
+    """Where a tree sits, for a message: its dock's title and the tab it is
+    in ("Combo View, Model tab"), else its class."""
+    dock = tab = None
+    chain, p = [t], t.parentWidget()
+    while p is not None:
+        if tab is None and hasattr(p, "indexOf") and hasattr(p, "tabBar"):
+            # The tab's page is a child of the tab widget's own stack.
+            i = next((k for k in (p.indexOf(c) for c in chain[-2:]) if k >= 0), -1)
+            if i >= 0:
+                tab = str(p.tabBar().tabText(i)).replace("&", "")
+        if dock is None and str(_cls(p)).endswith("DockWidget") and hasattr(p, "windowTitle"):
+            dock = str(p.windowTitle())
+        chain.append(p)
+        p = p.parentWidget()
+    bits = [x for x in (dock, f"{tab} tab" if tab else None) if x]
+    return ", ".join(bits) or str(_cls(t))
+
+
+def tab_of_any(w, mw=None):
+    """tab_of with this window's Qt: whether w sits in a tab at all (in
+    front or not): (tab widget, index) or None."""
+    _QtCore, _QtGui, QtW = _qt()
+    page, p = w, w.parentWidget()
+    while p is not None:
+        if isinstance(p, QtW.QStackedWidget) and isinstance(p.parentWidget(), QtW.QTabWidget):
+            i = p.parentWidget().indexOf(page)
+            if i >= 0:
+                return p.parentWidget(), i
+        page, p = p, p.parentWidget()
     return None
 
 
@@ -858,7 +983,7 @@ def _has_doc(tree, doc_label):
         for it in stack:
             if it is None:
                 continue
-            if _same(it.text(0), doc_label):
+            if _doc_is(it.text(0), doc_label):
                 return True
             nxt += [it.child(j) for j in range(it.childCount())]
         stack, depth = nxt, depth + 1
