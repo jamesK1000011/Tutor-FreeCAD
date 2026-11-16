@@ -382,6 +382,13 @@ class Placement(unittest.TestCase):
         self.assertTrue(bubble.inside((10, 19, 340, 90), (0, 0, 1000, 700)))
         self.assertFalse(bubble.inside((10, 19, 0, 90), (0, 0, 1000, 700)))  # no size
         self.assertFalse(bubble.inside((900, 19, 340, 90), (0, 0, 1000, 700)))  # off the view's edge
+        # The pixel check: the window's picture where the bubble stands against
+        # the bubble's own picture.
+        own = [(38, 41, 46)] * 50 + [(242, 242, 242)] * 10
+        self.assertLess(bubble.mean_diff(own, list(own)), bubble.MATCH)
+        view = [(90, 120, 160)] * 60  # the 3D view painted where the bubble should be
+        self.assertGreater(bubble.mean_diff(view, own), bubble.MATCH)
+        self.assertEqual(bubble.mean_diff([], []), 255.0)
         col = bubble.colours({"bubble": "#ffffff", "bubble_text": "#000000", "accent": "#0072b2"})
         # No font family named anywhere (Qt warned of a missing "Sans" on the Mac).
         for text in (bubble.stylesheet(col), bubble.arrow_sheet(col), callout.build("Push **Pad**. Set it.", why="Why.").html()):
