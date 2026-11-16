@@ -60,7 +60,7 @@ def _here():
 
 
 def find(lib, ref):
-    """A lesson by its id, or by the end of it ("pad-sketch") when only one
+    """A lesson by its id, or by the last part of it when only one
     lesson's id ends so."""
     have = lib.lessons()
     if ref in have:

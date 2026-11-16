@@ -44,6 +44,9 @@ class FakeUI:
             g.editing = g.task = None
             g.selection = []
 
+    def frame(self, view, doc=None):
+        self.log.append(("frame", view))
+
     def open_task(self, e):
         name = run.edit_target(e)
         self.log.append(("open", name))

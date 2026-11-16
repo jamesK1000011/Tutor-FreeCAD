@@ -223,6 +223,8 @@ def _tree(f, spec, win, bindings):
     if got is None:
         f.why = note or "not in the Model tab"
         return
+    if note == getattr(win, "MODEL_TAB", None) or (note or "").startswith("the Model tab is not in front"):
+        f.text = f"Open the Model tab, then {getattr(obj, 'Label', ref)}"
     hidden = win.visible(got)
     if hidden:
         f.why = f"its row is {hidden}"

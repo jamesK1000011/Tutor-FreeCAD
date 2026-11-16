@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """The Tutor's state machine: one lesson, its mode, the step in front, the
-hint level and the bindings ($pad: the object the person actually made).
+hint level and the bindings ($name: the object the person actually made).
 
 Nothing here draws or watches. The engine is given what it reads:
 
@@ -17,9 +17,11 @@ and point-out keep no state and do not come here. demo and guided switch
 mid-lesson (set_mode); "show me this one" is do() on the step in front.
 
 The hint ladder, one rung per raise_hint: 1 a nudge (the step's first hint,
-else why it is not done), 2 the exact field (only the step's first target
-ringed: hint_targets), 3 the exact value (the step's third hint, else the
-value its check wants: checks.exact) and "Do it for me" offered.
+else why it is not done; the same rings), 2 the field (only the step's task
+field ringed, else its first target: hint_targets; never the value), 3 the
+exact value (the step's third hint, else the value its check wants:
+checks.exact) and "Do it for me" offered. lessons.hint_problems holds every
+lesson's hints 1 and 2 to that: neither says the value.
 
 run.py drives this engine in the window and for the tutor tool: timers,
 re-checks on events, pointing and the rider line.
@@ -51,6 +53,16 @@ def resolve(value, bindings):
     if isinstance(value, list):
         return [resolve(v, bindings) for v in value]
     return value
+
+
+def field_target(targets):
+    """The one target the second hint rings: the first field of a task panel
+    (a task target that is not a button), else the first target."""
+    for t in targets:
+        task = t.get("task") if isinstance(t, dict) else None
+        if isinstance(task, str) or (isinstance(task, dict) and not task.get("button")):
+            return t
+    return targets[0]
 
 
 class TutorError(ValueError):
@@ -285,10 +297,12 @@ class Engine:
         return hints[-1] if hints else self.step["say"]
 
     def hint_targets(self):
-        """The step's targets to ring at this rung: all of them, or from
-        rung 2 the first only (the exact field)."""
+        """The step's targets to ring at this rung: all of them at rungs 0
+        and 1; from rung 2 the field only (field_target)."""
         tg = list(self.step.get("targets") or []) if self.step else []
-        return tg[:1] if self.hint >= 2 else tg
+        if self.hint >= 2 and tg:
+            return [field_target(tg)]
+        return tg
 
     def offer_do(self):
         return self.hint >= HINT_MAX and bool(self.step.get("do"))

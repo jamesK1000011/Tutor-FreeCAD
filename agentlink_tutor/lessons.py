@@ -13,7 +13,10 @@ data/lesson.schema.json and then for what a schema cannot say:
 - each target spec is one known kind (parsed only; resolving it on screen
   is the window's job);
 - each call names a tool Agent Link knows, when the caller says which tools
-  there are.
+  there are;
+- the hint ladder keeps its rungs: hints 1 and 2 (a nudge, the field) never
+  say a value the step's check wants (a number or a file name); only hint 3
+  does (hint_problems).
 
 A lesson's id starts with the package that ships it ("agentlink_tutor.pd.pad-
 sketch"), so two add-ons' lessons never collide. Lessons the agent writes
@@ -264,6 +267,73 @@ def _bind_problems(bind, where):
     return out
 
 
+# ---- the hint ladder ---------------------------------------------------------
+
+_NUM = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(?![\w.]*\d)")
+CMP_KEYS = ("eq", "lt", "gt", "le", "ge")
+
+
+def expected_values(check, vars_=None):
+    """The values a check wants that a person would type: the numbers of its
+    comparisons and sizes, and file names; $vars from the lesson's vars."""
+    vars_ = vars_ or {}
+    out = set()
+
+    def val(v):
+        m = VAR.match(v) if isinstance(v, str) else None
+        return vars_.get(m.group(1), v) if m else v
+
+    def walk(c):
+        if isinstance(c, list):
+            for x in c:
+                walk(x)
+            return
+        if not isinstance(c, dict):
+            return
+        for k, v in c.items():
+            if k in CMP_KEYS:
+                v = val(v)
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    out.add(float(v))
+            elif k == "size" and isinstance(v, list):
+                out.update(float(val(x)) for x in v if isinstance(val(x), (int, float)))
+            elif k == "file" and isinstance(v, str):
+                out.add(v)
+            elif k in ("all", "any", "not"):
+                walk(v)
+    walk(check)
+    out.discard(0.0)
+    return out
+
+
+def reveals(text, values):
+    """The values text says (15 in "Type 15", 15.0 too; Part.stl)."""
+    said = set()
+    for m in _NUM.finditer(str(text)):
+        try:
+            said.add(float(m.group(1).replace(",", ".")))
+        except ValueError:
+            pass
+    low = str(text).lower()
+    return sorted((v for v in values if (isinstance(v, float) and v in said) or (isinstance(v, str) and v.lower() in low)), key=str)
+
+
+def hint_problems(lesson):
+    """Hints 1 and 2 that give the value away (the ladder's rule for every
+    lesson: 1 a nudge, 2 the field only, 3 the value, then Do it for me)."""
+    out = []
+    for s in lesson.get("steps") or []:
+        if not isinstance(s, dict) or "check" not in s:
+            continue
+        values = expected_values(s["check"], lesson.get("vars"))
+        for i, h in enumerate((s.get("hints") or [])[:2]):
+            got = reveals(h, values)
+            if got:
+                shown = ", ".join(f"{v:g}" if isinstance(v, float) else v for v in got)
+                out.append(f"steps.{s.get('id')}.hints[{i}]: rung {i + 1} gives away {shown}; only the third hint says the value")
+    return out
+
+
 def check(lesson, tools=None, extra_kinds=(), inline=False):
     """What is wrong with a lesson, as a list ([] when fine). tools: the tool
     names there are (None: not checked). extra_kinds: check kinds installed
@@ -309,6 +379,7 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
         for where, c in _calls(lesson):
             if c["tool"] not in tools:
                 out.append(f"{where}: no tool {c['tool']}")
+    out += hint_problems(lesson)
     if detours(lesson) >= set(ids):
         out.append("steps: every step is a branch's target; the lesson has no main path")
     return out

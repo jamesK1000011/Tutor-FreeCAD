@@ -32,11 +32,15 @@ def _label_text(t):
     return norm(str(t or "").rstrip(":："))
 
 
+MODEL_TAB = "the Model tab is not in front: open it (its tab is ringed)"
+
+
 class Window:
-    def __init__(self, session=None, gui=None, hooks=None):
+    def __init__(self, session=None, gui=None, hooks=None, doc=None):
         self.s = session
         self._gui = gui
         self._hooks = hooks
+        self._doc = doc  # the lesson's document, when a lesson asks
 
     # ---- FreeCAD -------------------------------------------------------------
     def gui(self):
@@ -67,7 +71,12 @@ class Window:
         return ov.visible(w)
 
     def doc(self):
-        d = getattr(self.s, "doc", None) if self.s is not None else None
+        """The lesson's document when given, else the session's, else the
+        one in front: objects are found there by name, never by label
+        across documents."""
+        d = self._doc() if callable(self._doc) else None
+        if d is None:
+            d = getattr(self.s, "doc", None) if self.s is not None else None
         if d is None:
             import FreeCAD
 
@@ -275,17 +284,24 @@ class Window:
         trees = self.trees()
         if not trees:
             return None, "no Model tree in this window"
+        if not any(_shown(t) for t in trees):
+            # The Combo View shows its Tasks tab (FreeCAD flips to it on a
+            # workbench switch): the Model tab's header is ringed instead.
+            for t in trees:
+                head = self._tab_header(t)
+                if head is not None:
+                    return head, MODEL_TAB
         tree = item = None
         for t in trees:
             try:
-                item = _find_item(t, label, doc)
+                item = _find_item(t, label, doc, strict=True)
             except RuntimeError:  # deleted while read
                 item = None
             if item is not None:
                 tree = t
                 break
         if item is None:
-            return None, f"{label} is not in the Model tree"
+            return None, f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
         note = None
         # A folded branch is never unfolded: its nearest shown parent's row is ringed.
         top, p = item, item.parent()
@@ -299,7 +315,7 @@ class Window:
         if not tree.isVisible():
             head = self._tab_header(tree)
             if head is not None:
-                return head, "the Model tab is not in front: its tab is ringed"
+                return head, MODEL_TAB
         box = {"tree": tree, "item": top}
 
         def rect():
@@ -430,16 +446,25 @@ def _beside(lay, lab, QtW):
     return None
 
 
-def _find_item(tree, label, doc_label=None):
+def _shown(w):
+    try:
+        return bool(w.isVisible())
+    except RuntimeError:
+        return False
+
+
+def _find_item(tree, label, doc_label=None, strict=False):
     """The tree item labelled label; under the document's own item when
-    several documents hold one of that label."""
+    several documents hold one of that label. strict: only under that
+    document's item when the tree has one (another document's row of the
+    same label is never taken for it)."""
     hits = []
     stack = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
     while stack:
         it = stack.pop(0)
         if it is None:
             continue
-        if it.text(0) == label and it.parent() is not None:
+        if str(it.text(0)).strip() == str(label).strip() and it.parent() is not None:
             hits.append(it)
         stack += [it.child(j) for j in range(it.childCount())]
 
@@ -452,7 +477,24 @@ def _find_item(tree, label, doc_label=None):
         return False
 
     mine = [h for h in hits if doc_label is None or in_doc(h)]
+    if strict and doc_label is not None and not mine and _has_doc(tree, doc_label):
+        return None
     return (mine or hits or [None])[0]
+
+
+def _has_doc(tree, doc_label):
+    stack = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
+    depth = 0
+    while stack and depth < 3:
+        nxt = []
+        for it in stack:
+            if it is None:
+                continue
+            if it.text(0) == doc_label:
+                return True
+            nxt += [it.child(j) for j in range(it.childCount())]
+        stack, depth = nxt, depth + 1
+    return False
 
 
 def edge_pick(shape, q):

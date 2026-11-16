@@ -33,7 +33,7 @@ def shower(session):
             return None
         from .window import Window
 
-        tg = c.e.hint_targets()
+        tg, _again = c.shown()
         say = c.callout()
         if not tg:  # words only: the callout at the window's top centre
             point.point({}, None, hooks=hooks)
@@ -41,7 +41,7 @@ def shower(session):
             if ov is not None and say:
                 ov.show([], say=point.plain(say), owner=point.OWNER)
             return {"resolved": 0, "missing": []}
-        got = point.point({"targets": tg, "say": say}, Window(session), hooks=hooks, bindings=c.e.bindings)
+        got = point.point({"targets": tg, "say": say}, Window(session, doc=c.e._doc), hooks=hooks, bindings=c.e.bindings)
         return {"resolved": len(got.get("shown") or []),
                 "missing": [str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []]}
 
@@ -88,6 +88,21 @@ class UI:
             FreeCADGui.updateGui()
         except Exception:  # noqa: BLE001
             pass
+
+    def frame(self, view, doc=None):
+        """The lesson document's 3D view set to view (isometric, front, top,
+        right, left, rear, bottom) and fitted to the part."""
+        gd = self._gd(doc)
+        v = gd.activeView() if gd is not None else None
+        if v is None:
+            return
+        turn = getattr(v, "view" + view.capitalize(), None)
+        if view == "isometric":
+            turn = getattr(v, "viewIsometric", None)
+        if callable(turn):
+            turn()
+        if hasattr(v, "fitAll"):
+            v.fitAll()
 
     def open_task(self, engine):
         """Demo: open the feature the step's do works on, so its task panel

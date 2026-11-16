@@ -30,6 +30,7 @@ tests/fakes.py
 tests/test_checks.py
 tests/test_engine.py
 tests/test_files.py
+tests/test_general.py
 tests/test_lessons.py
 tests/test_point.py
 tests/test_replay_fc.py
