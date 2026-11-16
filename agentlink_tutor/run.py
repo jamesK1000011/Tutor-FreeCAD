@@ -101,6 +101,8 @@ class Controller:
         self.said = None  # the rider's last line
         self.last_by = None
         self._framed = None  # the step the view was last set for
+        self.step_seq = 0  # the event number when the step in front began (observe.BUF)
+        self._seq_at = None
         self._holding = False
 
     # ---- reading ----------------------------------------------------------------
@@ -168,7 +170,21 @@ class Controller:
 
     # ---- after each change ---------------------------------------------------------
 
+    def step_events(self):
+        """The person's events since the step in front began, for a
+        `used` check; None when nothing is watched (the check waits)."""
+        from . import observe
+
+        if not observe.active():
+            return None
+        return observe.BUF.since(self.step_seq)
+
     def _changed(self):
+        if self.stepping and self.e.index != self._seq_at:
+            from . import observe
+
+            self._seq_at = self.e.index
+            self.step_seq = observe.BUF.seq
         if self.ui is not None and self.stepping and self.e.mode == "demo" and not self.e.passed and task_targets(self.e.step):
             # Demo: the feature's task panel opened, so its field and OK are
             # ringed and the person sees them change.

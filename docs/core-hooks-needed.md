@@ -61,18 +61,24 @@ The window's own signals a guided step is checked on in T3 need nothing
 new: FreeCAD's document observer (recompute, undo, redo, deletion), its
 selection observer and the main window's `workbenchActivated`, all public.
 
-## T4: watch mode
+## T4: watch mode (done)
 
-- **An `agent_acting` flag** set by echo's before/after and gui_link's
-  `in_call`, readable by an add-on, so the person's events are kept apart
-  from the agent's.
-- **A socket-thread tool flag** (a `THREAD_TOOLS` set next to `PINNED_FREE`
-  that an add-on's family can declare into), so `tutor_watch wait` is
-  answered on gui_link's socket thread and never blocks the GUI thread or
-  holds `in_call`.
-- **Command `QAction.triggered`** reachable without the add-on importing GUI
-  internals, or a core `command_used` event through `hooks.emit` (the
-  main window's `workbenchActivated` is public and used since T3).
+In Agent Link core since 15 Nov 2026 (API 1, additions only; core names
+no add-on):
+
+- **`hooks.agent_acting()`**, True while one of the agent's own calls runs
+  (every call goes through `Server.call`, the window link's and the
+  echo's alike; a panel click is the person's), so the person's events are
+  kept apart from the agent's.
+- **Socket-thread tools**, `hooks.register_thread_tool(name)` beside
+  `PINNED_FREE`: the window link answers such a tool on a thread of its own
+  (`Server.handle_light`: no undo step, echo, call_done, notice or rider),
+  never through the GUI thread's queue and never holding `in_call`; replies
+  on one connection are written one at a time. `tutor_watch` is one.
+- **Window events**, `hooks.watch_window(owner)`: while watched,
+  `workbench_activated(name, by)` and `command_used(name, by)` through
+  `hooks.emit` (`agentlink/gui_events.py`), so the Tutor imports no GUI
+  internals; `hooks.off(event, fn)` takes a listener off.
 
 ## T5: add-on lessons
 

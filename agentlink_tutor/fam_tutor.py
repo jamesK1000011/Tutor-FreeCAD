@@ -45,6 +45,9 @@ def follow():
     hooks.on("call_done", live.call_done)
     if hasattr(hooks, "register_rider"):
         hooks.register_rider("tutor", live.rider)
+    if hasattr(hooks, "register_thread_tool"):
+        # A long poll: answered on the window link's socket thread.
+        hooks.register_thread_tool("tutor_watch")
 
 
 follow()
@@ -61,4 +64,4 @@ def tools(session):
     def tutor(a):
         return tool.tutor(a, session, library())
 
-    return hooks.tools_from_data(DATA, GROUP, {"tutor_point": tutor_point, "tutor": tutor}, "Tutor")
+    return hooks.tools_from_data(DATA, GROUP, {"tutor_point": tutor_point, "tutor": tutor, "tutor_watch": tool.watch}, "Tutor")

@@ -9,7 +9,6 @@ import sys
 
 from . import point
 
-_OBS = {}  # controller id -> (doc observer, selection observer, workbench slot)
 
 
 def timer(ms, fn):
@@ -139,86 +138,45 @@ class UI:
             pass
 
 
-class _DocObserver:
-    def __init__(self, poke):
-        self.poke = poke
-
-    def slotRecomputedDocument(self, doc):
-        self.poke()
-
-    def slotUndoDocument(self, doc):
-        self.poke()
-
-    def slotRedoDocument(self, doc):
-        self.poke()
-
-    def slotDeletedObject(self, obj):
-        self.poke()
-
-
-class _SelObserver:
-    def __init__(self, poke):
-        self.poke = poke
-
-    def addSelection(self, doc, obj, sub, pnt):
-        self.poke()
-
-    def removeSelection(self, doc, obj, sub):
-        self.poke()
-
-    def setSelection(self, doc):
-        self.poke()
-
-    def clearSelection(self, doc):
-        self.poke()
-
-
 def attach(c):
-    """The signals that re-check the step in front (debounced by the
-    controller's poke)."""
-    if id(c) in _OBS:
-        return
-    import FreeCAD
-    import FreeCADGui
+    """The window's events re-check the step in front (the controller's
+    poke is debounced); observe.py owns the observers."""
+    from . import observe
 
-    doc_obs, sel_obs, slot = _DocObserver(c.poke), _SelObserver(c.poke), None
-    try:
-        FreeCAD.addDocumentObserver(doc_obs)
-    except Exception as e:  # noqa: BLE001
-        doc_obs = None
-        sys.stderr.write(f"Tutor: no document signals ({e})\n")
-    try:
-        FreeCADGui.Selection.addObserver(sel_obs)
-    except Exception as e:  # noqa: BLE001
-        sel_obs = None
-        sys.stderr.write(f"Tutor: no selection signals ({e})\n")
-    try:
-        mw = FreeCADGui.getMainWindow()
-
-        def slot(_name=None):
-            c.poke()
-
-        mw.workbenchActivated.connect(slot)
-    except Exception:  # noqa: BLE001  (a step on the workbench is checked on Next)
-        slot = None
-    _OBS[id(c)] = (doc_obs, sel_obs, slot)
+    observe.need(("lesson", id(c)), lambda _ev, c=c: c.poke())
 
 
 def detach(c):
-    got = _OBS.pop(id(c), None)
-    if got is None:
-        return
-    doc_obs, sel_obs, slot = got
-    try:
-        import FreeCAD
-        import FreeCADGui
+    from . import observe
 
-        if doc_obs is not None:
-            FreeCAD.removeDocumentObserver(doc_obs)
-        if sel_obs is not None:
-            FreeCADGui.Selection.removeObserver(sel_obs)
-        if slot is not None:
-            FreeCADGui.getMainWindow().workbenchActivated.disconnect(slot)
-    except Exception:  # noqa: BLE001
-        pass
+    observe.release(("lesson", id(c)))
 
+
+def badge(on):
+    """The visible sign that Claude is watching: a label in the status bar
+    while watch mode is on."""
+    import FreeCADGui
+
+    sb = FreeCADGui.getMainWindow().statusBar()
+    lab = _BADGE.get("label")
+    if on:
+        if lab is None:
+            from PySide import QtGui
+
+            QtW = getattr(__import__("PySide", fromlist=["QtWidgets"]), "QtWidgets", QtGui)
+            lab = QtW.QLabel("● Claude is watching (Tutor tab: turn it off)")
+            lab.setObjectName("TutorWatchBadge")
+            lab.setAccessibleName("Claude is watching")
+            sb.addPermanentWidget(lab)
+            _BADGE["label"] = lab
+        lab.show()
+    elif lab is not None:
+        try:
+            sb.removeWidget(lab)
+            lab.deleteLater()
+        except RuntimeError:
+            pass
+        _BADGE.pop("label", None)
+
+
+_BADGE = {}
