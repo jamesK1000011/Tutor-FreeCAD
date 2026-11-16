@@ -16,8 +16,16 @@ agentlink_tutor/fam_tutor.py
 agentlink_tutor/gui_run.py
 agentlink_tutor/icons/Tutor.svg
 agentlink_tutor/lessons.py
+agentlink_tutor/lessons/bike-stem-1.lesson.json
+agentlink_tutor/lessons/bike-stem-2.lesson.json
+agentlink_tutor/lessons/bike-stem-3.lesson.json
+agentlink_tutor/lessons/constrain-rectangle.lesson.json
+agentlink_tutor/lessons/drawing-page.lesson.json
 agentlink_tutor/lessons/export-stl.lesson.json
+agentlink_tutor/lessons/fillet-chamfer.lesson.json
+agentlink_tutor/lessons/fixed-joint.lesson.json
 agentlink_tutor/lessons/pad-sketch.lesson.json
+agentlink_tutor/lessons/parameter-depth.lesson.json
 agentlink_tutor/lessons/pocket-hole.lesson.json
 agentlink_tutor/live.py
 agentlink_tutor/observe.py
@@ -31,6 +39,7 @@ agentlink_tutor/tool.py
 agentlink_tutor/window.py
 agentlink_tutor/words.py
 docs/core-hooks-needed.md
+docs/examples/workshop/lessons/hole-for-hardware.lesson.json
 package.xml
 tests/_fc.py
 tests/data/agentlink_tools.txt
@@ -41,6 +50,7 @@ tests/test_as_person.py
 tests/test_callout.py
 tests/test_chapters.py
 tests/test_checks.py
+tests/test_course.py
 tests/test_engine.py
 tests/test_files.py
 tests/test_general.py

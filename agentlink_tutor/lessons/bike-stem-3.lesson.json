@@ -1,0 +1,638 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.course.bike-stem-3",
+ "version": "1.0.0",
+ "title": "Bike stem 3: the inset",
+ "summary": "Sketch on the side face with outside edges of the part: an arc of radius 14.5 mm round the hole, three lines and a circle equal to the hole. Pad it 2.5 mm.",
+ "level": "basic",
+ "minutes": 15,
+ "tags": [
+  "course",
+  "bike-stem",
+  "external-geometry",
+  "sketch",
+  "pad"
+ ],
+ "course": {
+  "id": "bike-stem",
+  "title": "Bike stem (beginner course)",
+  "chapter": 3
+ },
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "SketcherWorkbench"
+  ]
+ },
+ "setup": {
+  "after": "agentlink_tutor.course.bike-stem-2",
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "vars": {
+  "r": 14.5,
+  "pad": 2.5
+ },
+ "result": {
+  "exists": {
+   "type": "PartDesign::Pad",
+   "where": {
+    "Length": {
+     "eq": 2.5,
+     "tol": 0.01
+    }
+   }
+  }
+ },
+ "steps": [
+  {
+   "id": "face",
+   "say": "Select the large flat side face of the stem. Push **{PartDesign_NewSketch|New Sketch}**.",
+   "why": "A sketch on the face starts the inset on that face.",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       -1,
+       0
+      ],
+      "largest": true
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "inset": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "Pick the outer side face, away from the base sketch.",
+    "The rings show the face and the sketch button."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "face": {
+       "at": [
+        0,
+        -22,
+        0
+       ],
+       "normal": [
+        0,
+        -1,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "external",
+   "say": "Push **{Sketcher_External|External geometry}**. Click the rear edge of the face. Click the edge of the hole.",
+   "why": "Outside edges let the sketch follow the part when size changes.",
+   "targets": [
+    {
+     "cmd": "Sketcher_External"
+    }
+   ],
+   "check": {
+    "sketch": "$inset",
+    "external": 2
+   },
+   "hints": [
+    "The tool shows edges of the part in the sketch as purple lines.",
+    "The rear edge is the vertical edge far from the hole."
+   ],
+   "do": [
+    {
+     "tool": "sketch_external",
+     "args": {
+      "sketch": "$inset",
+      "edges": [
+       {
+        "type": "line",
+        "near": [
+         -27,
+         -22,
+         0
+        ]
+       },
+       {
+        "type": "circle",
+        "radius": 10.5,
+        "near": [
+         55,
+         -22,
+         0
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "arc",
+   "say": "Push **{Sketcher_CreateArc|Create arc}**. Click the centre of the purple circle. Draw a half circle on the front side.",
+   "why": "The arc shares the centre of the hole, so it moves with it.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateArc"
+    }
+   ],
+   "check": {
+    "sketch": "$inset",
+    "count": 1
+   },
+   "hints": [
+    "The arc tool draws from a centre point.",
+    "Click the centre first. Click the start and the end of the arc after."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$inset",
+      "items": [
+       {
+        "kind": "arc",
+        "center": [
+         55,
+         0
+        ],
+        "radius": 14.5,
+        "start": -90,
+        "end": 90
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$inset",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          0,
+          3
+         ],
+         [
+          -4,
+          3
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "half",
+   "say": "Select the two end points and the centre of the arc. Push **{Sketcher_ConstrainVertical|Constrain vertical}**. Set the radius of the arc to 14.5 mm.",
+   "why": "Three points in a vertical line make the arc an exact half circle.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainVertical"
+    },
+    {
+     "cmd": "Sketcher_ConstrainRadius"
+    }
+   ],
+   "check": {
+    "sketch": "$inset",
+    "dims": [
+     "$r"
+    ],
+    "radii": [
+     "$r"
+    ]
+   },
+   "hints": [
+    "Hold Ctrl to select the three points.",
+    "Use the radius tool for the size of the arc."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$inset",
+      "constraints": [
+       {
+        "type": "vertical",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         [
+          0,
+          3
+         ]
+        ]
+       },
+       {
+        "type": "vertical",
+        "refs": [
+         [
+          0,
+          2
+         ],
+         [
+          0,
+          3
+         ]
+        ]
+       },
+       {
+        "type": "radius",
+        "refs": [
+         0
+        ],
+        "value": "$r"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "lines",
+   "say": "Push **{Sketcher_CreateLine|Create line}**. Draw a horizontal line from each end of the arc to the purple rear line. Draw a line on the rear line to close the outline.",
+   "why": "Keep the lines horizontal, off the purple end points.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateLine"
+    }
+   ],
+   "check": {
+    "sketch": "$inset",
+    "count": 4,
+    "closed": true
+   },
+   "hints": [
+    "Start each line on an end of the arc.",
+    "End the third line on the start of the first line."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$inset",
+      "items": [
+       {
+        "kind": "line",
+        "from": [
+         55,
+         14.5
+        ],
+        "to": [
+         -27,
+         14.5
+        ]
+       },
+       {
+        "kind": "line",
+        "from": [
+         55,
+         -14.5
+        ],
+        "to": [
+         -27,
+         -14.5
+        ]
+       },
+       {
+        "kind": "line",
+        "from": [
+         -27,
+         -14.5
+        ],
+        "to": [
+         -27,
+         14.5
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$inset",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          1,
+          1
+         ],
+         [
+          0,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          2,
+          1
+         ],
+         [
+          0,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "horizontal",
+        "refs": [
+         1
+        ]
+       },
+       {
+        "type": "horizontal",
+        "refs": [
+         2
+        ]
+       },
+       {
+        "type": "point_on_object",
+        "refs": [
+         [
+          1,
+          2
+         ],
+         -3
+        ]
+       },
+       {
+        "type": "point_on_object",
+        "refs": [
+         [
+          2,
+          2
+         ],
+         -3
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          3,
+          1
+         ],
+         [
+          2,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          3,
+          2
+         ],
+         [
+          1,
+          2
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "circle",
+   "say": "Push **{Sketcher_CreateCircle|Create circle}**. Draw a circle on the centre of the purple circle. Select both circles. Push **{Sketcher_ConstrainEqual|Constrain equal}**.",
+   "why": "The hole stays open through the inset.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateCircle"
+    },
+    {
+     "cmd": "Sketcher_ConstrainEqual"
+    }
+   ],
+   "check": {
+    "sketch": "$inset",
+    "full": true,
+    "count": 5
+   },
+   "hints": [
+    "Click the centre of the purple circle to start the circle.",
+    "Hold Ctrl to select the second circle."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$inset",
+      "items": [
+       {
+        "kind": "circle",
+        "center": [
+         55,
+         0
+        ],
+        "radius": 10.5
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$inset",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          4,
+          3
+         ],
+         [
+          -4,
+          3
+         ]
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         4,
+         -4
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "close",
+   "say": "Push **Close**.",
+   "targets": [
+    {
+     "cmd": "Sketcher_LeaveSketch"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "editing": null
+     },
+     {
+      "sketch": "$inset",
+      "full": true,
+      "closed": true
+     }
+    ]
+   },
+   "do": [
+    {
+     "tool": "cmd_run",
+     "args": {
+      "name": "Sketcher_LeaveSketch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Select the sketch. Push **{PartDesign_Pad|Pad}**.",
+   "why": "The inset stands out from the side face.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Pad"
+   },
+   "bind": {
+    "inpad": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find Pad in the Part Design toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$inset",
+      "length": "$pad"
+     }
+    }
+   ]
+  },
+  {
+   "id": "length",
+   "say": "Set **Length** to 2.5 mm. Push **OK**.",
+   "targets": [
+    {
+     "task": {
+      "name": "lengthEdit",
+      "label": "Length"
+     }
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$inpad",
+      "name": "Length",
+      "eq": "$pad",
+      "tol": 0.01,
+      "unit": "mm"
+     },
+     {
+      "task_open": null
+     },
+     {
+      "valid": "$inpad"
+     }
+    ]
+   },
+   "hints": [
+    "Find the Length box in the Tasks panel.",
+    "The Length box sets how far the inset stands out.",
+    "Length = 2.5 mm."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$inpad",
+      "set": {
+       "Length": "$pad"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the inset. The Tutor changes size for a moment to check that the inset follows the hole.",
+   "targets": [
+    {
+     "tree": "$inpad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$inpad"
+     },
+     {
+      "sketch": "$inset",
+      "full": true
+     },
+     {
+      "follows": "size",
+      "object": "$body",
+      "by": 5,
+      "axis": "x",
+      "change": 5
+     }
+    ]
+   }
+  }
+ ]
+}

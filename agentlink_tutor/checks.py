@@ -900,6 +900,10 @@ def needs_window(check):
     return False
 
 
+def _is_var(x):
+    return isinstance(x, str) and x.startswith("$") and x[1:].isidentifier()
+
+
 # What each kind's operand must look like (lessons.validate uses this).
 def problems(check, where, extra_kinds=()):
     out = []
@@ -996,11 +1000,11 @@ def problems(check, where, extra_kinds=()):
             out.append(f"{where}.{kind}: an object")
     if kind == "sketch" and "radii" in check:
         r = check["radii"]
-        if not (isinstance(r, list) and r and all(number(x) is not None and number(x) > 0 for x in r)):
+        if not (isinstance(r, list) and r and all(_is_var(x) or (number(x) is not None and number(x) > 0) for x in r)):
             out.append(f"{where}: radii is a list of radii (mm)")
     if kind == "sketch" and "dims" in check:
         r = check["dims"]
-        if not (isinstance(r, list) and r and all(number(x) is not None and number(x) > 0 for x in r)):
+        if not (isinstance(r, list) and r and all(_is_var(x) or (number(x) is not None and number(x) > 0) for x in r)):
             out.append(f"{where}: dims is a list of dimensions (mm)")
     for k in ("dof_max", "count"):
         if kind == "sketch" and k in check and not (isinstance(check[k], int) and not isinstance(check[k], bool) and check[k] >= 0):

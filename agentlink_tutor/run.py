@@ -61,6 +61,8 @@ def _prop_object(check):
     if isinstance(check, dict):
         if isinstance(check.get("prop"), str):
             return check["prop"]
+        if isinstance(check.get("expr"), str):
+            return check["expr"]  # the object whose value is bound
         for k in ("all", "any"):
             for c in check.get(k) or ():
                 got = _prop_object(c)

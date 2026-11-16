@@ -1,0 +1,296 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.pd.fillet-chamfer",
+ "version": "1.0.0",
+ "title": "Round an edge and bevel an edge",
+ "summary": "Put a fillet on a top edge of a block and a chamfer on a bottom edge, and set their sizes.",
+ "level": "first-steps",
+ "minutes": 6,
+ "tags": [
+  "partdesign",
+  "fillet",
+  "chamfer",
+  "dress-up"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "SketcherWorkbench"
+  ]
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "EdgeLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        40,
+        30
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 20
+    }
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "vars": {
+  "r": 3,
+  "c": 2
+ },
+ "steps": [
+  {
+   "id": "fillet",
+   "say": "Select the top front edge of the block. Push **{PartDesign_Fillet|Fillet}**.",
+   "why": "A fillet rounds the edge you select.",
+   "targets": [
+    {
+     "edge": {
+      "near": [
+       0,
+       -15,
+       20
+      ]
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_Fillet"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Fillet"
+   },
+   "bind": {
+    "fil": {
+     "new": "PartDesign::Fillet"
+    }
+   },
+   "hints": [
+    "Click the edge where the top face meets the front face.",
+    "The rings show the edge and the button."
+   ],
+   "do": [
+    {
+     "tool": "pd_fillet",
+     "args": {
+      "edges": [
+       {
+        "near": [
+         0,
+         -15,
+         20
+        ]
+       }
+      ],
+      "radius": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "radius",
+   "say": "Set **Radius** to 3 mm. Push **OK**.",
+   "targets": [
+    {
+     "task": "Radius"
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$fil",
+      "name": "Radius",
+      "eq": "$r",
+      "tol": 0.01,
+      "unit": "mm"
+     },
+     {
+      "task_open": null
+     },
+     {
+      "valid": "$fil"
+     }
+    ]
+   },
+   "hints": [
+    "Find the Radius box in the Tasks panel.",
+    "This box sets how round the edge is.",
+    "Radius = 3 mm."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$fil",
+      "set": {
+       "Radius": "$r"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "chamfer",
+   "say": "Select the bottom rear edge of the block. Push **{PartDesign_Chamfer|Chamfer}**.",
+   "why": "A chamfer cuts the edge flat at an angle.",
+   "targets": [
+    {
+     "edge": {
+      "near": [
+       0,
+       15,
+       0
+      ]
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_Chamfer"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Chamfer"
+   },
+   "bind": {
+    "cham": {
+     "new": "PartDesign::Chamfer"
+    }
+   },
+   "hints": [
+    "Turn the view to see the rear edge at the bottom.",
+    "The rings show the edge and the button."
+   ],
+   "do": [
+    {
+     "tool": "pd_chamfer",
+     "args": {
+      "edges": [
+       {
+        "near": [
+         0,
+         15,
+         0
+        ]
+       }
+      ],
+      "size": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "size",
+   "say": "Set **Size** to 2 mm. Push **OK**.",
+   "targets": [
+    {
+     "task": "Size"
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$cham",
+      "name": "Size",
+      "eq": "$c",
+      "tol": 0.01,
+      "unit": "mm"
+     },
+     {
+      "task_open": null
+     },
+     {
+      "valid": "$cham"
+     }
+    ]
+   },
+   "hints": [
+    "Find the Size box in the Tasks panel.",
+    "This box sets how much of the edge goes.",
+    "Size = 2 mm."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$cham",
+      "set": {
+       "Size": "$c"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a round top edge and a flat cut on a bottom edge.",
+   "targets": [
+    {
+     "tree": "$cham"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$fil"
+     },
+     {
+      "valid": "$cham"
+     },
+     {
+      "prop": "$fil",
+      "name": "Radius",
+      "eq": "$r",
+      "tol": 0.01
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,335 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.asm.fixed-joint",
+ "version": "1.0.0",
+ "title": "Join two parts with a fixed joint",
+ "summary": "Make an assembly of two bodies, ground one of them, and fix the other to it.",
+ "level": "basic",
+ "minutes": 8,
+ "tags": [
+  "assembly",
+  "joint",
+  "grounded"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "AssemblyWorkbench"
+  ]
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "AssemblyLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        40,
+        40
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 10
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        60,
+        0
+       ],
+       "size": [
+        20,
+        20
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 30
+    }
+   }
+  ],
+  "bind": {
+   "base": "Body",
+   "post": "Body001"
+  }
+ },
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Assembly** workbench in the workbench list.",
+   "targets": [
+    {
+     "wb": "AssemblyWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "AssemblyWorkbench"
+   },
+   "hints": [
+    "The workbench list is in the toolbar at the top.",
+    "The ring shows the list."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "Assembly"
+     }
+    }
+   ]
+  },
+  {
+   "id": "new",
+   "say": "Push **{Assembly_CreateAssembly|Create Assembly}**.",
+   "why": "An assembly holds parts and the joints between them.",
+   "targets": [
+    {
+     "cmd": "Assembly_CreateAssembly"
+    }
+   ],
+   "check": {
+    "new": "Assembly::AssemblyObject"
+   },
+   "bind": {
+    "asm": {
+     "new": "Assembly::AssemblyObject"
+    }
+   },
+   "hints": [
+    "Look at the first button of the Assembly toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "asm_new",
+     "args": {
+      "parts": [
+       "Body"
+      ],
+      "ground": false
+     }
+    }
+   ]
+  },
+  {
+   "id": "insert",
+   "say": "Push **{Assembly_InsertLink|Insert Component}**. Select both bodies in the list. Push **OK**.",
+   "why": "The assembly uses links to the bodies, not copies.",
+   "targets": [
+    {
+     "cmd": "Assembly_InsertLink"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "App::Link",
+       "in": "$asm",
+       "label": "Body"
+      }
+     },
+     {
+      "exists": {
+       "type": "App::Link",
+       "in": "$asm",
+       "label": "Body001"
+      }
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find the button next to the assembly button.",
+    "The list shows the bodies of the document."
+   ],
+   "do": [
+    {
+     "tool": "asm_add",
+     "args": {
+      "assembly": "$asm",
+      "parts": [
+       "Body001"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "ground",
+   "say": "Select the large block. Push **{Assembly_ToggleGrounded|Toggle grounded}**.",
+   "why": "A grounded part stays in place while the other parts move to it.",
+   "targets": [
+    {
+     "cmd": "Assembly_ToggleGrounded"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "App::FeaturePython",
+     "where": {
+      "ObjectToGround": {
+       "set": true
+      }
+     }
+    }
+   },
+   "hints": [
+    "Click the flat block, not the post.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "asm_ground",
+     "args": {
+      "assembly": "$asm",
+      "part": "Body"
+     }
+    }
+   ]
+  },
+  {
+   "id": "joint",
+   "say": "Select the top face of the block. Select the bottom face of the post. Push **{Assembly_CreateJointFixed|Create a Fixed Joint}**. Push **OK**.",
+   "why": "A fixed joint holds the post on the block with no motion.",
+   "targets": [
+    {
+     "cmd": "Assembly_CreateJointFixed"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "JointType": "Fixed"
+       }
+      }
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Hold Ctrl to select the second face.",
+    "Turn the view to see the bottom face of the post."
+   ],
+   "do": [
+    {
+     "tool": "asm_joint",
+     "args": {
+      "assembly": "$asm",
+      "kind": "fixed",
+      "a": {
+       "part": "Body",
+       "element": {
+        "kind": "face",
+        "normal": [
+         0,
+         0,
+         1
+        ]
+       }
+      },
+      "b": {
+       "part": "Body001",
+       "element": {
+        "kind": "face",
+        "normal": [
+         0,
+         0,
+         -1
+        ]
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the post sits on the block. The grounded block stays in place and the joint holds the post.",
+   "targets": [
+    {
+     "tree": "$asm"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "ObjectToGround": {
+         "set": true
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "JointType": "Fixed"
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

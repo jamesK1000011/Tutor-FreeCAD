@@ -16,6 +16,7 @@ from . import lessons, live
 from .point import Refusal
 
 LIST_MAX = 12
+LIST_CHARS = 420
 # The session's inline lessons by id, so a later batch can come after one
 # (setup.after); never written anywhere.
 INLINE = {}
@@ -87,9 +88,17 @@ def tutor(a, session, lib, progress=None):
                 ls = lib.lessons()
                 rows = [r for r in rows if q in r["id"].lower() or q in r["title"].lower()
                         or any(q in t for t in ls[r["id"]].get("tags") or ())]
-            out = {"lessons": rows[:LIST_MAX]}
-            if len(rows) > LIST_MAX:
-                out["more"] = len(rows) - LIST_MAX
+            # Compact: done only when done, the title without the id's words;
+            # rows past LIST_MAX or LIST_CHARS are counted in more (a query
+            # narrows the list).
+            rows = [{k: v for k, v in r.items() if not (k == "done" and not v) and v is not None} for r in rows]
+            shown = rows[:LIST_MAX]
+            while len(shown) > 1 and len(json.dumps(shown, ensure_ascii=False)) > LIST_CHARS:
+                shown.pop()
+            out = {"lessons": shown}
+            if len(rows) > len(shown):
+                out["more"] = len(rows) - len(shown)
+                out["say"] = "More lessons: list with a query (words of the title, id or a tag)."
             if c is not None and c.stepping:
                 out["running"] = f"{c.e.lesson['id']} step {c.e.position()}"
             return out

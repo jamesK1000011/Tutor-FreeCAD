@@ -1,0 +1,219 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.course.bike-stem-2",
+ "version": "1.0.0",
+ "title": "Bike stem 2: two chamfers",
+ "summary": "Bevel the two front edges of the stem with a chamfer of two distances, 8 mm and 5 mm.",
+ "level": "basic",
+ "minutes": 6,
+ "tags": [
+  "course",
+  "bike-stem",
+  "chamfer"
+ ],
+ "course": {
+  "id": "bike-stem",
+  "title": "Bike stem (beginner course)",
+  "chapter": 2
+ },
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "SketcherWorkbench"
+  ]
+ },
+ "setup": {
+  "after": "agentlink_tutor.course.bike-stem-1",
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "vars": {
+  "s1": 8,
+  "s2": 5
+ },
+ "result": {
+  "exists": {
+   "type": "PartDesign::Chamfer",
+   "where": {
+    "ChamferType": "Two distances"
+   }
+  }
+ },
+ "steps": [
+  {
+   "id": "edges",
+   "say": "Hold **Ctrl**. Select the top front edge and the bottom front edge. Push **{PartDesign_Chamfer|Chamfer}**.",
+   "why": "One chamfer can cut more than one edge.",
+   "targets": [
+    {
+     "edge": {
+      "near": [
+       75,
+       -11,
+       23.5
+      ]
+     },
+     "of": "$body"
+    },
+    {
+     "edge": {
+      "near": [
+       75,
+       -11,
+       -23.5
+      ]
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_Chamfer"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Chamfer"
+   },
+   "bind": {
+    "cham": {
+     "new": "PartDesign::Chamfer"
+    }
+   },
+   "hints": [
+    "The front edges are the short edges at the end near the hole.",
+    "The rings show the two edges and the button."
+   ],
+   "do": [
+    {
+     "tool": "pd_chamfer",
+     "args": {
+      "edges": {
+       "type": "line",
+       "axis": "y",
+       "x": 75
+      },
+      "size": 8,
+      "size2": 5
+     }
+    }
+   ]
+  },
+  {
+   "id": "sizes",
+   "say": "Set **Type** to **Two distances**. Set **Size** to 8 mm. Set **Size 2** to 5 mm. Push **OK**.",
+   "why": "Two distances give a cut that is longer on one face.",
+   "targets": [
+    {
+     "task": "Type"
+    },
+    {
+     "task": "Size"
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$cham",
+      "name": "ChamferType",
+      "eq": "Two distances"
+     },
+     {
+      "any": [
+       {
+        "all": [
+         {
+          "prop": "$cham",
+          "name": "Size",
+          "eq": "$s1",
+          "tol": 0.01,
+          "unit": "mm"
+         },
+         {
+          "prop": "$cham",
+          "name": "Size2",
+          "eq": "$s2",
+          "tol": 0.01,
+          "unit": "mm"
+         }
+        ]
+       },
+       {
+        "all": [
+         {
+          "prop": "$cham",
+          "name": "Size",
+          "eq": "$s2",
+          "tol": 0.01,
+          "unit": "mm"
+         },
+         {
+          "prop": "$cham",
+          "name": "Size2",
+          "eq": "$s1",
+          "tol": 0.01,
+          "unit": "mm"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "task_open": null
+     },
+     {
+      "valid": "$cham"
+     }
+    ]
+   },
+   "hints": [
+    "Find the Type list at the top of the Tasks panel.",
+    "With two distances the panel shows a second size box.",
+    "**Size** = 8 mm, **Size 2** = 5 mm."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$cham",
+      "set": {
+       "ChamferType": "Two distances",
+       "Size": "$s1",
+       "Size2": "$s2"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the front of the stem has two chamfers. The Tutor changes size for a moment to check that they follow.",
+   "targets": [
+    {
+     "tree": "$cham"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$cham"
+     },
+     {
+      "follows": "size",
+      "object": "$body",
+      "by": 5,
+      "axis": "x",
+      "change": 5
+     }
+    ]
+   }
+  }
+ ]
+}

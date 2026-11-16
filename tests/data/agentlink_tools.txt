@@ -171,6 +171,7 @@ job_start
 job_status
 link_edit
 link_make
+live_run
 material_clear
 material_get
 material_list
