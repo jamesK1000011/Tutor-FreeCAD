@@ -7,6 +7,10 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Tests for two agents on one link (`tests/test_as_person.py`, with Agent Link 1ec7069 or later): a student agent's `gui_input` with `as: "person"` makes the person's events (a selection, a command, a workbench switch, a task panel opened and closed, an object made, Ask Claude) that `tutor_watch` gives in order with a rising `next`; a milestone ends a teacher's waiting `tutor_watch` early; a guided `used` check passes as the person's own (no `done_for`); the teacher's calls before, between and inside the student's stay left out. The live script is Agent Link's `scripts/live/tutor-watch.json` (`ROLES.md` beside it).
+
 ### Fixed
 
 From the live check of the pocket lesson on FreeCAD 1.1.3, with two recovered documents open and another one in front:
