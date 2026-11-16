@@ -121,7 +121,7 @@
   },
   {
    "id": "pad",
-   "say": "Push **Pad**.",
+   "say": "Push **{PartDesign_Pad|Pad}**.",
    "why": "Pad pushes a closed sketch out to make a solid.",
    "targets": [
     {
@@ -249,7 +249,7 @@
   },
   {
    "id": "undo-pocket",
-   "say": "Push **Undo** (⌘Z).",
+   "say": "Push **{Std_Undo|Undo}** (⌘Z).",
    "targets": [
     {
      "cmd": "Std_Undo"

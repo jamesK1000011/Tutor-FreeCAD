@@ -33,7 +33,7 @@ class Vocabulary(unittest.TestCase):
         self.assertEqual(self.st({"exists": {"type": "PartDesign::Pad", "in": "Body"}}).status, "pass")
         r = self.st({"exists": "PartDesign::Pocket"})
         self.assertEqual(r.status, "fail")
-        self.assertIn("Pocket", r.why)
+        self.assertEqual(r.why, "there is no pocket yet")
         self.assertEqual(self.st({"absent": "PartDesign::Pocket"}).status, "pass")
         r = self.st({"absent": {"type": "PartDesign::Pad"}})
         self.assertEqual((r.status, r.why), ("fail", "Pad is still there"))

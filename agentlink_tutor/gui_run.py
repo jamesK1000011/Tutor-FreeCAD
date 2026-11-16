@@ -28,23 +28,36 @@ def shower(session):
         except ImportError:
             return None
         if c is None:
-            point.point({}, None, hooks=hooks)
+            from . import bubble
+
+            point.point({}, None, hooks=hooks, bubble=bubble)
             return None
         from .window import Window
 
+        from . import bubble
+
         tg, _again = c.shown()
-        say = c.callout()
-        if not tg:  # words only: the callout at the window's top centre
-            point.point({}, None, hooks=hooks)
-            ov = hooks.service("overlay")
-            if ov is not None and say:
-                ov.show([], say=point.plain(say), owner=point.OWNER)
+        say = c.parts()
+        if not tg:  # words only: the bubble at the 3D view's top, else the overlay's callout
+            point.point({}, None, hooks=hooks, bubble=bubble)
+            if say is not None and not say.empty() and not _safe_show(bubble, say):
+                ov = hooks.service("overlay")
+                if ov is not None:
+                    ov.show([], say=say.text(), owner=point.OWNER)
             return {"resolved": 0, "missing": []}
-        got = point.point({"targets": tg, "say": say}, Window(session, doc=c.e._doc), hooks=hooks, bindings=c.e.bindings)
+        got = point.point({"targets": tg, "say": say}, Window(session, doc=c.e._doc), hooks=hooks, bindings=c.e.bindings, bubble=bubble)
         return {"resolved": len(got.get("shown") or []),
                 "missing": [str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []]}
 
     return show
+
+
+def _safe_show(bubble, words):
+    try:
+        return bool(bubble.show(words, ()))
+    except Exception as e:  # noqa: BLE001  (the overlay's callout instead)
+        sys.stderr.write(f"Tutor: callout bubble not shown ({e})\n")
+        return False
 
 
 class UI:
@@ -143,7 +156,7 @@ def attach(c):
     poke is debounced); observe.py owns the observers."""
     from . import observe
 
-    observe.need(("lesson", id(c)), lambda _ev, c=c: c.poke())
+    observe.need(("lesson", id(c)), lambda ev, c=c: c.poke(ev if isinstance(ev, dict) else None))
 
 
 def detach(c):

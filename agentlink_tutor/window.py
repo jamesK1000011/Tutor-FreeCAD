@@ -126,7 +126,9 @@ class Window:
         except Exception:
             return {}
         keys = info.get("shortcutText") or info.get("shortcut") or ""
-        return {"menuText": str(info.get("menuText") or cmd).replace("&", ""), "shortcut": str(keys) or None}
+        from . import words
+
+        return {"menuText": words.clean_menu_text(info.get("menuText")) or words.command_words(cmd), "shortcut": str(keys) or None}
 
     def command_buttons(self, cmd):
         from agentlink import targets

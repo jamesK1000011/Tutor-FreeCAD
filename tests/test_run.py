@@ -312,7 +312,7 @@ class Hints(unittest.TestCase):
         e.step.pop("hints")
         for _ in range(3):
             st = c.act("hint")
-        self.assertEqual(st["hint_text"], "Length = 15 mm; then press OK.")
+        self.assertEqual(st["hint_text"], "Length = 15 mm; then push OK.")
 
 
 class Rider(unittest.TestCase):

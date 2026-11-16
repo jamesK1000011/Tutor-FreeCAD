@@ -32,6 +32,7 @@ command's name and shortcut).
 """
 
 from . import lessons
+from . import words as words_mod
 
 TASK_BUTTONS = ("ok", "cancel", "apply", "close", "reset", "help")
 
@@ -97,9 +98,16 @@ def _bench(win, wb):
         return wb
 
 
+def _cmd_name(win, cmd):
+    """The command as this window names it (its menu text), never its
+    internal name."""
+    info = win.command_info(cmd) or {}
+    return words_mod.clean_menu_text(info.get("menuText")) or words_mod.command_words(cmd)
+
+
 def _cmd_words(win, cmd):
     info = win.command_info(cmd) or {}
-    words = info.get("menuText") or cmd
+    words = _cmd_name(win, cmd)
     keys = info.get("shortcut")
     return f"{words} ({keys})" if keys else words
 
@@ -122,7 +130,7 @@ def _cmd(f, spec, win, _b):
         f.marks = [{"widget": button}]
         f.dropdown = (menu, action)
         f.note = "in the ▾ menu of this button"
-        f.text = f"Open the ▾ menu of the ringed button. Select {_cmd_words(win, cmd)}."
+        f.text = f"Open the ▾ menu of the ringed button {words_mod.badge(f.n)}. Select {_cmd_words(win, cmd)}."
         return
     bench = win.workbench_of(cmd)
     active = win.active_workbench()
@@ -144,7 +152,7 @@ def _menu(f, spec, win, _b):
         cmd = titles
         found = win.menu_path_of(cmd)
         if not found:
-            name = (win.command_info(cmd) or {}).get("menuText") or cmd
+            name = _cmd_name(win, cmd)
             f.what = f"menu {name}"
             f.why = f"{name} is in no menu of this window"
             wb = win.workbench_of(cmd)
@@ -174,7 +182,7 @@ def _menu(f, spec, win, _b):
     seen = [w for w, hidden in win.command_buttons(cmd) if hidden is None] if cmd else []
     if seen:
         f.marks = [{"widget": w} for w in seen]
-        f.text += ", or the toolbar button ringed here"
+        f.text += f", or the ringed toolbar button {words_mod.badge(f.n)}"
     else:
         f.why = "the macOS menubar cannot be drawn over; the path is in the callout"
 

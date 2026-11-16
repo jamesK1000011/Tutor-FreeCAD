@@ -34,6 +34,8 @@ theirs. Nothing here changes the document.
 import collections
 import os
 
+from . import words
+
 Result = collections.namedtuple("Result", "status why")
 
 PASS = Result("pass", None)
@@ -185,12 +187,15 @@ def find(ctx, spec, only_new=False):
     return found
 
 
-def describe(spec):
+def describe(spec, doc=None):
+    """A reference or query in the person's words: "sketch", "pad
+    labelled Pad001 in Body" (never a type id: words.type_words)."""
     q = query(spec)
     if q is None:
-        return str(spec)
-    t = q.get("type", "object").split("::")[-1]
-    return t + (f" labelled {q['label']}" if q.get("label") else "") + (f" in {q['in']}" if q.get("in") else "")
+        return _label(doc, spec) if doc is not None else str(spec)
+    t = words.type_words(q["type"]) if q.get("type") else "object"
+    where = f" in {_label(doc, q['in'])}" if q.get("in") else ""
+    return t + (f" labelled {q['label']}" if q.get("label") else "") + where
 
 
 # ---- numbers ---------------------------------------------------------------
@@ -239,7 +244,7 @@ def compare(what, have, spec, unit=""):
 def _exists(spec, ctx):
     if find(ctx, spec):
         return PASS
-    return fail(f"there is no {describe(spec)} yet")
+    return fail(f"there is no {describe(spec, ctx.doc)} yet")
 
 
 def _absent(spec, ctx):
@@ -252,7 +257,7 @@ def _absent(spec, ctx):
 def _new(spec, ctx):
     if find(ctx, spec, only_new=True):
         return PASS
-    return fail(f"no new {describe(spec)} yet")
+    return fail(f"no new {describe(spec, ctx.doc)} yet")
 
 
 def _one(ctx, ref):
@@ -266,8 +271,8 @@ def _prop(spec, ctx):
         return bad
     name = spec.get("name")
     if not hasattr(o, name):
-        return fail(f"{o.Label} has no {name}")
-    return compare(name, getattr(o, name), spec, spec.get("unit", ""))
+        return fail(f"{o.Label} has no {words.prop_words(name)}")
+    return compare(words.prop_words(name), getattr(o, name), spec, spec.get("unit", ""))
 
 
 def _shape(o):
@@ -412,27 +417,34 @@ def _editing(spec, ctx):
         # No window has nothing open for editing.
         if ctx.gui is None or ctx.gui.editing is None:
             return PASS
-        return fail(f"{ctx.gui.editing} is still open for editing: press OK or Close")
+        return fail(f"{_label(ctx.doc, ctx.gui.editing)} is still open for editing: push OK or Close")
     if ctx.gui is None:
         return pending(NO_WINDOW)
     o = lookup(ctx.doc, spec)
     name = o.Name if o is not None else spec
     if ctx.gui.editing == name:
         return PASS
-    return fail(f"{spec} is not open for editing")
+    return fail(f"{_label(ctx.doc, spec)} is not open for editing")
 
 
 def _task_open(spec, ctx):
     if spec is None:
         if ctx.gui is None or ctx.gui.task is None:
             return PASS
-        return fail("a task dialog is still open: press OK or Cancel")
+        return fail("a task panel is still open: push OK or Cancel")
     if ctx.gui is None:
         return pending(NO_WINDOW)
     task = ctx.gui.task
     if task is not None and (spec is True or task == spec):
         return PASS
-    return fail(f"the {spec if spec is not True else ''} task dialog is not open".replace("  ", " "))
+    return fail(f"the {task_words(spec) + ' ' if spec is not True else ''}task panel is not open")
+
+
+def task_words(task):
+    """A task panel's name (FreeCAD's PartDesign_Pad, from the type of the
+    object in edit) as the person knows it: "pad"."""
+    t = str(task or "")
+    return words.type_words(t.replace("_", "::", 1) if "::" not in t else t)
 
 
 def _used(spec, ctx):
@@ -440,7 +452,7 @@ def _used(spec, ctx):
         return pending("the person's actions are not being watched")
     if any(e.get("k") == "cmd" and e.get("c") == spec for e in ctx.events):
         return PASS
-    return fail(f"{spec} has not been used yet")
+    return fail(f"{words.command_words(spec)} has not been used yet")
 
 
 def _all(spec, ctx):
@@ -535,7 +547,7 @@ def _label(doc, ref):
 
 def exact(check, doc=None):
     """The exact thing a check wants, in a few words for the top of the hint
-    ladder ("Length = 15 mm; then press OK"), or None when it says nothing a
+    ladder ("Length = 15 mm; then push OK"), or None when it says nothing a
     person can type or pick. Bindings already resolved."""
     kind = kind_of(check)
     if kind is None:
@@ -549,7 +561,7 @@ def exact(check, doc=None):
         if op is None:
             return None
         word = {"eq": "=", "lt": "<", "gt": ">", "le": "≤", "ge": "≥"}[op]
-        return f"{check['name']} {word} {_fmt(number(check[op]) if number(check[op]) is not None else check[op], check.get('unit', ''))}"
+        return f"{words.prop_words(check['name'])} {word} {_fmt(number(check[op]) if number(check[op]) is not None else check[op], check.get('unit', ''))}"
     if kind == "bbox":
         size = check.get("size") or []
         return "size " + " × ".join(_fmt(float(v)) for v in size) + " mm" if len(size) == 3 else None
@@ -557,18 +569,18 @@ def exact(check, doc=None):
         op = next((k for k in CMP if k in check), None)
         return f"volume {_fmt(float(check[op]))} mm³" if op == "eq" else None
     if kind in ("task_open", "editing") and check.get(kind) is None:
-        return "then press OK"
+        return "then push OK"
     if kind == "workbench":
         return f"the {bench_text(str(check[kind]))} workbench"
     if kind == "selected":
         ref = check[kind]
         return f"select {_label(doc, ref)}" + (f" ({check['sub'].lower()})" if check.get("sub") else "")
     if kind == "new":
-        return f"a new {describe(check[kind])}"
+        return f"a new {describe(check[kind], doc)}"
     if kind == "file":
         return f"saved as {check[kind]}"
     if kind == "used":
-        return f"use {check[kind]}"
+        return f"use {words.command_words(check[kind])}"
     return None
 
 

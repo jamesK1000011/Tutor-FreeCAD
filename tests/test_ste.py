@@ -126,11 +126,11 @@ class Explainers(unittest.TestCase):
     def test_callout_and_answers_with_and_without(self):
         p = prefs.Memory()
         w, c = make(p)
-        self.assertEqual(c.callout().split("\n")[:2], ["Push **Pad**.", self.WHY])
+        self.assertEqual(c.callout().split("\n\n")[:2], ["Push Pad.", self.WHY])
         st = c.act("explain", on=False)
         self.assertEqual(st["explain"], "off")
         self.assertNotIn("because", st)
-        self.assertEqual(c.callout(), "Push **Pad**.")
+        self.assertEqual(c.callout(), "Push Pad.")
         self.assertEqual(c.state(detail=True)["because"], self.WHY)  # asked for
         c.act("hint")
         self.assertIn("Find the yellow block", c.callout())  # hints still work
