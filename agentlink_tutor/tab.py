@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 """The Tutor tab in Agent Link's panel (order 15, between Notes and Steps):
-the lessons installed, the step in front and what it says, Back, Next,
-Hint, Skip and Stop, and Ask Claude, which leaves the person's question as
-a note the agent reads through Agent Link's notes.
+the lessons installed, Guided or Demo, the step in front with what it says
+and whether its check passed, Back, Next, Hint, Skip, Do it for me and
+Stop, and Ask Claude, which leaves the person's question as a note the
+agent reads through Agent Link's notes. The lesson is the one in hand
+(live.py): the agent's tutor tool moves the same one, and the tab follows.
 
 The tab follows the theme the person chose: it sets no colours and paints
 no background (FreeCAD's light themes are stylesheets over a palette that
@@ -10,14 +12,16 @@ may stay dark, so a colour read from the palette would be wrong); it uses
 fonts only. The words and which buttons are on are plain functions,
 tested without a window; the Qt part is TutorTab.
 
-Not here yet (T3, guided and demo modes): checking a step on the person's
-own actions as they happen, and "Do it for me"; that button is shown, off,
-with a tooltip saying so.
+In guided mode the step is checked as the person works (run.py) and the
+lesson goes on by itself once it passes; in demo mode Next does the step
+for them and waits at the next one.
 """
 
 from . import live
 
-DO_LATER = "Do it for me comes with demo mode in a later version of the Tutor."
+DO_TIP = "Do this step for me: the tools do it while you watch (one undo step per call)."
+NEXT_TIP = {"guided": "Check this step, then go on.", "demo": "Do this step, then wait at the next one."}
+MODES = (("guided", "Guided: I do it"), ("demo", "Demo: show me"))
 NO_DOC = "Open a document first: the question is left as a note on it."
 
 
@@ -45,8 +49,20 @@ def step_words(status):
         head += " · done"
     elif st.get("check") == "fail" and st.get("why"):
         head += " · not yet"
+    elif st.get("check") == "pending" and st.get("why"):
+        head += " · waiting"
     hint = st.get("hint_text") or (st.get("why") if st.get("check") == "fail" else "") or ""
     return (head, st.get("say") or "", hint)
+
+
+def check_line(status):
+    """The step's check result in words for the tab."""
+    st = status or {}
+    c = st.get("check")
+    if "lesson" not in st or st.get("step") == "done" or c is None:
+        return ""
+    word = {"pass": "Check: passed", "fail": "Check: not yet", "pending": "Check: waiting"}[c]
+    return word + (f" ({st['why']})" if st.get("why") and c != "pass" else "")
 
 
 def buttons_on(engine):
@@ -54,8 +70,10 @@ def buttons_on(engine):
     state = getattr(engine, "state", "idle") if engine is not None else "idle"
     stepping = state == "step"
     back = stepping and bool(getattr(engine, "history", None))
+    step = getattr(engine, "step", None) if stepping else None
+    do = bool(stepping and isinstance(step, dict) and step.get("do"))
     return {"start": not stepping, "back": back, "next": stepping, "hint": stepping, "skip": stepping,
-            "stop": stepping, "do": False, "ask": True}
+            "stop": stepping, "do": do, "ask": True, "mode": True}
 
 
 def question_note(text, status=None):
@@ -131,10 +149,15 @@ def _make():
             self.pick.setMinimumContentsLength(12)
             self.start = QtW.QPushButton("Start")
             self.start.setToolTip("Start the lesson: it sets up a document, then shows each step.")
+            self.mode = QtW.QComboBox()
+            self.mode.setAccessibleName("Lesson mode")
+            self.mode.setToolTip("Guided: you do each step and it is checked as you go. Demo: each step is done for you while you watch. Switch any time.")
+            for key, text in MODES:
+                self.mode.addItem(text, key)
             lay.addWidget(self.pick)
             row = QtW.QHBoxLayout()
             row.addWidget(self.start)
-            row.addStretch(1)
+            row.addWidget(self.mode, 1)
             lay.addLayout(row)
             self.head = QtW.QLabel()
             f = QtGui.QFont(self.head.font())
@@ -150,14 +173,17 @@ def _make():
             fi.setItalic(True)
             self.hint.setFont(fi)
             self.hint.setAccessibleName("Tutor hint")
-            for w in (self.head, self.say, self.hint):
+            self.check = QtW.QLabel()
+            self.check.setWordWrap(True)
+            self.check.setAccessibleName("Tutor check")
+            for w in (self.head, self.say, self.check, self.hint):
                 lay.addWidget(w)
             grid = QtW.QGridLayout()
             self.b = {}
             for i, (key, text, tip) in enumerate((
                     ("back", "Back", "The step before."), ("next", "Next", "Check this step, then go on."),
                     ("hint", "Hint", "A hint, then a closer one."), ("skip", "Skip", "Leave this step and go on."),
-                    ("do", "Do it for me", DO_LATER), ("stop", "Stop", "Stop the lesson; the document stays."))):
+                    ("do", "Do it for me", DO_TIP), ("stop", "Stop", "Stop the lesson; the document stays."))):
                 b = QtW.QPushButton(text)
                 b.setToolTip(tip)
                 grid.addWidget(b, i // 3, i % 3)
@@ -177,15 +203,14 @@ def _make():
             lay.addWidget(self.line)
             lay.addStretch(1)
             self.start.clicked.connect(self._start)
-            self.b["back"].clicked.connect(lambda: self._step("back"))
-            self.b["next"].clicked.connect(lambda: self._step("next"))
-            self.b["hint"].clicked.connect(lambda: self._step("raise_hint"))
-            self.b["skip"].clicked.connect(lambda: self._step("skip"))
-            self.b["stop"].clicked.connect(lambda: self._step("stop"))
+            for key in ("back", "next", "hint", "skip", "do", "stop"):
+                self.b[key].clicked.connect(lambda _c=False, k=key: self._step(k))
+            self.mode.currentIndexChanged.connect(self._mode)
             self.ask.clicked.connect(self._ask)
             self.question.returnPressed.connect(self._ask)
             self.pick.currentIndexChanged.connect(lambda _i: (self._buttons(), self._pick_tip()))
-            self._pointed = False
+            live.watch(self._changed)
+            self.destroyed.connect(lambda *_a, f=self._changed: live.unwatch(f))
             self.fill()
 
         # -- reading
@@ -231,58 +256,51 @@ def _make():
             self._show()
 
         def _show(self, status=None):
-            e = live.engine()
+            c = live.controller()
             if status is None:
-                status = e.status() if e is not None else None
+                status = c.state() if c is not None else None
             head, say, hint = step_words(status)
+            if status and status.get("mode") and "lesson" in status:
+                head += " · " + ("demo" if status["mode"] == "demo" else "guided")
             self.head.setText(head)
             self.say.setText(say)
             self.say.setAccessibleDescription(say)
+            line = check_line(status)
+            self.check.setText(line)
+            self.check.setVisible(bool(line))
             self.hint.setText(hint)
             self.hint.setVisible(bool(hint))
+            if c is not None and c.mode in ("demo", "guided"):
+                i = self.mode.findData(c.mode)
+                if i >= 0 and i != self.mode.currentIndex():
+                    self.mode.blockSignals(True)
+                    self.mode.setCurrentIndex(i)
+                    self.mode.blockSignals(False)
             self._buttons()
-            self._point(e)
+
+        def _changed(self, _c=None):
+            """The lesson moved (the agent's call, a check that passed, a
+            timer): the tab follows."""
+            try:
+                self._show()
+            except RuntimeError:  # the widget is gone
+                live.unwatch(self._changed)
 
         def _pick_tip(self):
             tip = getattr(QtCore.Qt, "ToolTipRole", None) or QtCore.Qt.ItemDataRole.ToolTipRole
             self.pick.setToolTip(str(self.pick.itemData(self.pick.currentIndex(), tip) or ""))
 
         def _buttons(self):
-            on = buttons_on(live.engine())
+            e = live.engine()
+            on = buttons_on(e)
             self.start.setEnabled(on["start"] and self.pick.currentData() is not None)
             for k, b in self.b.items():
                 b.setEnabled(on[k])
-
-        def _point(self, e):
-            """Ring the step's targets, its words in the callout (the
-            agent's tutor_point does the same)."""
-            from . import point
-            from .window import Window
-
-            try:
-                from agentlink import hooks
-            except Exception:
-                return
-            if e is None or getattr(e, "state", None) != "step":
-                # Only the tab's own rings go; the agent's stay.
-                if self._pointed:
-                    point.point({}, None, hooks=hooks)
-                    self._pointed = False
-                return
-            s = e.step
-            try:
-                session, _server = self.panel._server()
-            except Exception:
-                session = None
-            say = e.said or s.get("say")
-            hint = e.hint_text() if e.hint else None
-            point.point({"targets": list(s.get("targets") or []), "say": "\n".join(x for x in (say, hint) if x)},
-                        Window(session), hooks=hooks, bindings=e.bindings)
-            self._pointed = True
+            self.b["next"].setToolTip(NEXT_TIP.get(getattr(e, "mode", None) or self.mode.currentData() or "guided", NEXT_TIP["guided"]))
 
         # -- acting
         def _start(self):
-            from . import engine, lessons
+            from . import lessons
 
             lid = self.pick.currentData()
             if not lid:
@@ -294,30 +312,36 @@ def _make():
                     session, _server = self.panel._server()
                 except Exception:
                     pass
-                e = engine.Engine(lesson, call=call_for(self.panel), doc=lambda s=session: _doc(s),
-                                  out_dir=getattr(session, "out_dir", None), progress=lessons.Progress())
-                live.set_engine(e)
+                c = live.new(lesson, call=call_for(self.panel), doc=lambda s=session: _doc(s),
+                             out_dir=getattr(session, "out_dir", None), session=session, progress=lessons.Progress())
                 self.line.setText("")
-                self._show(e.start("guided"))
+                self._show(c.start(self.mode.currentData() or "guided"))
             except Exception as err:  # noqa: BLE001  (a setup call refused, a lesson gone)
                 self.line.setText(f"The lesson could not start: {err}")
                 self._show()
 
         def _step(self, what):
-            e = live.engine()
-            if e is None:
+            c = live.controller()
+            if c is None:
                 return
             try:
-                if what == "next":
-                    at = e.index
-                    st = e.check()
-                    if e.index != at:  # a known wrong turn: its branch step first
-                        return self._show(st)
-                st = getattr(e, what)()
+                st = c.act(what)
                 if what == "stop":
-                    live.set_engine(None)
+                    live.set_controller(None)
+                    st = None
                 self.line.setText("")
-                self._show(st if what != "stop" else None)
+                self._show(st)
+            except Exception as err:  # noqa: BLE001  (a refused call: its words)
+                self.line.setText(str(err))
+                self._show()
+
+        def _mode(self, _i=None):
+            c = live.controller()
+            if c is None or not c.stepping:
+                self._buttons()
+                return
+            try:
+                self._show(c.act("status", mode=self.mode.currentData()))
             except Exception as err:  # noqa: BLE001
                 self.line.setText(str(err))
 

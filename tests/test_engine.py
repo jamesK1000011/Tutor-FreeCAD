@@ -118,7 +118,8 @@ class StateMachine(unittest.TestCase):
             e.next()
         self.assertEqual(seen, ["bench", "pick", "pad", "length", "see"])
         self.assertEqual(e.bindings["pad"], "Pad")
-        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "step": "done", "skipped": []})
+        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "step": "done", "skipped": [],
+                                      "done_for": ["bench", "length", "pad", "pick"]})
 
     def test_headless_window_steps_wait_and_the_rest_pass(self):
         w, e = make()

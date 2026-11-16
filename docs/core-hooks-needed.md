@@ -31,13 +31,35 @@ no add-on):
   prefixes), next to `batch`, `session_state`, `tool_groups` and
   `guide_read`; `echo.skipped(name)`. The tutor family declares `tutor`.
 
-## T3: guided and demo modes
+## T3: guided and demo modes (done)
 
-- **A core rider line on answers** that an add-on can feed (`tutor: step 3/7
-  passed`), separate from the single `notice` service an add-on may take:
-  `protocol._add_notice` with more than one provider, or a second channel.
-- **`call_done` with the tool's name and whether it changed the document**,
-  so the engine re-checks a step after the agent's own calls in demo mode.
+In Agent Link core since 15 Nov 2026 (API 1, additions only; core names
+no add-on):
+
+- **The rider line**, `hooks.register_rider(owner, fn)` /
+  `unregister_rider(owner)`: after every call `fn(tool)` gives a short line
+  or `None`; every active provider's line joins the answer as `"rider"`
+  (each cut to 80 characters, the whole to 200), apart from the single
+  `notice` service. The Tutor's: `tutor: step 3/5 passed; now step 4/5
+  pending`, given when it changes, never on the tutor's own answers.
+- **`call_done(session, tool, ok, changed)`** after every call through the
+  server (the agent's, a panel click's, a batch's inner calls), refusals
+  too, before the rider is asked; `changed` when the call went through and
+  changed the document; `session.by` says whose. The Tutor re-checks the
+  step in front on it (not during its own setup or do).
+- **The test flag `AGENTLINK_AS_USER=1`** (the design's
+  `AGENTLINK_TUTOR_AS_USER`, made generic): the agent's calls run as the
+  person's (`session.by`), so guided mode is tested end to end by an agent
+  (`tests/test_tool.py`, `tests/test_replay_t3_fc.py`). Off by default,
+  documented as test-only in Agent Link's `docs/hooks.md`.
+- From the live check: the 3D badge (`annotations.light(…, badge=n)`) is a
+  disc and a bold number sized for the screen's pixel ratio, drawn at the
+  point of the face nearest its centre that the view shows with room
+  around it, not under another part.
+
+The window's own signals a guided step is checked on in T3 need nothing
+new: FreeCAD's document observer (recompute, undo, redo, deletion), its
+selection observer and the main window's `workbenchActivated`, all public.
 
 ## T4: watch mode
 
@@ -48,9 +70,9 @@ no add-on):
   that an add-on's family can declare into), so `tutor_watch wait` is
   answered on gui_link's socket thread and never blocks the GUI thread or
   holds `in_call`.
-- **The main window's `workbenchActivated`** and command `QAction.triggered`
-  signals reachable without the add-on importing GUI internals, or a core
-  `command_used` event through `hooks.emit`.
+- **Command `QAction.triggered`** reachable without the add-on importing GUI
+  internals, or a core `command_used` event through `hooks.emit` (the
+  main window's `workbenchActivated` is public and used since T3).
 
 ## T5: add-on lessons
 

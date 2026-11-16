@@ -7,10 +7,10 @@ import os
 
 from agentlink import hooks
 
-from . import live, point
+from . import lessons, live, point, tool
 
 GROUP = "tutor"
-INFO = "Teach FreeCAD in the person's window: point at controls with numbered rings and a callout, light faces in 3D; never the cursor, menus or focus."
+INFO = "Teach FreeCAD in the person's window: lessons in demo or guided mode, each step checked; point at controls with numbered rings and a callout, light faces in 3D; never the cursor, menus or focus."
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 # The live echo: the tutor tools draw in the window themselves, so the echo
@@ -29,10 +29,36 @@ def _timer(ms, fn):
         pass
 
 
+_LIB = {}
+
+
+def library():
+    if "lib" not in _LIB:
+        _LIB["lib"] = lessons.core_library()
+    return _LIB["lib"]
+
+
+# The lesson in hand follows the agent's and the person's calls (re-checked
+# after each), and its state rides on the agent's answers while it runs.
+# An older Agent Link without these hooks: the lesson is checked on Next.
+def follow():
+    hooks.on("call_done", live.call_done)
+    if hasattr(hooks, "register_rider"):
+        hooks.register_rider("tutor", live.rider)
+
+
+follow()
+
+
 def tools(session):
     from .window import Window
+
+    follow()
 
     def tutor_point(a):
         return point.point(a, Window(session), hooks=hooks, bindings=live.bindings(), timer=_timer)
 
-    return hooks.tools_from_data(DATA, GROUP, {"tutor_point": tutor_point}, "Tutor")
+    def tutor(a):
+        return tool.tutor(a, session, library())
+
+    return hooks.tools_from_data(DATA, GROUP, {"tutor_point": tutor_point, "tutor": tutor}, "Tutor")
