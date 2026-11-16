@@ -352,13 +352,21 @@ def _make():
                     session, _server = self.panel._server()
                 except Exception:
                     pass
-                c = live.new(lesson, call=call_for(self.panel), doc=lambda s=session: _doc(s),
+                c = live.new(lesson, call=call_for(self.panel), doc=lambda: _doc(self._session()),
                              out_dir=getattr(session, "out_dir", None), session=session, progress=lessons.Progress())
                 self.line.setText("")
                 self._show(c.start(self.mode.currentData() or "guided"))
             except Exception as err:  # noqa: BLE001  (a setup call refused, a lesson gone)
                 self.line.setText(f"The lesson could not start: {err}")
                 self._show()
+
+        def _session(self):
+            """The session the panel's calls go to now (Agent Link may make a
+            new one when the front document changes)."""
+            try:
+                return self.panel._server()[0]
+            except Exception:  # noqa: BLE001
+                return None
 
         def _step(self, what):
             c = live.controller()

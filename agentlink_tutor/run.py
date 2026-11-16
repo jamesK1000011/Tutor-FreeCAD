@@ -122,6 +122,12 @@ class Controller:
         if self.stepping and self.e.step.get("targets"):
             t = self.targets or {"resolved": 0, "missing": [NO_WINDOW]}
             st["targets"] = {"resolved": t.get("resolved", 0), "missing": list(t.get("missing") or [])[:3]}
+        if self.stepping and self.targets and self.targets.get("callout"):
+            # Where the person reads the step: bubble (over the 3D view),
+            # overlay (Agent Link's callout) or none; why when not the bubble.
+            st["callout"] = self.targets["callout"]
+            if self.targets.get("callout_why"):
+                st["callout_why"] = self.targets["callout_why"]
         return engine_mod._fit(st)
 
     def panel_closed(self):
@@ -272,7 +278,10 @@ class Controller:
             if self.ui is not None:
                 # The person starts from a quiet window: setup's sketch closed,
                 # no task dialog, nothing selected, the part in view.
-                self.ui.settle()
+                try:
+                    self.ui.settle(self.e._doc())
+                except TypeError:  # a stand-in without the document
+                    self.ui.settle()
                 v = (self.e.lesson or {}).get("view", "isometric")
                 if v in VIEWS:
                     self.ui.frame(v, self.e._doc())

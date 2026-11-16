@@ -50,11 +50,15 @@ def callout(say, found):
 _gen = {"n": 0}
 
 
-def point(args, win, hooks=None, bindings=None, timer=None, bubble=None):
+def point(args, win, hooks=None, bindings=None, timer=None, bubble=None, report=None):
     """The tool's answer for args ({targets?, say?, ms?, clear?}). say may
     be a callout.Callout. bubble: bubble.py's show(callout, found) -> True
     when it showed the words itself (over the 3D view) and hide(); without
-    it, or when it cannot, the overlay's own callout has them."""
+    it, or when it cannot, the overlay's own callout has them. The answer
+    says which ("callout": bubble, overlay or none, with "callout_why" when
+    the bubble could not); report, a dict, is filled the same way and kept
+    up to date by the bubble's later self-check."""
+    report = {} if report is None else report
     tg = args.get("targets") or []
     say = args.get("say")
     ms = args.get("ms")
@@ -87,10 +91,11 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None):
         return {"cleared": True}
     found = [targets.resolve(spec, i + 1, win, bindings) for i, spec in enumerate(tg)]
     if ov is None:
+        report["callout"] = "none"
         for f in found:
             f.marks, f.menu, f.light = [], None, None
             f.why = f.why or "nothing can be drawn: Agent Link's overlay is not here (no window, or an older Agent Link)"
-        return _answer(found, None, ms)
+        return {**_answer(found, None, ms), **report}
     specs, owners = [], []
     for f in found:
         for m in f.marks:
@@ -98,11 +103,20 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None):
             owners.append(f)
     words = parts(say, found)
     drawn = False
+    report.pop("callout_why", None)
     if bubble is not None and not words.empty():
         try:
-            drawn = bool(bubble.show(words, found))
-        except Exception:  # noqa: BLE001  (the overlay's callout instead)
+            doc = win.doc() if hasattr(win, "doc") else None
+        except Exception:  # noqa: BLE001
+            doc = None
+        try:
+            drawn = bool(bubble.show(words, found, doc=doc, report=report))
+            if not drawn and getattr(bubble, "why", None) and bubble.why():
+                report["callout_why"] = str(bubble.why())[:100]
+        except Exception as e:  # noqa: BLE001  (the overlay's callout instead)
             drawn = False
+            report["callout_why"] = f"bubble failed: {e}"[:100]
+    report["callout"] = "none" if words.empty() else "bubble" if drawn else "overlay"
     if drawn and ms and hasattr(bubble, "hide_after"):
         bubble.hide_after(ms)
     got = ov.show(specs, say=None if drawn else words.text(), ms=ms, owner=OWNER) or {}
@@ -151,7 +165,7 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None):
     if ms and ann is not None and timer is not None:
         n = _gen["n"]
         timer(ms, lambda: ann.clear(OWNER) if _gen["n"] == n else None)
-    return _answer(found, got.get("handle"), ms)
+    return {**_answer(found, got.get("handle"), ms), **report}
 
 
 def _answer(found, handle, ms):

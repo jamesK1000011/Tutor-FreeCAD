@@ -122,7 +122,13 @@ The callout sits over the 3D view, on the edge nearest what it points at
 (under the toolbars for a toolbar button), with an arrow to the ring, so it
 covers no toolbar or panel. It shows the instruction (numbered when it has
 more than one line), the why line apart in smaller, dimmer text, and, only
-after you act or ask for a hint, why the step is not done yet.
+after you act or ask for a hint, why the step is not done yet. When the
+lesson's 3D view is not in front, the words go to Agent Link's own callout
+instead, and the agent's answers say which (`callout: bubble|overlay|none`).
+
+A lesson works on its own document: setup makes it (or takes the one open
+at start), brings its view to the front, and every step and check uses it,
+whatever else is open.
 
 ## Tests
 

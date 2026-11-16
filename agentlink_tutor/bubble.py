@@ -1,17 +1,24 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-"""The Tutor's callout bubble over the 3D view: the step's words (callout.py)
-in rich text, the why line smaller and dimmer, with an arrow to the ring.
+"""The Tutor's callout bubble over the lesson's 3D view: the step's words
+(callout.py) in rich text, the why line smaller and dimmer, with an arrow
+toward the ring.
 
-It is a child of the 3D view's window (as Agent Link's caption is), so it
-draws over the view on every platform (Agent Link's overlay cannot: the
-view's GL surface paints over it). There it covers no toolbar, dock or
-panel; callout.place() puts it on the view's edge nearest the ring (under
-the toolbars for a toolbar button, at the left edge for the Tasks panel).
-It takes no mouse, no keys and no focus. When there is no 3D view (Start
-page, a TechDraw page) show() answers False and the overlay's own callout
-has the words.
+It is built as Agent Link's caption is (a QLabel child of the 3D view's
+window, styled by its own stylesheet), which paints over the view on the
+Mac where Agent Link's overlay cannot. It takes no mouse, no keys and no
+focus, and uses the application's font (no family is named). callout.place()
+puts it on the view's edge nearest the ring, so it covers no toolbar, dock
+or panel.
 
-    bubble.show(callout, found) -> True when shown
+show() parents it to the view of the lesson's own document, and only when
+that view is the window's front tab. It then checks itself: the label is
+visible, has a size, lies inside the view and is what the window shows
+there (again a moment later, after the window has settled). When any of
+that fails it is hidden, and the words go to Agent Link's overlay callout:
+show() answers False, why() says why, and a later failure updates the
+report the caller passed ({"callout": "overlay", "callout_why": …}).
+
+    bubble.show(callout, found, doc=None, report=None) -> True when shown
     bubble.hide()
 """
 import sys
@@ -19,8 +26,9 @@ import sys
 from . import callout as callout_mod
 
 PAD = 9
-RADIUS = 6
-_STATE = {"w": None, "gen": 0}
+RECHECK_MS = (400, 1500)
+ARROWS = {"up": "▲", "down": "▼", "left": "◀", "right": "▶"}
+_STATE = {"w": None, "a": None, "host": None, "gen": 0, "why": None}
 
 
 def _qt():
@@ -33,29 +41,59 @@ def _qt():
 def _flag(QtCore, name):
     v = getattr(QtCore.Qt, name, None)
     if v is None:
-        for group in ("WidgetAttribute", "FocusPolicy", "GlobalColor"):
+        for group in ("WidgetAttribute", "FocusPolicy", "TextFormat"):
             v = getattr(getattr(QtCore.Qt, group, None), name, None)
             if v is not None:
                 break
     return v
 
 
-def view_widget():
-    """The 3D view in front (the MDI area's active window's widget), or None."""
+def why():
+    """Why the last show() did not show the bubble (None when it did)."""
+    return _STATE["why"]
+
+
+def _cls(w):
+    try:
+        return w.metaObject().className()
+    except Exception:  # noqa: BLE001
+        return type(w).__name__
+
+
+def subwindow_title_matches(title, label):
+    """True when an MDI tab's title is a view of the document labelled
+    label ("PocketLesson : 1", "PocketLesson : 1[*]")."""
+    t = str(title or "").replace("[*]", "")
+    return t == label or t.startswith(label + " : ")
+
+
+def view_widget(doc=None):
+    """(the 3D view widget of doc (else of the front tab), None) when it is
+    the window's front tab; else (None, why)."""
     import FreeCADGui
 
     _QtCore, _QtGui, QtW = _qt()
     mw = FreeCADGui.getMainWindow()
     area = mw.findChild(QtW.QMdiArea) if mw is not None else None
-    sub = area.activeSubWindow() if area is not None else None
-    w = sub.widget() if sub is not None else None
-    if w is None or not w.isVisible():
-        return None
-    try:
-        cls = w.metaObject().className()
-    except Exception:  # noqa: BLE001
-        cls = type(w).__name__
-    return w if "View3D" in cls else None
+    if area is None:
+        return None, "no 3D view area"
+    # currentSubWindow, not activeSubWindow: the latter is None while the
+    # window is in the background, as the person's window often is.
+    cur = area.currentSubWindow() or area.activeSubWindow()
+    if doc is not None:
+        label = getattr(doc, "Label", None) or getattr(doc, "Name", "")
+        mine = [s for s in area.subWindowList() if subwindow_title_matches(s.windowTitle(), label)
+                and s.widget() is not None and "View3D" in _cls(s.widget())]
+        if not mine:
+            return None, f"{label} has no 3D view open"
+        if cur not in mine:
+            return None, f"{label}'s 3D view is not the front tab"
+    w = cur.widget() if cur is not None else None
+    if w is None or "View3D" not in _cls(w):
+        return None, "no 3D view in front"
+    if not w.isVisible():
+        return None, "the 3D view is hidden"
+    return w, None
 
 
 def _point(x, y):
@@ -95,51 +133,171 @@ def _mix(a, b, t):
     return "#" + "".join(f"{int(round(x + (y - x) * t)):02x}" for x, y in zip(ca, cb))
 
 
-def _colours():
-    try:
-        from agentlink import hooks
+def colours(col=None):
+    """{fill, text, dim, edge} from the overlay's colours (the theme's)."""
+    if col is None:
+        try:
+            from agentlink import hooks
 
-        ov = hooks.service("overlay")
-        col = ov.colours() if ov is not None else {}
-    except Exception:  # noqa: BLE001
-        col = {}
+            ov = hooks.service("overlay")
+            col = ov.colours() if ov is not None else {}
+        except Exception:  # noqa: BLE001
+            col = {}
     fill = col.get("bubble", "#26292e")
     text = col.get("bubble_text", "#f2f2f2")
     return {"fill": fill, "text": text, "dim": _mix(text, fill, 0.35), "edge": col.get("accent", "#3f93e0")}
 
 
-def show(c, found=()):
-    """Show callout c (callout.Callout) over the 3D view, its arrow to the
-    first ringed target. False when there is no 3D view to show it on."""
+def stylesheet(col):
+    """The label's own stylesheet: colours, edge and padding only. No font
+    family is named (the application's font is set on the label)."""
+    return (f"QLabel#TutorCallout {{ background: {col['fill']}; color: {col['text']}; border: 2px solid {col['edge']}; "
+            f"border-radius: 6px; padding: {PAD}px; }}")
+
+
+def arrow_sheet(col):
+    return f"QLabel#TutorCalloutArrow {{ background: transparent; color: {col['edge']}; border: none; padding: 0px; }}"
+
+
+def inside(r, area):
+    x, y, w, h = r
+    ax, ay, aw, ah = area
+    return w > 0 and h > 0 and x >= ax and y >= ay and x + w <= ax + aw and y + h <= ay + ah
+
+
+def verify(w, host, mw):
+    """None when w shows over host as meant, else why not."""
+    try:
+        if w is None or host is None:
+            return "gone"
+        if not host.isVisible():
+            return "its 3D view was hidden"
+        if not w.isVisible():
+            return "not visible"
+        g = w.geometry()
+        r = (g.x(), g.y(), g.width(), g.height())
+        if not inside(r, (0, 0, host.width(), host.height())):
+            return f"placed outside its 3D view ({r[0]}, {r[1]}, {r[2]} × {r[3]})"
+        # What the window shows under the bubble's middle is its own 3D view
+        # (the bubble takes no mouse, so childAt sees through it).
+        at = mw.childAt(w.mapTo(mw, _point(r[2] // 2, r[3] // 2))) if mw is not None else None
+        while at is not None and at is not host:
+            at = at.parentWidget()
+        if at is not host:
+            return "covered: its 3D view is not what the window shows there"
+    except RuntimeError:
+        return "its 3D view was closed"
+    return None
+
+
+def show(c, found=(), doc=None, report=None):
+    """Show callout c (callout.Callout) over doc's 3D view (else the front
+    one), its arrow toward the first ringed target. False, with why(), when
+    it cannot be shown there and seen."""
+    _STATE["why"] = None
     try:
         import FreeCADGui
     except ImportError:
+        _STATE["why"] = "no window"
         return False
-    host = view_widget()
+    host, why_not = view_widget(doc)
     if host is None:
         hide()
+        _STATE["why"] = why_not
         return False
+    _QtCore, QtGui, QtW = _qt()
     mw = FreeCADGui.getMainWindow()
-    w = _widget(host)
-    col = _colours()
-    w.set_text(c.html(col["text"], col["dim"]), col)
-    bw, bh = w.natural_size()
+    lab, arrow = _widgets(host)
+    col = colours()
+    lab.setStyleSheet(stylesheet(col))
+    arrow.setStyleSheet(arrow_sheet(col))
+    lab.setFont(QtGui.QFont(QtW.QApplication.font()))
+    arrow.setFont(QtGui.QFont(QtW.QApplication.font()))
+    lab.setText(c.html(col["text"], col["dim"]))
+    lab.setAccessibleDescription(c.text() or "")
+    width = min(callout_mod.WIDTH, max(160, host.width() - 2 * callout_mod.MARGIN))
+    lab.setFixedWidth(width)
+    hfw = lab.heightForWidth(width)
+    bh = max(hfw if hfw > 0 else lab.sizeHint().height(), 1)
+    lab.setFixedHeight(bh)
     hp = host.mapTo(mw, _point(0, 0))
     view = (hp.x(), hp.y(), host.width(), host.height())
-    x, y, side, tip = callout_mod.place(view, (bw, bh), target_rect(found, mw))
-    w.put(x - view[0], y - view[1], bw, bh, side, None if tip is None else (tip[0] - view[0], tip[1] - view[1]))
+    x, y, side, tip = callout_mod.place(view, (width, bh), target_rect(found, mw))
+    lab.move(int(x - view[0]), int(y - view[1]))
+    lab.show()
+    lab.raise_()
+    if side and tip:
+        arrow.setText(ARROWS[side])
+        arrow.adjustSize()
+        aw, ah = arrow.width(), arrow.height()
+        tx, ty = tip[0] - view[0], tip[1] - view[1]
+        ax = {"up": tx - aw // 2, "down": tx - aw // 2, "left": tx, "right": tx - aw}[side]
+        ay = {"up": ty, "down": ty - ah, "left": ty - ah // 2, "right": ty - ah // 2}[side]
+        arrow.move(int(ax), int(ay))
+        arrow.show()
+        arrow.raise_()
+    else:
+        arrow.hide()
     _STATE["gen"] += 1
+    bad = verify(lab, host, mw)
+    if bad:
+        hide()
+        _STATE["why"] = f"bubble {bad}"
+        return False
+    _recheck_later(c, report)
     return True
 
 
+def _recheck_later(c, report):
+    """A moment later (the window settled, a tab may have come up in front):
+    still seen, else hidden and the words given to the overlay's callout."""
+    QtCore, _QtGui, _QtW = _qt()
+    gen = _STATE["gen"]
+
+    def again():
+        if _STATE["gen"] != gen:
+            return
+        try:
+            import FreeCADGui
+
+            bad = verify(_STATE["w"], _STATE["host"], FreeCADGui.getMainWindow())
+        except Exception as e:  # noqa: BLE001
+            bad = f"not checked ({e})"
+        if not bad:
+            return
+        hide()
+        _STATE["gen"] += 1
+        _STATE["why"] = f"bubble {bad}"
+        sys.stderr.write(f"Tutor: callout bubble {bad}; the overlay's callout has the words\n")
+        try:
+            from agentlink import hooks
+
+            from . import point
+
+            ov = hooks.service("overlay")
+            if ov is not None and c.text():
+                ov.show([], say=c.text(), owner=point.OWNER)
+                if report is not None:
+                    report.update(callout="overlay", callout_why=_STATE["why"])
+            elif report is not None:
+                report.update(callout="none", callout_why=_STATE["why"])
+        except Exception:  # noqa: BLE001
+            pass
+
+    for ms in RECHECK_MS:
+        QtCore.QTimer.singleShot(int(ms), again)
+
+
 def hide():
-    w = _STATE["w"]
-    if w is None:
-        return
-    try:
-        w.hide()
-    except RuntimeError:  # its 3D view was closed
-        _STATE["w"] = None
+    _STATE["gen"] += 1  # a self-check still waiting is called off
+    for key in ("w", "a"):
+        w = _STATE[key]
+        if w is None:
+            continue
+        try:
+            w.hide()
+        except RuntimeError:  # its 3D view was closed
+            _STATE[key] = None
 
 
 def hide_after(ms):
@@ -149,124 +307,37 @@ def hide_after(ms):
     QtCore.QTimer.singleShot(int(ms), lambda: hide() if _STATE["gen"] == gen else None)
 
 
-def _widget(host):
-    w = _STATE["w"]
+def _widgets(host):
+    """The callout label and its arrow, children of host (made again when
+    the view changed or was closed)."""
+    QtCore, _QtGui, QtW = _qt()
+    lab, arrow = _STATE["w"], _STATE["a"]
     try:
-        if w is not None and w.parent() is host:
-            return w
-        if w is not None:
-            w.hide()
-            w.deleteLater()
+        if lab is not None and arrow is not None and lab.parent() is host and arrow.parent() is host:
+            return lab, arrow
     except RuntimeError:
         pass
-    w = _bubble_class()(host)
-    _STATE["w"] = w
-    return w
-
-
-_CLS = {}
-
-
-def _bubble_class():
-    if "b" in _CLS:
-        return _CLS["b"]
-    QtCore, QtGui, QtW = _qt()
-
-    class Bubble(QtW.QWidget):
-        def __init__(self, host):
-            super().__init__(host)
-            self.setObjectName("TutorCallout")
-            self.setAccessibleName("Tutor step")
-            for name in ("WA_TransparentForMouseEvents", "WA_TranslucentBackground", "WA_NoSystemBackground"):
-                flag = _flag(QtCore, name)
-                if flag is not None:
-                    self.setAttribute(flag, True)
-            nofocus = _flag(QtCore, "NoFocus")
-            if nofocus is not None:
-                self.setFocusPolicy(nofocus)
-            self.doc = QtGui.QTextDocument(self)
-            self.doc.setDocumentMargin(0)
-            self.col = {}
-            self.side = None
-            self.tip = None
-            self.box = (0, 0, 0, 0)
-
-        def set_text(self, html, col):
-            f = QtGui.QFont(QtW.QApplication.font())
-            if f.pixelSize() <= 0 and f.pointSizeF() > 0:
-                f.setPixelSize(max(13, int(round(f.pointSizeF() * 96 / 72.0))))
-            elif f.pixelSize() > 0:
-                f.setPixelSize(max(13, f.pixelSize()))
-            self.doc.setDefaultFont(f)
-            self.doc.setHtml(html)
-            self.col = col
-            self.setAccessibleDescription(self.doc.toPlainText())
-
-        def natural_size(self):
-            self.doc.setTextWidth(-1)
-            ideal = self.doc.idealWidth()
-            self.doc.setTextWidth(min(callout_mod.WIDTH - 2 * PAD, ideal + 1))
-            s = self.doc.size()
-            return (int(s.width()) + 2 * PAD, int(s.height()) + 2 * PAD)
-
-        def put(self, x, y, w, h, side, tip):
-            """The bubble at (x, y, w, h) in the host's px; the widget grows
-            to hold the arrow on side, its point at tip."""
-            a = callout_mod.ARROW
-            gx, gy, gw, gh = x, y, w, h
-            if side == "up":
-                gy, gh = y - a, h + a
-            elif side == "down":
-                gh = h + a
-            elif side == "left":
-                gx, gw = x - a, w + a
-            elif side == "right":
-                gw = w + a
-            self.box = (x - gx, y - gy, w, h)
-            self.side = side
-            self.tip = None if tip is None else (tip[0] - gx, tip[1] - gy)
-            self.doc.setTextWidth(w - 2 * PAD)
-            self.setGeometry(int(gx), int(gy), int(gw), int(gh))
-            self.show()
-            self.raise_()
-            self.update()
-
-        def paintEvent(self, _ev):
-            try:
-                self._paint()
-            except Exception as e:  # noqa: BLE001
-                sys.stderr.write(f"Tutor: callout not painted ({e})\n")
-
-        def _paint(self):
-            p = QtGui.QPainter(self)
-            aa = getattr(QtGui.QPainter, "Antialiasing", None) or QtGui.QPainter.RenderHint.Antialiasing
-            p.setRenderHint(aa, True)
-            x, y, w, h = self.box
-            path = QtGui.QPainterPath()
-            path.addRoundedRect(QtCore.QRectF(x, y, w, h), RADIUS, RADIUS)
-            if self.side and self.tip:
-                tx, ty = self.tip
-                a = callout_mod.ARROW
-                tri = QtGui.QPainterPath()
-                if self.side == "up":
-                    pts = [(tx - a, y + 1), (tx, y - a), (tx + a, y + 1)]
-                elif self.side == "down":
-                    pts = [(tx - a, y + h - 1), (tx, y + h + a), (tx + a, y + h - 1)]
-                elif self.side == "left":
-                    pts = [(x + 1, ty - a), (x - a, ty), (x + 1, ty + a)]
-                else:
-                    pts = [(x + w - 1, ty - a), (x + w + a, ty), (x + w - 1, ty + a)]
-                tri.moveTo(*pts[0])
-                for pt in pts[1:]:
-                    tri.lineTo(*pt)
-                tri.closeSubpath()
-                path = path.united(tri)
-            p.setPen(QtGui.QPen(QtGui.QColor(self.col.get("edge", "#3f93e0")), 2))
-            p.setBrush(QtGui.QBrush(QtGui.QColor(self.col.get("fill", "#26292e"))))
-            p.drawPath(path)
-            p.translate(x + PAD, y + PAD)
-            self.doc.drawContents(p)
-            p.end()
-
-    _CLS["b"] = Bubble
-    return Bubble
+    for w in (lab, arrow):
+        try:
+            if w is not None:
+                w.hide()
+                w.deleteLater()
+        except RuntimeError:
+            pass
+    rich = _flag(QtCore, "RichText")
+    nofocus = _flag(QtCore, "NoFocus")
+    through = _flag(QtCore, "WA_TransparentForMouseEvents")
+    lab, arrow = QtW.QLabel(host), QtW.QLabel(host)
+    lab.setObjectName("TutorCallout")
+    arrow.setObjectName("TutorCalloutArrow")
+    lab.setAccessibleName("Tutor step")
+    lab.setWordWrap(True)
+    if rich is not None:
+        lab.setTextFormat(rich)
+    for w in (lab, arrow):
+        if through is not None:
+            w.setAttribute(through, True)
+        if nofocus is not None:
+            w.setFocusPolicy(nofocus)
+    _STATE.update(w=lab, a=arrow, host=host)
+    return lab, arrow

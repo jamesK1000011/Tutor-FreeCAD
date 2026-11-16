@@ -38,26 +38,40 @@ def shower(session):
 
         tg, _again = c.shown()
         say = c.parts()
+        report = {}
         if not tg:  # words only: the bubble at the 3D view's top, else the overlay's callout
             point.point({}, None, hooks=hooks, bubble=bubble)
-            if say is not None and not say.empty() and not _safe_show(bubble, say):
-                ov = hooks.service("overlay")
-                if ov is not None:
-                    ov.show([], say=say.text(), owner=point.OWNER)
-            return {"resolved": 0, "missing": []}
-        got = point.point({"targets": tg, "say": say}, Window(session, doc=c.e._doc), hooks=hooks, bindings=c.e.bindings, bubble=bubble)
-        return {"resolved": len(got.get("shown") or []),
-                "missing": [str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []]}
+            report.update(resolved=0, missing=[], callout="none")
+            if say is None or say.empty():
+                return report
+            if _safe_show(bubble, say, c.e._doc(), report):
+                report["callout"] = "bubble"
+                return report
+            ov = hooks.service("overlay")
+            if ov is not None:
+                ov.show([], say=say.text(), owner=point.OWNER)
+                report["callout"] = "overlay"
+            return report
+        got = point.point({"targets": tg, "say": say}, Window(session, doc=c.e._doc), hooks=hooks, bindings=c.e.bindings,
+                          bubble=bubble, report=report)
+        # The same dict the bubble's later self-check updates (callout: overlay).
+        report.update(resolved=len(got.get("shown") or []),
+                      missing=[str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []])
+        return report
 
     return show
 
 
-def _safe_show(bubble, words):
+def _safe_show(bubble, words, doc, report):
     try:
-        return bool(bubble.show(words, ()))
+        if bubble.show(words, (), doc=doc, report=report):
+            return True
+        if bubble.why():
+            report["callout_why"] = str(bubble.why())[:100]
     except Exception as e:  # noqa: BLE001  (the overlay's callout instead)
         sys.stderr.write(f"Tutor: callout bubble not shown ({e})\n")
-        return False
+        report["callout_why"] = f"bubble failed: {e}"[:100]
+    return False
 
 
 class UI:
@@ -79,12 +93,13 @@ class UI:
                 pass
         return FreeCADGui.ActiveDocument
 
-    def settle(self):
-        """After setup: no sketch or feature left in edit, no task dialog,
-        nothing selected (the person starts from a quiet window)."""
+    def settle(self, doc=None):
+        """After setup: no sketch or feature left in edit in the lesson's
+        document, no task dialog, nothing selected (the person starts from a
+        quiet window)."""
         import FreeCADGui
 
-        gd = self._gd()
+        gd = self._gd(doc)
         try:
             if gd is not None and gd.getInEdit() is not None:
                 gd.resetEdit()
