@@ -1,0 +1,277 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.param.parameter-depth",
+ "version": "1.0.0",
+ "title": "Drive a dimension with a parameter",
+ "summary": "Make a variable set with a depth, bind the pad's length to it, and change the depth to change the part.",
+ "level": "basic",
+ "minutes": 8,
+ "tags": [
+  "parameters",
+  "variable-set",
+  "spreadsheet",
+  "expressions"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "SketcherWorkbench"
+  ]
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "ParameterLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        40,
+        20
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 5
+    }
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   },
+   "pad": {
+    "exists": "PartDesign::Pad"
+   }
+  }
+ },
+ "vars": {
+  "d1": 5,
+  "d2": 8
+ },
+ "steps": [
+  {
+   "id": "varset",
+   "say": "Push **{Std_VarSet|Add Variable Set}**. Type **depth** in **Name**. Set **Type** to **Length**. Push **OK**.",
+   "why": "A variable set holds values that other dimensions can use.",
+   "targets": [
+    {
+     "cmd": "Std_VarSet"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "exists": {
+       "type": "App::VarSet",
+       "where": {
+        "depth": {
+         "set": true
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "Spreadsheet::Sheet",
+       "where": {
+        "depth": {
+         "set": true
+        }
+       }
+      }
+     }
+    ]
+   },
+   "hints": [
+    "Find the variable set button in the toolbar.",
+    "A dialog asks for the name and the type of the value."
+   ],
+   "do": [
+    {
+     "tool": "param_set",
+     "args": {
+      "name": "depth",
+      "value": 5,
+      "unit": "mm"
+     }
+    }
+   ]
+  },
+  {
+   "id": "value",
+   "say": "Select the variable set in the Model tree. Set **depth** to 5 mm in the **Property** view.",
+   "targets": [
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "exists": {
+       "type": "App::VarSet",
+       "where": {
+        "depth": {
+         "eq": "$d1",
+         "tol": 0.01
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "Spreadsheet::Sheet",
+       "where": {
+        "depth": {
+         "eq": "$d1",
+         "tol": 0.01
+        }
+       }
+      }
+     }
+    ]
+   },
+   "hints": [
+    "The new value is a row in the Property view.",
+    "Click the value cell of the depth row.",
+    "depth = 5 mm."
+   ],
+   "do": [
+    {
+     "tool": "param_set",
+     "args": {
+      "name": "depth",
+      "value": "$d1",
+      "unit": "mm"
+     }
+    }
+   ]
+  },
+  {
+   "id": "bind",
+   "say": "Double-click **Pad** in the Model tree. Push **f(x)** next to **Length**. Type the variable set name, a dot and **depth**. Push **OK**.",
+   "why": "The pad length now follows the value of depth.",
+   "targets": [
+    {
+     "task": {
+      "name": "lengthEdit",
+      "label": "Length"
+     }
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "expr": "$pad",
+      "uses": "depth"
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "The f(x) button is at the right end of the Length box.",
+    "An expression names an object, a dot and a property."
+   ],
+   "do": [
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Pad.Length",
+      "expression": "depth"
+     }
+    }
+   ]
+  },
+  {
+   "id": "change",
+   "say": "Set **depth** to 8 mm in the **Property** view.",
+   "why": "One change to the value changes every dimension that uses it.",
+   "targets": [
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$pad",
+      "name": "Length",
+      "eq": "$d2",
+      "tol": 0.01,
+      "unit": "mm"
+     },
+     {
+      "valid": "$pad"
+     }
+    ]
+   },
+   "hints": [
+    "Select the variable set in the Model tree first.",
+    "Change the value in the depth row.",
+    "depth = 8 mm."
+   ],
+   "do": [
+    {
+     "tool": "param_set",
+     "args": {
+      "name": "depth",
+      "value": "$d2",
+      "unit": "mm"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the pad follows depth. The Tutor changes depth for a moment to check it.",
+   "targets": [
+    {
+     "tree": "$pad"
+    }
+   ],
+   "check": {
+    "follows": "depth",
+    "object": "$body",
+    "by": 2,
+    "axis": "z",
+    "change": 2
+   }
+  }
+ ]
+}

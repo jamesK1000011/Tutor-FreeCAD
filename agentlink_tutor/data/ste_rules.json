@@ -36,7 +36,8 @@
   "remove",
   "add",
   "change",
-  "pick"
+  "pick",
+  "hold"
  ],
  "not_for_buttons": {
   "press": "push",

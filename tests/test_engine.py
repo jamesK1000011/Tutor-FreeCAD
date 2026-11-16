@@ -63,7 +63,7 @@ class World:
         if name == "feature_edit":
             f = self.doc.getObject(args["feature"])
             for k, v in args["set"].items():
-                setattr(f, k, Quantity(float(v)))
+                setattr(f, k, Quantity(float(v)) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
             self.refresh()
             return False, {"feature": f.Label}
         if name == "history_undo":

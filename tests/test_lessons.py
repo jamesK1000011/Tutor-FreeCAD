@@ -39,9 +39,13 @@ def tiny(**over):
 
 
 class CoreLessons(unittest.TestCase):
-    def test_three_starter_lessons(self):
+    def test_starter_lessons_and_the_course(self):
         ids = {load(n)["id"] for n in core_files()}
-        self.assertEqual(ids, {"agentlink_tutor.pd.pad-sketch", "agentlink_tutor.pd.pocket-hole", "agentlink_tutor.io.export-stl"})
+        self.assertEqual(ids, {"agentlink_tutor.pd.pad-sketch", "agentlink_tutor.pd.pocket-hole", "agentlink_tutor.io.export-stl",
+                               "agentlink_tutor.sk.constrain-rectangle", "agentlink_tutor.pd.fillet-chamfer",
+                               "agentlink_tutor.param.parameter-depth", "agentlink_tutor.td.drawing-page",
+                               "agentlink_tutor.asm.fixed-joint", "agentlink_tutor.course.bike-stem-1",
+                               "agentlink_tutor.course.bike-stem-2", "agentlink_tutor.course.bike-stem-3"})
 
     def test_each_fits_the_schema_and_the_rules(self):
         tools = gen_agentlink_tools.vendored()
@@ -78,7 +82,7 @@ class CoreLessons(unittest.TestCase):
 
     def test_library_loads_them(self):
         lib = lessons.core_library(gen_agentlink_tools.vendored())
-        self.assertEqual(len(lib.lessons()), 3)
+        self.assertEqual(len(lib.lessons()), len(core_files()))
         self.assertEqual(lib.refused, [])
         self.assertEqual(lib.get("agentlink_tutor.pd.pad-sketch")["title"], "Pad a sketch into a solid")
         with self.assertRaises(lessons.LessonError):

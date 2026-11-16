@@ -25,12 +25,23 @@ from agentlink_tutor.engine import Engine
 
 
 def starters():
+    """Every stored lesson as its file has it, with the chapters before it
+    (a course's chapter 2 starts where chapter 1 ended)."""
     out = []
     for n in sorted(os.listdir(lessons.CORE_DIR)):
         if n.endswith(lessons.SUFFIX):
             with open(os.path.join(lessons.CORE_DIR, n), encoding="utf-8") as f:
                 out.append(json.load(f))
-    return out
+    have = {l["id"]: l for l in out}
+    return [dict(l, _after=lessons.chain(l, have.get)) for l in out]
+
+
+# What the stand-in world makes for the tools no test spells out: an object
+# of the type the tool makes, or nothing (a constraint, a binding, a view).
+MAKES = {"pd_fillet": ("Fillet", "PartDesign::Fillet"), "pd_chamfer": ("Chamfer", "PartDesign::Chamfer"),
+         "pd_hole": ("Hole", "PartDesign::Hole"), "hw_hole": ("Hole", "PartDesign::Hole"),
+         "td_view": ("View", "TechDraw::DrawViewPart"), "asm_new": ("Assembly", "Assembly::AssemblyObject"),
+         "param_set": ("Params", "Spreadsheet::Sheet")}
 
 
 PART_BOX = {
@@ -94,7 +105,11 @@ class World(PadWorld):
     def __call__(self, name, args):
         mine = ("workbench", "part_box", "obj_set", "td_page", "sketch_constrain")
         if name not in mine and not (name == "sketch_new" and not any(o.TypeId == "PartDesign::Body" for o in self.doc.Objects)):
-            return super().__call__(name, args)
+            refused, out = super().__call__(name, args)
+            if refused and (out.get("error") or {}).get("code") == "not_found":
+                self.calls.pop()
+                return self.generic(name, args)
+            return refused, out
         self.calls.append((name, args))
         if name == "workbench":
             self.gui.workbench = {"Part": "PartWorkbench", "TechDraw": "TechDrawWorkbench"}.get(args.get("activate"), "PartDesignWorkbench")
@@ -110,9 +125,18 @@ class World(PadWorld):
         elif name == "sketch_new":
             self.doc.add("Sketch", "Sketcher::SketchObject", Datum=Quantity(5.0))
             self.gui.editing, self.gui.task = "Sketch", "Sketcher_SketchObject"  # as the echo opens it
-        elif name == "sketch_constrain":
+        elif name == "sketch_constrain" and "value" in args:
             self.doc.getObject(args["sketch"]).Datum = Quantity(float(args["value"]))
             self.gui.editing = self.gui.task = None
+        return False, {}
+
+    def generic(self, name, args):
+        """Any other tool: it goes through, making what it makes."""
+        self.calls.append((name, args))
+        made = MAKES.get(name)
+        if made and not (name == "param_set" and self.doc.getObject("Params")):
+            o = self.doc.add(made[0], made[1], shape=Shape(1, (1, 1, 1)))
+            return False, {"made": o.Name}
         return False, {}
 
 
@@ -143,12 +167,13 @@ class Lint(unittest.TestCase):
     def test_installed_lessons_are_all_loaded(self):
         lib = lessons.core_library()
         self.assertEqual(lib.refused, [])
-        self.assertEqual(len(lib.lessons()), 3)
+        self.assertEqual(len(lib.lessons()), len(starters()))
+        self.assertGreaterEqual(len(lib.lessons()), 11)
 
     def test_rung_two_giving_the_value_away_is_refused(self):
         for lesson, sid, i, leak in ((PART_BOX, "size", 1, "Type 30 into its Length row."),
                                      (CONSTRAINT, "datum", 0, "Make it 12.0 long."),
-                                     (starters()[0], "export", 1, "Call it Part.stl.")):
+                                     (next(l for l in starters() if l["id"].endswith("export-stl")), "export", 1, "Call it Part.stl.")):
             bad = copy.deepcopy(lesson)
             step = next(s for s in bad["steps"] if s["id"] == sid)
             step["hints"][i] = leak
@@ -199,7 +224,8 @@ class ClosedPanel(unittest.TestCase):
         doc = c.e._doc()
         if doc.getObject(obj_name) is None:
             doc.add(obj_name, "Some::Feature", label=label)
-        c.e.bindings.update({k: obj_name for k in ("pad", "pocket", "sketch") if k in lessons.refs(c.e.step)})
+        # The step's objects (its bindings, whatever the lesson calls them) are the feature.
+        c.e.bindings.update({k: obj_name for k in lessons.refs(c.e.step) if k not in (lesson.get("vars") or {})})
         w.gui.task = None  # OK pressed with another value: the panel is gone
         tg, words = c.shown()
         self.assertEqual(tg[0], {"tree": obj_name})

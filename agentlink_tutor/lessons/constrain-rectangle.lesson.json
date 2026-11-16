@@ -1,0 +1,264 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.sk.constrain-rectangle",
+ "version": "1.0.0",
+ "title": "Constrain a sketch fully",
+ "summary": "Fix a rectangle to the origin and give it a width and a height, until the sketch has no degrees of freedom left.",
+ "level": "first-steps",
+ "minutes": 6,
+ "tags": [
+  "sketcher",
+  "constraints",
+  "dof"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "SketcherWorkbench"
+  ]
+ },
+ "view": "top",
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "ConstrainLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        6,
+        4
+       ],
+       "size": [
+        24,
+        16
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "bind": {
+   "sketch": {
+    "exists": "Sketcher::SketchObject"
+   }
+  }
+ },
+ "vars": {
+  "w": 30,
+  "h": 20
+ },
+ "steps": [
+  {
+   "id": "open",
+   "say": "Double-click the sketch in the Model tree.",
+   "why": "A sketch opens in the Sketcher, where you add constraints.",
+   "targets": [
+    {
+     "tree": "$sketch"
+    }
+   ],
+   "check": {
+    "editing": "$sketch"
+   },
+   "hints": [
+    "Find the sketch under the body in the Model tree.",
+    "The ring shows its row in the tree."
+   ],
+   "do": [
+    {
+     "tool": "selection",
+     "args": {
+      "objects": [
+       "$sketch"
+      ]
+     }
+    },
+    {
+     "tool": "cmd_run",
+     "args": {
+      "name": "Std_Edit"
+     }
+    }
+   ]
+  },
+  {
+   "id": "corner",
+   "say": "Select the lower left corner of the rectangle. Select the origin point. Push **{Sketcher_ConstrainCoincidentUnified|Constrain Coincident}**.",
+   "why": "This ties the rectangle to the origin, so it cannot move.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainCoincidentUnified"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "dof_max": 2
+   },
+   "hints": [
+    "The origin is where the red and green axes cross.",
+    "Hold Ctrl to select the second point."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "width",
+   "say": "Select the lower line. Push **{Sketcher_ConstrainDistanceX|Constrain Horizontal Distance}**. Set the length to 30 mm. Push **OK**.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainDistanceX"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "dof_max": 1,
+      "dims": [
+       "$w"
+      ]
+     }
+    ]
+   },
+   "hints": [
+    "Find the horizontal distance tool among the red constraint tools.",
+    "The dialog asks for the length of the line."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "distance_x",
+        "refs": [
+         0
+        ],
+        "value": "$w"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "height",
+   "say": "Select the right line. Push **{Sketcher_ConstrainDistanceY|Constrain Vertical Distance}**. Set the length to 20 mm. Push **OK**.",
+   "why": "The sketch turns green when it has no degrees of freedom left.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainDistanceY"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "full": true,
+    "dims": [
+     "$h"
+    ]
+   },
+   "hints": [
+    "Find the vertical distance tool next to the horizontal one.",
+    "The dialog asks for the length of the line."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "distance_y",
+        "refs": [
+         1
+        ],
+        "value": "$h"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "close",
+   "say": "Push **Close**.",
+   "targets": [
+    {
+     "cmd": "Sketcher_LeaveSketch"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "editing": null
+     },
+     {
+      "sketch": "$sketch",
+      "full": true
+     }
+    ]
+   },
+   "do": [
+    {
+     "tool": "cmd_run",
+     "args": {
+      "name": "Sketcher_LeaveSketch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the sketch has no degrees of freedom. Its size and place stay as you set them.",
+   "targets": [
+    {
+     "tree": "$sketch"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "full": true,
+    "closed": true
+   }
+  }
+ ]
+}

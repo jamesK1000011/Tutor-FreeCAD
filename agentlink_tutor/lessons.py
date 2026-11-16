@@ -382,7 +382,10 @@ def word_problems(lesson):
 def check(lesson, tools=None, extra_kinds=(), inline=False):
     """What is wrong with a lesson, as a list ([] when fine). tools: the tool
     names there are (None: not checked). extra_kinds: check kinds installed
-    add-ons add."""
+    add-ons add. Keys starting with _ are the loader's own (its folder,
+    owner, the chapters before) and are not checked."""
+    if isinstance(lesson, dict):
+        lesson = {k: v for k, v in lesson.items() if not k.startswith("_")}
     out = validate(lesson, schema())
     if out or not isinstance(lesson, dict):
         return out

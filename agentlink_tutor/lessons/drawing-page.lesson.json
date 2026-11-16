@@ -1,0 +1,194 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.td.drawing-page",
+ "version": "1.0.0",
+ "title": "Make a drawing page of a part",
+ "summary": "Open TechDraw, insert a page, and put a view of the body on it.",
+ "level": "first-steps",
+ "minutes": 5,
+ "tags": [
+  "techdraw",
+  "drawing",
+  "page"
+ ],
+ "view": "keep",
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench",
+   "TechDrawWorkbench"
+  ]
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "DrawingLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        50,
+        30
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 10
+    }
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **TechDraw** workbench in the workbench list.",
+   "targets": [
+    {
+     "wb": "TechDrawWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "TechDrawWorkbench"
+   },
+   "hints": [
+    "The workbench list is in the toolbar at the top.",
+    "The ring shows the list."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "TechDraw"
+     }
+    }
+   ]
+  },
+  {
+   "id": "page",
+   "say": "Push **{TechDraw_PageDefault|Insert Default Page}**.",
+   "why": "A page is the sheet that holds the views of your part.",
+   "targets": [
+    {
+     "cmd": "TechDraw_PageDefault"
+    }
+   ],
+   "check": {
+    "new": "TechDraw::DrawPage"
+   },
+   "bind": {
+    "page": {
+     "new": "TechDraw::DrawPage"
+    }
+   },
+   "hints": [
+    "Look at the first buttons of the TechDraw toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "td_page",
+     "args": {
+      "action": "new"
+     }
+    }
+   ]
+  },
+  {
+   "id": "view",
+   "say": "Select the body in the Model tree. Push **{TechDraw_View|Insert View}**. Push **OK**.",
+   "why": "A view shows the body as seen from one side.",
+   "targets": [
+    {
+     "tree": "$body"
+    },
+    {
+     "cmd": "TechDraw_View"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "TechDraw::DrawViewPart"
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "view": {
+     "new": "TechDraw::DrawViewPart"
+    }
+   },
+   "hints": [
+    "Click the body first. The view button needs it.",
+    "The rings show the body and the button."
+   ],
+   "do": [
+    {
+     "tool": "td_view",
+     "args": {
+      "page": "$page",
+      "bodies": [
+       "$body"
+      ],
+      "direction": "front"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the page has a view of the body. Open the page tab to look at it.",
+   "targets": [
+    {
+     "tree": "$page"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "$page"
+     },
+     {
+      "exists": {
+       "type": "TechDraw::DrawViewPart"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
