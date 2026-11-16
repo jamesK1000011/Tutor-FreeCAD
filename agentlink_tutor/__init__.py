@@ -8,4 +8,4 @@ Agent Link at load: its agentlink_families module, which only Agent Link
 imports, connects the Tutor to it.
 """
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
