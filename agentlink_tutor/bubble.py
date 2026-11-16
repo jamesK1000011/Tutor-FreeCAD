@@ -27,7 +27,8 @@ from . import callout as callout_mod
 
 PAD = 9
 RECHECK_MS = (400, 1500)
-ARROWS = {"up": "▲", "down": "▼", "left": "◀", "right": "▶"}
+ARROWS = {"up": "▲", "down": "▼", "left": "◀", "right": "▶",
+          "up-left": "◤", "up-right": "◥", "down-left": "◣", "down-right": "◢"}
 _STATE = {"w": None, "a": None, "host": None, "gen": 0, "why": None}
 
 
@@ -41,7 +42,7 @@ def _qt():
 def _flag(QtCore, name):
     v = getattr(QtCore.Qt, name, None)
     if v is None:
-        for group in ("WidgetAttribute", "FocusPolicy", "TextFormat"):
+        for group in ("WidgetAttribute", "FocusPolicy", "TextFormat", "AlignmentFlag"):
             v = getattr(getattr(QtCore.Qt, group, None), name, None)
             if v is not None:
                 break
@@ -234,6 +235,17 @@ def painted(lab, mw):
     return mean_diff(there, own) < MATCH
 
 
+def arrow_at(side, tip, size):
+    """Where the arrow label goes (its top-left) for side and tip: on an edge
+    its point at tip; at a corner it sits on the corner, pointing out."""
+    tx, ty = tip
+    aw, ah = size
+    return {"up": (tx - aw // 2, ty), "down": (tx - aw // 2, ty - ah),
+            "left": (tx, ty - ah // 2), "right": (tx - aw, ty - ah // 2),
+            "up-left": (tx - aw // 3, ty - ah + ah // 3), "up-right": (tx - aw + aw // 3, ty - ah + ah // 3),
+            "down-left": (tx - aw // 3, ty - ah // 3), "down-right": (tx - aw + aw // 3, ty - ah // 3)}[side]
+
+
 def show(c, found=(), doc=None, report=None):
     """Show callout c (callout.Callout) over doc's 3D view (else the front
     one), its arrow toward the first ringed target. False, with why(), when
@@ -260,6 +272,10 @@ def show(c, found=(), doc=None, report=None):
     lab.setText(c.html(col["text"], col["dim"]))
     lab.setAccessibleDescription(c.text() or "")
     width = min(callout_mod.WIDTH, max(160, host.width() - 2 * callout_mod.MARGIN))
+    # The size from these words alone: the last showing's fixed size let go
+    # first (a why line turned off left its height, an empty band).
+    lab.setMinimumSize(0, 0)
+    lab.setMaximumSize(16777215, 16777215)
     lab.setFixedWidth(width)
     hfw = lab.heightForWidth(width)
     bh = max(hfw if hfw > 0 else lab.sizeHint().height(), 1)
@@ -275,8 +291,7 @@ def show(c, found=(), doc=None, report=None):
         arrow.adjustSize()
         aw, ah = arrow.width(), arrow.height()
         tx, ty = tip[0] - view[0], tip[1] - view[1]
-        ax = {"up": tx - aw // 2, "down": tx - aw // 2, "left": tx, "right": tx - aw}[side]
-        ay = {"up": ty, "down": ty - ah, "left": ty - ah // 2, "right": ty - ah // 2}[side]
+        ax, ay = arrow_at(side, (tx, ty), (aw, ah))
         arrow.move(int(ax), int(ay))
         arrow.show()
         arrow.raise_()
@@ -388,6 +403,10 @@ def _widgets(host):
     arrow.setObjectName("TutorCalloutArrow")
     lab.setAccessibleName("Tutor step")
     lab.setWordWrap(True)
+    top = _flag(QtCore, "AlignTop")
+    left = _flag(QtCore, "AlignLeft")
+    if top is not None and left is not None:
+        lab.setAlignment(top | left)  # any spare height below the words, never above
     if rich is not None:
         lab.setTextFormat(rich)
     for w in (lab, arrow):

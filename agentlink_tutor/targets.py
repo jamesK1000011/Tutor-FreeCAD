@@ -55,6 +55,10 @@ class Found:
         self.marks, self.menu, self.light = [], None, None
         self.dropdown = None
         self.text = self.note = self.why = None
+        # A command reached only through a toolbar dropdown: its name as the
+        # window shows it. The callout puts text's steps in place of the
+        # instruction's "Push <name>." (callout.merge), not after it.
+        self.replaces = None
 
     def shown(self):
         return bool(self.marks or self.menu or self.light)
@@ -131,6 +135,7 @@ def _cmd(f, spec, win, _b):
         f.dropdown = (menu, action)
         f.note = "in the ▾ menu of this button"
         f.text = f"Open the ▾ menu of the ringed button {words_mod.badge(f.n)}. Select {_cmd_words(win, cmd)}."
+        f.replaces = _cmd_name(win, cmd)
         return
     bench = win.workbench_of(cmd)
     active = win.active_workbench()

@@ -312,7 +312,7 @@ class Dropdowns(unittest.TestCase):
                 self.assertEqual((got["kind"], got["note"]), ("cmd", "in the ▾ menu of this button"))
                 self.assertEqual(ov.shows[0]["specs"], [{"widget": btn, "badge": 1}])
                 self.assertEqual(ov.watched, [(f"{btn}-menu", f"{cmd}-act", "tutor", 7, 1)])
-                self.assertIn("\n2. Open the ▾ menu of the ringed button ①. Select ", ov.shows[0]["say"])
+                self.assertIn("\n2. Open the ▾ menu of the ringed button ①.\n3. Select ", ov.shows[0]["say"])
 
     def test_own_button_first_and_hidden_dropdown_not_used(self):
         w = Win(commands={"Sketcher_CreateLine": [("line-btn", None)]}, groups={"Sketcher_CreateLine": [("x", None, "m", "a")]})

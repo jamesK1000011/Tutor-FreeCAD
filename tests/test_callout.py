@@ -213,6 +213,7 @@ class Layout(unittest.TestCase):
         f = targets.Found(n, "cmd")
         f.marks = [{"widget": "group-button"}]
         f.text = f"Open the ▾ menu of the ringed button {words.badge(n)}. Select New Sketch."
+        f.replaces = "New Sketch"
         return f
 
     def test_instruction_why_and_dropdown_apart(self):
@@ -220,11 +221,26 @@ class Layout(unittest.TestCase):
             w, c = pocket()
             c.call_done(AGENT, "view_snapshot", True, False)  # re-checked, nothing done
             got = point.callout(c.parts(), [targets.Found(1, "face"), self.dropdown()])
+        # The dropdown's steps take the place of "Push New Sketch.", not after it.
         self.assertEqual(got, "1. Select the top face of the block.\n"
-                              "2. Push New Sketch.\n"
-                              "3. Open the ▾ menu of the ringed button ②. Select New Sketch.\n"
+                              "2. Open the ▾ menu of the ringed button ②.\n"
+                              "3. Select New Sketch.\n"
                               "\n"
                               "A sketch on this face sets where the pocket starts.")
+
+    def test_dropdown_steps_replace_the_command_step_whatever_its_verb(self):
+        for say in ("Push **New Sketch**.", "Click New Sketch (Ctrl+N).", "Select the face. Use the New Sketch button."):
+            with self.subTest(say=say):
+                got = point.callout(say, [self.dropdown(1)])
+                self.assertEqual(got.count("New Sketch"), 1, got)
+                self.assertTrue(got.endswith("Open the ▾ menu of the ringed button ①.\n" + str(got.count("\n") + 1) + ". Select New Sketch."), got)
+        # A step that does not name the command: the dropdown's steps go after.
+        self.assertEqual(point.callout("Draw a rectangle.", [self.dropdown(1)]),
+                         "1. Draw a rectangle.\n2. Open the ▾ menu of the ringed button ①.\n3. Select New Sketch.")
+        # Another target's words still go after as one line.
+        f = targets.Found(2, "menu")
+        f.text = "Menu: Edit › Undo"
+        self.assertEqual(point.callout("Push **Undo**.", [f]), "1. Push Undo.\n2. Menu: Edit › Undo")
 
     def test_one_line_has_no_number(self):
         c = callout.build("Push **Pad**.", why="Pad makes a solid.")
@@ -238,10 +254,23 @@ class Layout(unittest.TestCase):
     def test_rich_text_why_smaller_and_dimmer(self):
         c = callout.build("Select the face. Push **Pad**.", why="Pad <makes> a solid.", notes=["Not yet: no pad yet."])
         h = c.html("#111111", "#777777")
-        self.assertIn("<td>Select the face.</td>", h)
-        self.assertIn('font-size:small; color:#777777">Pad &lt;makes&gt; a solid.</p>', h)
-        self.assertLess(h.index("Push Pad."), h.index("Pad &lt;makes&gt;"))
+        self.assertTrue(h.startswith('<p style="margin-top:0px; margin-bottom:0px; color:#111111; margin-left:18px; text-indent:-18px">1. Select the face.</p>'), h)
+        self.assertIn('color:#777777; font-size:small">Pad &lt;makes&gt; a solid.</p>', h)
+        self.assertLess(h.index("2. Push Pad."), h.index("Pad &lt;makes&gt;"))
         self.assertLess(h.index("Pad &lt;makes&gt;"), h.index("Not yet"))
+        self.assertNotIn("<table", h)
+        self.assertNotIn("<div", h)
+
+    def test_no_empty_band_with_or_without_the_why_line(self):
+        import re
+
+        for why in ("Pad makes a solid.", None):
+            with self.subTest(why=why):
+                h = callout.build("Push **Pad**.", why=why).html()
+                tops = [int(t) for t in re.findall(r"margin-top:(\d+)px", h)]
+                self.assertEqual(tops[0], 0)  # nothing above the first line
+                self.assertEqual(h.count("<p"), 2 if why else 1)  # nothing kept for a why line that is off
+                self.assertNotIn("<p></p>", h)
 
 
 class LiveMenuText(unittest.TestCase):
@@ -290,6 +319,32 @@ class Placement(unittest.TestCase):
         self.assertEqual(tip, (536, y - callout.ARROW))  # under the ring's middle
         self.assertLessEqual(y - self.VIEW[1], callout.MARGIN + callout.ARROW)
 
+    def test_ring_left_of_the_view_arrow_from_the_corner(self):
+        # The live run: ring ② on the toolbar above the left dock (x 61), the
+        # 3D view starting at x 300: the bubble at the view's left, its arrow
+        # pointing up-left from its top-left corner, not up from its middle.
+        ring = (45, 80, 32, 32)
+        x, y, side, tip = callout.place(self.VIEW, (300, 90), ring)
+        self.assertEqual(x, self.VIEW[0] + callout.MARGIN)
+        self.assertEqual(side, "up-left")
+        self.assertEqual(tip, (x, y))
+        from agentlink_tutor import bubble
+
+        ax, ay = bubble.arrow_at(side, tip, (15, 15))
+        self.assertLess(ax, x)  # out past the corner, toward the ring
+        self.assertLess(ay, y)
+
+    def test_ring_within_reach_arrow_under_it(self):
+        for ring_x in (320, 700, 1100):  # inside the view's span: the bubble slides to it
+            with self.subTest(ring_x=ring_x):
+                ring = (ring_x, 80, 32, 32)
+                x, y, side, tip = callout.place(self.VIEW, (300, 90), ring)
+                if side == "up":
+                    self.assertEqual(tip[0], ring_x + 16)
+                    self.assertTrue(x + callout.CORNER <= tip[0] <= x + 300 - callout.CORNER)
+                else:  # past the cube's corner: still toward it
+                    self.assertEqual(side, "up-right")
+
     def test_dock_target_arrow_left(self):
         field = (40, 400, 200, 24)  # a Tasks panel field in the left dock
         x, y, side, tip = callout.place(self.VIEW, (300, 90), field)
@@ -304,7 +359,8 @@ class Placement(unittest.TestCase):
         vx, vy, vw, _vh = self.VIEW
         cube = (vx + vw - callout.CUBE[0], vy, callout.CUBE[0], callout.CUBE[1])
         self.assertEqual(callout._overlap((x, y, 300, 90), cube), 0)
-        self.assertEqual(side, "up")
+        self.assertEqual(side, "up-right")  # slid off the cube: the arrow points from its corner to the ring
+        self.assertEqual(_tip, (x + 300, y))
 
     def test_no_target_top_centre_and_face_in_view(self):
         x, y, side, tip = callout.place(self.VIEW, (300, 90), None)
