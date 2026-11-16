@@ -13,7 +13,16 @@ Nothing here draws or watches. The engine is given what it reads:
 Modes: demo (the steps are done through the tools, one by one, and the engine
 waits for next), guided (the person does each step; check() is called on their
 events and the engine moves on when it passes) and watch (no lesson). Explain
-and point-out keep no state and do not come here.
+and point-out keep no state and do not come here. demo and guided switch
+mid-lesson (set_mode); "show me this one" is do() on the step in front.
+
+The hint ladder, one rung per raise_hint: 1 a nudge (the step's first hint,
+else why it is not done), 2 the exact field (only the step's first target
+ringed: hint_targets), 3 the exact value (the step's third hint, else the
+value its check wants: checks.exact) and "Do it for me" offered.
+
+run.py drives this engine in the window and for the tutor tool: timers,
+re-checks on events, pointing and the rider line.
 
 Steps run in their order, except that a step a branch goes to (a detour) is
 entered only through that branch; when it passes it goes to its next, or
@@ -69,6 +78,8 @@ class Engine:
         self.return_to = None  # where a detour goes back to
         self.said = None  # a branch's words, shown once
         self.skipped = set()
+        self.done_for = set()  # steps done for the person (do, or the agent's own calls)
+        self.did = None  # the step do() last ran
         if lesson is not None:
             self._ids = [s["id"] for s in lesson["steps"]]
             self._detours = lessons.detours(lesson)
@@ -96,6 +107,15 @@ class Engine:
         return f"{n}/{len(self._main)}"
 
     # ---- starting -----------------------------------------------------------
+
+    def set_mode(self, mode):
+        """demo or guided, mid-lesson; the step in front stays."""
+        if mode not in ("demo", "guided"):
+            raise TutorError("mode: demo or guided (watch has no lesson)")
+        if self.state not in ("step", "done"):
+            raise TutorError(f"no lesson running: the lesson is {self.state}")
+        self.mode = mode
+        return self.status()
 
     def start(self, mode="guided", fixtures=None):
         """Set the lesson up (its setup calls through the tools) and enter its
@@ -156,6 +176,7 @@ class Engine:
         self.hint = 0
         self.passed = False
         self.result = None
+        self.did = None
         self.before = self._names()
 
     # ---- moving -------------------------------------------------------------
@@ -188,6 +209,7 @@ class Engine:
                 self._enter(self._ids.index(b["goto"]))
                 self.said = b.get("say")
                 return self.status()
+        self.passed = False  # done once, undone since
         return self.status()
 
     def next(self):
@@ -215,6 +237,7 @@ class Engine:
         if not self.history:
             return self.status()
         self.index = self.history.pop()
+        self.did = None
         self.hint = 0
         self.passed = False
         self.result = None
@@ -233,6 +256,8 @@ class Engine:
         if not self.step.get("do"):
             raise TutorError(f"step {self.step['id']} has nothing to do for the person")
         self._run(self.step["do"], f"step {self.step['id']}")
+        self.did = self.step["id"]
+        self.done_for.add(self.step["id"])
         return self.check()
 
     # ---- hints --------------------------------------------------------------
@@ -254,7 +279,16 @@ class Engine:
             return (self.result.why + ".") if self.result is not None and self.result.why else self.step["say"]
         if self.hint == 2:
             return "Look for what is ringed." if self.step.get("targets") else self.step["say"]
+        exact = checks.exact(resolve(self.step["check"], self.bindings), self.context().doc) if "check" in self.step else None
+        if exact:
+            return exact + "."
         return hints[-1] if hints else self.step["say"]
+
+    def hint_targets(self):
+        """The step's targets to ring at this rung: all of them, or from
+        rung 2 the first only (the exact field)."""
+        tg = list(self.step.get("targets") or []) if self.step else []
+        return tg[:1] if self.hint >= 2 else tg
 
     def offer_do(self):
         return self.hint >= HINT_MAX and bool(self.step.get("do"))
@@ -273,6 +307,8 @@ class Engine:
         out = {"lesson": self.lesson["id"], "mode": self.mode}
         if self.state == "done":
             out.update(step="done", skipped=sorted(self.skipped))
+            if self.done_for:
+                out["done_for"] = sorted(self.done_for)
             return _fit(out)
         s = self.step
         r = self.result
@@ -287,6 +323,8 @@ class Engine:
             out["do_it"] = True
         if s.get("targets"):
             out["targets"] = len(s["targets"])
+        if self.did is not None:
+            out["did"] = self.did
         if detail:
             later = [self.lesson["steps"][i]["say"] for i in self._main if i > self.index]
             out["remaining"] = [t[:60] for t in later]
@@ -297,10 +335,10 @@ def _fit(out):
     """Text fields cut so the answer stays under STATE_MAX characters."""
     import json
 
-    for key in ("remaining", "hint_text", "why", "say"):
+    for key in ("remaining", "missing", "hint_text", "why", "say"):
         if len(json.dumps(out, ensure_ascii=False)) <= STATE_MAX:
             break
-        v = out.get(key)
+        v = out.get(key) if key != "missing" else (out.get("targets") or {}).get("missing") if isinstance(out.get("targets"), dict) else None
         if isinstance(v, list):
             while v and len(json.dumps(out, ensure_ascii=False)) > STATE_MAX:
                 v.pop()

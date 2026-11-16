@@ -504,6 +504,56 @@ def evaluate(check, ctx):
         return pending(f"{kind} could not be read: {e}"[:160])
 
 
+# Workbench names as their selector shows them, where the two differ.
+BENCH_WORDS = {"PartDesign": "Part Design", "Part": "Part", "BIM": "BIM", "Assembly": "Assembly", "Fem": "FEM", "Cam": "CAM", "Mesh": "Mesh"}
+
+
+def _label(doc, ref):
+    o = lookup(doc, ref) if ref else None
+    return getattr(o, "Label", None) or str(ref)
+
+
+def exact(check, doc=None):
+    """The exact thing a check wants, in a few words for the top of the hint
+    ladder ("Length = 15 mm; then press OK"), or None when it says nothing a
+    person can type or pick. Bindings already resolved."""
+    kind = kind_of(check)
+    if kind is None:
+        return None
+    if kind in ("all", "any"):
+        parts = [p for p in (exact(c, doc) for c in check[kind]) if p]
+        parts = list(dict.fromkeys(parts))
+        return ("; " if kind == "all" else " or ").join(parts) or None
+    if kind == "prop":
+        op = next((k for k in CMP if k in check), None)
+        if op is None:
+            return None
+        word = {"eq": "=", "lt": "<", "gt": ">", "le": "≤", "ge": "≥"}[op]
+        return f"{check['name']} {word} {_fmt(number(check[op]) if number(check[op]) is not None else check[op], check.get('unit', ''))}"
+    if kind == "bbox":
+        size = check.get("size") or []
+        return "size " + " × ".join(_fmt(float(v)) for v in size) + " mm" if len(size) == 3 else None
+    if kind == "volume":
+        op = next((k for k in CMP if k in check), None)
+        return f"volume {_fmt(float(check[op]))} mm³" if op == "eq" else None
+    if kind in ("task_open", "editing") and check.get(kind) is None:
+        return "then press OK"
+    if kind == "workbench":
+        name = str(check[kind])
+        name = name[:-len("Workbench")] if name.endswith("Workbench") else name
+        return f"the {BENCH_WORDS.get(name, name)} workbench"
+    if kind == "selected":
+        ref = check[kind]
+        return f"select {_label(doc, ref)}" + (f" ({check['sub'].lower()})" if check.get("sub") else "")
+    if kind == "new":
+        return f"a new {describe(check[kind])}"
+    if kind == "file":
+        return f"saved as {check[kind]}"
+    if kind == "used":
+        return f"use {check[kind]}"
+    return None
+
+
 def needs_window(check):
     """True when every way the check can pass needs the window or watching."""
     kind = kind_of(check)

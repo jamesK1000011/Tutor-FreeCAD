@@ -40,6 +40,60 @@
    "source": "written for the Tutor",
    "date": "2026-11-15",
    "activity": "Pointed out controls"
+  },
+  "tutor": {
+   "group": "tutor",
+   "description": "Run a FreeCAD lesson in the person's window. list (query filters); start {lesson: id, or inline {id: \"inline.x\", title, steps ≤8}, mode}; next, back, hint, skip, do, stop, status {detail}. demo: next does the step through the tools, then waits at the following one. guided: the person does it; checked on their actions and yours, on to the next 0.6 s after a pass. hint climbs 3 rungs (nudge, exact field, exact value), do is \"Do it for me\". mode switches mid-lesson. Answers {lesson, mode, step: \"n/m\", say, check: pass|fail|pending, why, hint, targets: {resolved, missing}}; while it runs a rider line (tutor: step n/m …) joins your other answers.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "action": {
+      "type": "string",
+      "enum": [
+       "list",
+       "start",
+       "next",
+       "back",
+       "hint",
+       "skip",
+       "do",
+       "stop",
+       "status"
+      ],
+      "default": "status"
+     },
+     "lesson": {
+      "type": [
+       "string",
+       "object"
+      ],
+      "description": "start: a lesson id (or its last part), or an inline lesson."
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "demo",
+       "guided"
+      ],
+      "description": "start's mode (guided by default); with another action, switches."
+     },
+     "query": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "list: words in the title, id or tags."
+     },
+     "detail": {
+      "type": "boolean",
+      "default": false,
+      "description": "status: the steps still to come too."
+     }
+    },
+    "additionalProperties": false
+   },
+   "changes": false,
+   "source": "written for the Tutor",
+   "date": "2026-11-15",
+   "activity": "Tutor lesson {action}"
   }
  }
 }

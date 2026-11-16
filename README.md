@@ -10,15 +10,38 @@ Tutor is an add-on for [Agent Link for FreeCAD](https://github.com/jamesK1000011
 and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
-Status: early. The lesson engine, its checks and three starter lessons are
-here (pad a sketch, cut a pocket and drill a hole, export an STL), with the
-Tutor tab and `tutor_point`, which rings the controls a step needs. Guided
-and demo modes (each step checked as you go, "Do it for me") and watch mode
-come next.
+Status: early. Three starter lessons (pad a sketch, cut a pocket and drill
+a hole, export an STL) run in two modes, switchable at any step:
+
+- **Guided**: you do each step. Its controls are ringed, and the step is
+  checked as you work (after a recompute, an undo, a selection, a workbench
+  switch, or a call of the agent's); 0.6 s after it passes the lesson goes
+  on by itself. Hint climbs a ladder: a nudge, then only the exact field
+  ringed, then the exact value, then "Do it for me".
+- **Demo**: Claude does each step with the ordinary tools while you watch
+  (each call is one undo step), the callout saying what and why, and waits
+  for Next before the following one.
+
+A known wrong turn (Pocket for Pad) takes a short detour to put it right.
+Watch mode, where the agent follows what you do without a lesson, comes
+next.
 
 ## For the agent
 
-`tool_groups enable: ["tutor"]` lists `tutor_point`: `{targets: [spec],
+`tool_groups enable: ["tutor"]` lists `tutor` and `tutor_point`.
+
+`tutor`: `{action: list|start|next|back|hint|skip|do|stop|status, lesson?,
+mode?: demo|guided, query?, detail?}`. `start` takes a lesson's id (or its
+last part, `pad-sketch`) or an inline lesson of 8 steps or fewer
+(`{id: "inline.x", title, steps}`, schema-checked, its calls checked against
+the tools there are); `mode` with another action switches mid-lesson; `do`
+is "show me this one". Each answer is the lesson's compact state, under 600
+characters: `{lesson, mode, step: "3/5", id, say, check: pass|fail|pending,
+why?, hint: 0-3, hint_text?, do_it?, did?, targets: {resolved, missing}}`.
+While a lesson runs, a rider line (`tutor: step 3/5 passed; now step 4/5
+pending`) joins the agent's other answers when the step's state changes.
+
+`tutor_point`: `{targets: [spec],
 say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: [titles]}`, `{wb}`,
 `{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
 `{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
@@ -46,7 +69,10 @@ Lessons hold no code. Other add-ons can ship their own lessons.
     python3 -m pytest -q tests
 
 The replay tests need FreeCAD and an Agent Link checkout (`AGENTLINK_SRC`, or
-`agentlink-freecad` beside this folder); the rest run with plain Python.
+`agentlink-freecad` beside this folder); the tutor tool's tests need the
+checkout only; the rest run with plain Python. Guided mode is replayed end
+to end by an agent with Agent Link's test flag `AGENTLINK_AS_USER=1`, which
+takes the agent's calls as yours: for tests only, never for real use.
 
 ## Licence
 

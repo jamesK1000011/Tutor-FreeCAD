@@ -489,8 +489,16 @@ class TabWords(unittest.TestCase):
         e = types.SimpleNamespace(state="step", history=[])
         on = tab.buttons_on(e)
         self.assertTrue(on["next"] and on["hint"] and on["skip"] and on["stop"])
-        self.assertFalse(on["back"] or on["start"] or on["do"])  # Do it for me waits for demo mode (T3)
+        self.assertFalse(on["back"] or on["start"] or on["do"])  # no step with a do in front
         self.assertTrue(tab.buttons_on(types.SimpleNamespace(state="step", history=[0]))["back"])
+        self.assertTrue(tab.buttons_on(types.SimpleNamespace(state="step", history=[], step={"do": [{"tool": "pd_pad"}]}))["do"])
+        self.assertFalse(tab.buttons_on(types.SimpleNamespace(state="step", history=[], step={"say": "Look."}))["do"])
+
+    def test_check_line(self):
+        self.assertEqual(tab.check_line(None), "")
+        self.assertEqual(tab.check_line({"lesson": "x", "step": "2/5", "check": "pass"}), "Check: passed")
+        self.assertEqual(tab.check_line({"lesson": "x", "step": "2/5", "check": "fail", "why": "Length is 20 mm"}), "Check: not yet (Length is 20 mm)")
+        self.assertEqual(tab.step_words({"lesson": "x", "step": "1/5", "say": "s", "check": "pending", "why": "needs the FreeCAD window"})[0], "Step 1/5 · waiting")
 
     def test_question_note(self):
         self.assertEqual(tab.question_note("  why   Pad? ", {"lesson": "agentlink_tutor.pd.pad-sketch", "step": "3/5"}),
@@ -532,7 +540,12 @@ class WithAgentLink(unittest.TestCase):
 
         doc = json.load(open(os.path.join(ROOT, "agentlink_tutor", "data", "tools.json"), encoding="utf-8"))
         self.assertEqual(tooldata.check(doc), [])
-        self.assertEqual(set(doc["entries"]), {"tutor_point"})
+        self.assertEqual(set(doc["entries"]), {"tutor_point", "tutor"})
+        # The design's budget: about 1,800 characters for the three tutor tools (tutor_watch to come).
+        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 1300)
+        t = doc["entries"]["tutor"]
+        self.assertEqual((t["group"], t["changes"]), ("tutor", False))
+        self.assertLessEqual(len(t["description"]), 660)
         d = doc["entries"]["tutor_point"]
         self.assertEqual(d["group"], "tutor")
         self.assertLessEqual(len(d["description"]), 600)
@@ -559,7 +572,7 @@ class WithAgentLink(unittest.TestCase):
         from agentlink_tutor import fam_tutor
 
         tools = fam_tutor.tools(types.SimpleNamespace(doc=None))
-        self.assertEqual([t.name for t in tools], ["tutor_point"])
+        self.assertEqual([t.name for t in tools], ["tutor_point", "tutor"])
         self.assertEqual(tools[0].group, "tutor")
 
 
