@@ -7,8 +7,34 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-11-16
+
+The first release (not tagged yet): Tutor, an add-on for Agent Link for
+FreeCAD (API 1) on FreeCAD 1.1 that teaches FreeCAD in the person's own
+window. Lessons are data files in Simplified Technical English; guided and
+demo modes check each step and climb a hint ladder; `tutor_point` rings
+controls and lights faces; watch mode follows the person's work when they
+turn it on; the Tutor tab sits in Agent Link's panel; three starter lessons
+(pad a sketch, cut a pocket and drill a hole, export an STL).
+
+### Fixed
+
+From the guided live run of the pocket lesson (FreeCAD 1.1.3), as rules for every lesson:
+
+- A step starts quiet: the callout and the Tutor tab show only the instruction and its why line. Why the step is not done ("Not yet: …") shows only once the person has acted since the step began (an event of theirs, a call of theirs, a call that changed the document, Do) or asked for a hint. The agent's answers still carry the check's result.
+- No internal names in anything the person reads: type ids and command names become plain words in one place (`words.py`: Sketcher::SketchObject is "sketch", PartDesign::Pad "pad", a task panel "the pad task panel", a command its menu text, a property "Use custom vector"). A test runs every lesson, step and hint rung, and every check's failure, and scans what the person would read; a lesson that writes an internal name is not loaded.
+- The callout's layout (`callout.py`, for lessons and `tutor_point` alike): each sentence of the instruction its own line, numbered only when there is more than one line; a target's own words (the ▾ menu of a toolbar dropdown) as the next numbered line, naming its badge (②); the why line its own paragraph, smaller and dimmer; then the hint or why not yet. No "2." without a "1.".
+- Step words name a command as this FreeCAD does: a lesson writes `**{PartDesign_NewSketch|New Sketch}**`, and the step shows the command's live menu text (`Gui.Command.get(name).getInfo()['menuText']`, & and … taken off), the words after `|` where FreeCAD cannot be asked. The starter lessons use it (the pocket lesson said "Create sketch" where 1.1.3's menu says "New Sketch"). Every command name the targets give is its cleaned menu text.
+- The callout no longer covers the toolbars: it is drawn over the 3D view (a child of the view's window, as Agent Link's caption is; the overlay cannot draw there on the Mac), on the view's edge nearest its target, under the toolbars for a toolbar button and at the left edge for the Tasks panel, kept off the navigation cube, with an arrow to the ring (`bubble.py`, placement in `callout.place`). Where there is no 3D view, the overlay's callout as before.
+- Check and tab words follow the writing rules: "push OK", "task panel".
+
 ### Added
 
+- An icon (`agentlink_tutor/icons/Tutor.svg`, a mortarboard over a cube, drawn for Tutor), named in `package.xml`.
+- README: an Install section (the Addon Manager's custom repositories: add both Agent Link and Tutor, or the dependency on "Agent Link" is taken for a Python package and the install fails), screenshot slots, links that work off GitHub.
+- A tests workflow (`.github/workflows/tests.yml`): the headless suite on push and pull request, one job, one Python version, pip cached.
 - Watch mode (T4): with "Let Claude watch" on in the Tutor tab (or `tutor {action: "watch", on}` when the person asks; off by default, a sign in the status bar while on), the person's events go into a ring buffer in memory (`observe.py`: commands used, workbench switches, selections, objects made and deleted, recomputes, a task panel opened and closed, undo, redo, save, and Ask Claude questions), the agent's own left out, selection and recompute bursts coalesced. `tutor_watch {since, wait 0–25 s, until: any|milestone}` answers them as a long poll on Agent Link's socket thread, never holding the window; a milestone (something finished) ends a wait early. The window's observers attach only while watch mode or a lesson needs them. A guided step's `used` check passes on the command the person used since the step began.
 - Every lesson's words are checked as Simplified Technical English (`ste.py`, rules as data in `data/ste_rules.json`, a short subset of ASD-STE100 Issue 9 in our own words, not its dictionary): each sentence of a step's instruction one instruction, starting with an action verb (push for buttons, select, set, type …), at most 20 words; no passive, no -ing words, no filler words, no "then" joining two instructions, each number with its unit; UI names in bold taken as written. Stored lessons and the agent's inline lessons alike are refused with the reasons until they comply. The starter lessons are rewritten to pass.
 - A step's optional `why`: one short explainer sentence (at most 15 words) under the instruction, in the callout and the tab. "Show explanations" in the Tutor tab (on by default, kept as `ShowExplainers` under BaseApp/Preferences/Mod/Tutor) and the tool's `{action: "explain", on}` switch it; the answers carry `explain: on|off` and send the why line (`because`) only while it is on, or with `detail`.
