@@ -146,7 +146,41 @@ def colours(col=None):
             col = {}
     fill = col.get("bubble", "#26292e")
     text = col.get("bubble_text", "#f2f2f2")
-    return {"fill": fill, "text": text, "dim": _mix(text, fill, 0.35), "edge": col.get("accent", "#3f93e0")}
+    if contrast(text, fill) < TEXT_CONTRAST:
+        # A theme whose bubble colours read badly: black or white, whichever
+        # stands out more from the fill.
+        text = max(("#000000", "#ffffff"), key=lambda c: contrast(c, fill))
+    # The why line dimmer than the words, never below the contrast the
+    # words need (WCAG AA for small text: 4.5:1).
+    t = 0.35
+    dim = _mix(text, fill, t)
+    while contrast(dim, fill) < TEXT_CONTRAST and t > 0:
+        t = round(t - 0.05, 2)
+        dim = _mix(text, fill, max(t, 0))
+    edge = col.get("accent", "#3f93e0")
+    if contrast(edge, fill) < EDGE_CONTRAST:
+        edge = text  # the edge must show against the fill (3:1 for graphics)
+    return {"fill": fill, "text": text, "dim": dim, "edge": edge}
+
+
+TEXT_CONTRAST = 4.5  # WCAG 2 AA, normal text
+EDGE_CONTRAST = 3.0  # WCAG 2 AA, graphics and a control's edge
+
+
+def luminance(c):
+    """Relative luminance of #rrggbb (WCAG 2)."""
+    c = c.lstrip("#")
+    out = []
+    for i in (0, 2, 4):
+        v = int(c[i:i + 2], 16) / 255.0
+        out.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * out[0] + 0.7152 * out[1] + 0.0722 * out[2]
+
+
+def contrast(a, b):
+    """The contrast ratio of two colours, 1 to 21 (WCAG 2)."""
+    la, lb = sorted((luminance(a), luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
 
 
 def stylesheet(col):
@@ -267,11 +301,16 @@ def show(c, found=(), doc=None, report=None):
     col = colours()
     lab.setStyleSheet(stylesheet(col))
     arrow.setStyleSheet(arrow_sheet(col))
-    lab.setFont(QtGui.QFont(QtW.QApplication.font()))
-    arrow.setFont(QtGui.QFont(QtW.QApplication.font()))
+    from . import prefs
+
+    font = QtGui.QFont(QtW.QApplication.font())
+    if font.pointSizeF() > 0:
+        font.setPointSizeF(prefs.scaled(font.pointSizeF()))  # the person's text size
+    lab.setFont(font)
+    arrow.setFont(QtGui.QFont(font))
     lab.setText(c.html(col["text"], col["dim"]))
     lab.setAccessibleDescription(c.text() or "")
-    width = min(callout_mod.WIDTH, max(160, host.width() - 2 * callout_mod.MARGIN))
+    width = min(int(callout_mod.WIDTH * prefs.text_scale() / 100), max(160, host.width() - 2 * callout_mod.MARGIN))
     # The size from these words alone: the last showing's fixed size let go
     # first (a why line turned off left its height, an empty band).
     lab.setMinimumSize(0, 0)

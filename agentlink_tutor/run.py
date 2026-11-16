@@ -29,6 +29,7 @@ me" / "show me this one", and mode switches mid-lesson. rider(tool) is the
 line Agent Link adds to the agent's answers while a lesson runs.
 """
 from . import engine as engine_mod
+from . import prefs as prefs_mod
 
 DEBOUNCE_MS = 300
 ADVANCE_MS = 600
@@ -227,7 +228,8 @@ class Controller:
                 pass
         if self.ui is not None and self.stepping and self.e.index != self._framed:
             self._framed = self.e.index
-            v = step_view(self.e.lesson, self.e.step)
+            # Reduced motion: the camera is not turned between steps.
+            v = None if prefs_mod.reduce_motion(self.prefs) else step_view(self.e.lesson, self.e.step)
             if v:
                 try:
                     self.ui.frame(v, self.e._doc())
@@ -284,7 +286,13 @@ class Controller:
                     self.ui.settle()
                 v = (self.e.lesson or {}).get("view", "isometric")
                 if v in VIEWS:
-                    self.ui.frame(v, self.e._doc())
+                    if prefs_mod.reduce_motion(self.prefs):
+                        try:
+                            self.ui.frame(v, self.e._doc(), animate=False)
+                        except TypeError:  # a stand-in without animate
+                            self.ui.frame(v, self.e._doc())
+                    else:
+                        self.ui.frame(v, self.e._doc())
         finally:
             self.busy = False
         self._changed()
@@ -406,8 +414,12 @@ class Controller:
         """A window signal (recompute, selection, workbench): the check is run
         once the signals have settled for DEBOUNCE_MS. ev: the person's event
         (observe.py), which counts as acting when it came after the step
-        began; a signal without one counts too."""
-        if self.busy or not self.stepping:
+        began; a signal without one counts too. Signals raised while a
+        check tries a parameter for a moment (checks.TRIAL) are not the
+        person's and are dropped."""
+        from . import checks
+
+        if self.busy or not self.stepping or checks.in_trial():
             return
         if ev is None or not isinstance(ev.get("n"), int) or ev["n"] > self.step_seq:
             self.acted = True

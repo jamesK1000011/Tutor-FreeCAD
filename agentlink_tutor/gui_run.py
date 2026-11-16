@@ -116,20 +116,36 @@ class UI:
         except Exception:  # noqa: BLE001
             pass
 
-    def frame(self, view, doc=None):
+    def frame(self, view, doc=None, animate=True):
         """The lesson document's 3D view set to view (isometric, front, top,
-        right, left, rear, bottom) and fitted to the part."""
+        right, left, rear, bottom) and fitted to the part. animate False
+        (reduced motion): the view's own animation is off while it turns,
+        and back as it was after."""
         gd = self._gd(doc)
         v = gd.activeView() if gd is not None else None
         if v is None:
             return
-        turn = getattr(v, "view" + view.capitalize(), None)
-        if view == "isometric":
-            turn = getattr(v, "viewIsometric", None)
-        if callable(turn):
-            turn()
-        if hasattr(v, "fitAll"):
-            v.fitAll()
+        was = None
+        if not animate and hasattr(v, "isAnimationEnabled") and hasattr(v, "setAnimationEnabled"):
+            try:
+                was = bool(v.isAnimationEnabled())
+                v.setAnimationEnabled(False)
+            except Exception:  # noqa: BLE001
+                was = None
+        try:
+            turn = getattr(v, "view" + view.capitalize(), None)
+            if view == "isometric":
+                turn = getattr(v, "viewIsometric", None)
+            if callable(turn):
+                turn()
+            if hasattr(v, "fitAll"):
+                v.fitAll()
+        finally:
+            if was is not None:
+                try:
+                    v.setAnimationEnabled(was)
+                except Exception:  # noqa: BLE001
+                    pass
 
     def open_task(self, engine):
         """Demo: open the feature the step's do works on, so its task panel
