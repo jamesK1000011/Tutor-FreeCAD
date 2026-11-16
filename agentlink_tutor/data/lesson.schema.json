@@ -175,6 +175,15 @@
     },
     "args": {
      "type": "object"
+    },
+    "else": {
+     "type": "array",
+     "minItems": 1,
+     "maxItems": 5,
+     "items": {
+      "type": "object"
+     },
+     "description": "Calls run instead when this one is refused: an Agent Link without the tool (an older one), or a document made the other way (a parameter in the Params sheet, not a variable set). Each is a call as this one is, without an else of its own."
     }
    }
   },

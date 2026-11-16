@@ -283,6 +283,12 @@ class Engine:
                 self.hold_doc()
             refused, out = self.call(c["tool"], resolve(c.get("args") or {}, self.bindings))
             answers.append({"tool": c["tool"], "refused": bool(refused), "answer": out})
+            if refused and c.get("else"):
+                # Refused (no such tool in this Agent Link, or the document
+                # was made the other way): the call's else instead.
+                answers += self._run([{k: v for k, v in e.items() if k != "else"} for e in c["else"]],
+                                     f"{where} (else of {c['tool']}: {_reason(out)[:80]})")
+                continue
             if refused:
                 raise TutorError(f"{where}: {c['tool']} was refused — {_reason(out)}")
             if c["tool"] in ("doc_new", "doc_open") and isinstance(out, dict) and out.get("document"):

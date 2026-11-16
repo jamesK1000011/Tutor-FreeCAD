@@ -111,6 +111,25 @@ class Stored(unittest.TestCase):
         for want in ('"external": 2', '"r": 14.5', '"radii": ["$r"]', '"equal"', '"pad": 2.5', '"follows": "size"'):
             self.assertIn(want, text)
 
+    def test_bike_stem_uses_a_variable_set_with_the_sheet_as_fallback(self):
+        # As the video: a Variable Set holds size; an Agent Link without
+        # varset_new (or a document with the Params sheet) uses param_set.
+        l = by_id()[COURSE[0]]
+        st = {s["id"]: s for s in l["steps"]}
+        self.assertEqual(st["varset"]["do"][0]["tool"], "varset_new")
+        self.assertEqual(st["varset"]["do"][0]["else"][0]["tool"], "param_set")
+        self.assertEqual(st["value"]["do"][0]["tool"], "varset_set")
+        self.assertEqual(st["value"]["do"][0]["else"][0]["tool"], "param_set")
+        self.assertEqual(st["bind-place"]["do"][0]["args"]["expression"], "VarSet.size")
+        self.assertEqual(st["bind-place"]["do"][0]["else"][0]["args"]["expression"], "size")
+        self.assertEqual(st["bind-front"]["do"][0]["else"][0]["args"]["expression"], "size + 20 mm")
+        self.assertEqual(l["vars"]["size_len"], "55 mm")
+        older = gen_agentlink_tools.vendored() - {"varset_new", "varset_set"}
+        self.assertEqual(lessons.check(l, older), [])
+        for chk in (st["varset"]["check"], st["value"]["check"], l["result"]["all"][1]):
+            kinds = {c["exists"]["type"] for c in chk["any"]}
+            self.assertEqual(kinds, {"App::VarSet", "Spreadsheet::Sheet"})
+
 
 class Workshop(unittest.TestCase):
     def test_hole_for_hardware_as_workshop_ships_it(self):

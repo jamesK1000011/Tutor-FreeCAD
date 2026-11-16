@@ -254,13 +254,36 @@ def normal_target(spec):
 
 
 def _calls(lesson):
-    """(where, call) for every tool call in a lesson."""
+    """(where, call) for every tool call in a lesson, a call's else too."""
+    def each(where, c):
+        yield where, c
+        if isinstance(c, dict):
+            for j, e in enumerate(c.get("else") or []):
+                yield f"{where}.else[{j}]", e
+
     for i, c in enumerate((lesson.get("setup") or {}).get("calls") or []):
-        yield f"setup.calls[{i}]", c
+        yield from each(f"setup.calls[{i}]", c)
     for s in lesson.get("steps") or []:
         if isinstance(s, dict):
             for i, c in enumerate(s.get("do") or []):
-                yield f"steps.{s.get('id')}.do[{i}]", c
+                yield from each(f"steps.{s.get('id')}.do[{i}]", c)
+
+
+def _else_problems(lesson):
+    """A call's else: calls ({tool, args}), none with an else of its own."""
+    out = []
+    for where, c in _calls(lesson):
+        if ".else[" not in where:
+            continue
+        if not isinstance(c, dict) or not isinstance(c.get("tool"), str) or not re.match(r"^[a-z][a-z0-9_]*$", c["tool"]):
+            out.append(f"{where}: a call {{tool, args}}")
+            continue
+        extra = set(c) - {"tool", "args"}
+        if extra:
+            out.append(f"{where}: an else call holds tool and args only (not {', '.join(sorted(extra))})")
+        if "args" in c and not isinstance(c["args"], dict):
+            out.append(f"{where}.args: an object")
+    return out
 
 
 def _bind_problems(bind, where):
@@ -430,10 +453,17 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
     missing = refs(lesson) - defined(lesson)
     for m in sorted(missing):
         out.append(f"${m} is used but never defined (vars, setup.bind or a step's bind)")
+    out += _else_problems(lesson)
     if tools is not None:
         for where, c in _calls(lesson):
-            if c["tool"] not in tools:
-                out.append(f"{where}: no tool {c['tool']}")
+            if not isinstance(c, dict) or not isinstance(c.get("tool"), str) or c["tool"] in tools:
+                continue
+            # A call with an else may name a tool this Agent Link lacks
+            # (a newer one's): its else is done instead.
+            alt = [e.get("tool") for e in (c.get("else") or []) if isinstance(e, dict)]
+            if alt and all(a in tools for a in alt):
+                continue
+            out.append(f"{where}: no tool {c['tool']}")
     out += hint_problems(lesson)
     out += word_problems(lesson)
     from . import ste

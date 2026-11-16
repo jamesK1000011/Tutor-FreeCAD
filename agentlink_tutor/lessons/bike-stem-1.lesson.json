@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.course.bike-stem-1",
- "version": "1.0.0",
+ "version": "1.1.0",
  "title": "Bike stem 1: the base sketch and the size",
  "summary": "Sketch the stem's side on the XZ plane: a 21 mm hole on the X axis and a symmetric outline 47 mm high. A variable size drives the hole's place and the front length. Pad it 22 mm.",
  "level": "basic",
@@ -52,7 +52,8 @@
   "rear": 27,
   "size": 55,
   "front": 75,
-  "pad": 22
+  "pad": 22,
+  "size_len": "55 mm"
  },
  "result": {
   "all": [
@@ -537,12 +538,23 @@
    ],
    "do": [
     {
-     "tool": "param_set",
+     "tool": "varset_new",
      "args": {
-      "name": "size",
-      "value": "$size",
-      "unit": "mm"
-     }
+      "name": "VarSet",
+      "properties": {
+       "size": "$size_len"
+      }
+     },
+     "else": [
+      {
+       "tool": "param_set",
+       "args": {
+        "name": "size",
+        "value": "$size",
+        "unit": "mm"
+       }
+      }
+     ]
     }
    ]
   },
@@ -587,12 +599,22 @@
    ],
    "do": [
     {
-     "tool": "param_set",
+     "tool": "varset_set",
      "args": {
-      "name": "size",
-      "value": "$size",
-      "unit": "mm"
-     }
+      "properties": {
+       "size": "$size_len"
+      }
+     },
+     "else": [
+      {
+       "tool": "param_set",
+       "args": {
+        "name": "size",
+        "value": "$size",
+        "unit": "mm"
+       }
+      }
+     ]
     }
    ]
   },
@@ -619,8 +641,17 @@
      "tool": "param_bind",
      "args": {
       "target": "Sketch.place",
-      "expression": "size"
-     }
+      "expression": "VarSet.size"
+     },
+     "else": [
+      {
+       "tool": "param_bind",
+       "args": {
+        "target": "Sketch.place",
+        "expression": "size"
+       }
+      }
+     ]
     }
    ]
   },
@@ -647,8 +678,17 @@
      "tool": "param_bind",
      "args": {
       "target": "Sketch.front",
-      "expression": "size + 20 mm"
-     }
+      "expression": "VarSet.size + 20 mm"
+     },
+     "else": [
+      {
+       "tool": "param_bind",
+       "args": {
+        "target": "Sketch.front",
+        "expression": "size + 20 mm"
+       }
+      }
+     ]
     }
    ]
   },
