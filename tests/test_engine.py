@@ -279,5 +279,56 @@ class StateMachine(unittest.TestCase):
         self.assertEqual(e.check()["check"], "pass")
 
 
+class ElseCalls(unittest.TestCase):
+    """A call's else: done instead when the call is refused (a newer tool
+    this Agent Link lacks, or a document made the other way)."""
+
+    def lesson(self):
+        return lessons.inline({"id": "inline.else", "title": "Else", "setup": {"calls": [
+            {"tool": "varset_new", "args": {"name": "VarSet", "properties": {"size": "55 mm"}},
+             "else": [{"tool": "pd_body_new"}]}]},
+            "steps": [{"id": "s", "say": "Make a body.", "check": {"exists": "PartDesign::Body"}}]})
+
+    def test_refused_call_runs_its_else(self):
+        w = World()
+        e = Engine(self.lesson(), call=w, doc=lambda: w.doc)
+        e.start("guided")
+        self.assertEqual([c[0] for c in w.calls], ["varset_new", "pd_body_new"])
+        self.assertEqual(e.check()["check"], "pass")
+
+    def test_answered_call_skips_its_else(self):
+        w = World()
+        calls = []
+
+        def call(name, args):
+            calls.append(name)
+            if name == "varset_new":
+                w.doc.add("Body", "PartDesign::Body")
+                return False, {"varset": "VarSet"}
+            return w(name, args)
+        e = Engine(self.lesson(), call=call, doc=lambda: w.doc)
+        e.start("guided")
+        self.assertEqual(calls, ["varset_new"])
+
+    def test_else_refused_too_stops(self):
+        l = self.lesson()
+        l["setup"]["calls"][0]["else"] = [{"tool": "nope"}]
+        w = World()
+        with self.assertRaises(TutorError) as x:
+            Engine(l, call=w, doc=lambda: w.doc).start("demo")
+        self.assertIn("else of varset_new", str(x.exception))
+        self.assertIn("no tool nope", str(x.exception))
+
+    def test_checked(self):
+        l = self.lesson()
+        tools = {"pd_body_new"}  # an Agent Link without varset_new: its else stands in
+        self.assertEqual(lessons.check(l, tools), [])
+        self.assertEqual(lessons.check(l, set()), ["setup.calls[0]: no tool varset_new", "setup.calls[0].else[0]: no tool pd_body_new"])
+        l["setup"]["calls"][0]["else"] = [{"tool": "pd_body_new", "else": [{"tool": "x"}]}, {"args": {}}]
+        got = lessons.check(l)
+        self.assertIn("setup.calls[0].else[0]: an else call holds tool and args only (not else)", got)
+        self.assertIn("setup.calls[0].else[1]: a call {tool, args}", got)
+
+
 if __name__ == "__main__":
     unittest.main()

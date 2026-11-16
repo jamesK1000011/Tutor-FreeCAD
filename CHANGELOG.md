@@ -19,6 +19,16 @@ From the live demo of bike-stem chapter 1 on FreeCAD 1.1.3:
 - Tree rows: matched by label with the ends trimmed and a changed document's * left out; a row FreeCAD has not filled in yet under a folded parent rings that parent's row (or the document's) with "Unfold the ringed row in the tree."
 - A step once passed stays passed when a later re-check cannot be told (`pending`): the rider and `status` agree. A demo's last check that is pending gets a quiet window and one more try.
 - The end of a lesson: `{step: "done", finished: "lesson complete", final: {step, check, why?}}`, the last step's check (the bike stem's "the part follows size"); the rider says `tutor: lesson complete, final check passed`.
+- Tree rows (steps 13 and 14 of bike-stem 1: "Sketch is not in the Model tree" after "Sketch shown in the tree"): every Model tree is searched (the Combo View's, a Tree view dock, a floating one), a row matched by the object's Label, then by its Name (unless another object carries that Name as its Label). Preparing unfolds each tree from the document's row down along the rows that hold the object (its body, then the feature that claims it: a Pad holds its sketch), letting Qt run between unfoldings; a row unfolded before FreeCAD filled it in is folded and unfolded again. `prepared` says "shown in the tree" only when the row then shows, else why not; a row still missing says what its parent row holds.
+
+### Added
+
+- A lesson's call may carry `else: [calls]`, done instead when the call is refused: a tool this Agent Link lacks (an older one), or a document made the other way. The lesson check takes a call whose tool is missing when its else's tools are there.
+
+### Changed
+
+- Bike stem chapter 1 (1.1.0) makes a real Variable Set as the video does: `varset_new` and `varset_set` (Agent Link b57959c), bound as `VarSet.size`; `param_set` and the bare `size` are each call's else. The checks take either.
+- `tests/data/agentlink_tools.txt` re-vendored from Agent Link main (`varset_new`, `varset_set`).
 
 ## [0.2.0] - 2026-11-16
 

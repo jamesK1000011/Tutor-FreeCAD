@@ -719,11 +719,12 @@ class WithAgentLink(unittest.TestCase):
         # The design's budget: about 1,800 characters for the three tutor
         # tools, raised to 2,000 with batches and the parameter checks (T5/T6),
         # and to 2,450 with the live demo's fixes (the lesson's document,
-        # demo's window preparation, the final check, dropdowns, panels).
-        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 2450)
+        # demo's window preparation, the final check, dropdowns, panels),
+        # and to 2,550 with a call's else (varset_new, param_set instead).
+        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 2550)
         t = doc["entries"]["tutor"]
         self.assertEqual((t["group"], t["changes"]), ("tutor", False))
-        self.assertLessEqual(len(t["description"]), 1250)
+        self.assertLessEqual(len(t["description"]), 1350)
         d = doc["entries"]["tutor_point"]
         self.assertEqual(d["group"], "tutor")
         self.assertLessEqual(len(d["description"]), 780)

@@ -95,9 +95,9 @@ add-on's package name. It also offers `hooks.service("lessons")`
 
 ## Wanted later (not needed now)
 
-- A tool that makes a variable set (`App::VarSet`) and adds a property to
-  it. Demo mode makes the parameter with `param_set` (a spreadsheet alias),
-  which the checks take as well as a variable set; with such a tool demo
-  would do what FreeCAD 1.0 and 1.1 beginners' videos do.
+- ~~A tool that makes a variable set (`App::VarSet`)~~: Agent Link has
+  `varset_new` and `varset_set` (b57959c). The bike-stem course's chapter 1
+  uses them as the video does, with `param_set` (a spreadsheet alias) as
+  each call's `else` on an Agent Link without them.
 - The echo's lit buttons flash: a person who turned on the Tutor's Reduce
   motion would want them still too (a preference the echo reads).
