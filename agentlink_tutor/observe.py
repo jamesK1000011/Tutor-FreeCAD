@@ -135,7 +135,12 @@ def owners():
 
 def record(k, **fields):
     """An event from the window: kept (unless the agent is acting) and told
-    to each owner's listener."""
+    to each owner's listener. Not while a check changes a parameter for
+    a moment (checks.TRIAL): those signals are the Tutor's, not the person's."""
+    from . import checks
+
+    if checks.in_trial():
+        return None
     try:
         from agentlink import hooks
 

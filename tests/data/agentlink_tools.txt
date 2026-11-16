@@ -167,6 +167,8 @@ insp_list
 insp_read
 insp_run
 insp_update
+job_start
+job_status
 link_edit
 link_make
 material_clear

@@ -4,7 +4,7 @@ import os
 import tempfile
 import unittest
 
-from fakes import Doc, Quantity, Shape, Wire
+from fakes import Doc, Obj, Quantity, Shape, Wire
 
 from agentlink_tutor import checks
 from agentlink_tutor.checks import Context, GuiState, evaluate
@@ -168,6 +168,166 @@ class Problems(unittest.TestCase):
         self.assertTrue(checks.problems({"file": "/tmp/x.stl"}, "c"))
         self.assertTrue(checks.problems({"all": []}, "c"))
         self.assertIn("c.all[1]", checks.problems({"all": [{"exists": "a"}, {"nope": 1}]}, "c")[0])
+
+
+# ---- parameters and features (T5/T6): where, expr, follows, sketch options ------------
+
+
+class Sheet(Obj):
+    """A spreadsheet with the alias size in A1, its value read as FreeCAD
+    reads an alias (sheet.size)."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.cells = {"A1": "55 mm"}
+
+    def getCellFromAlias(self, alias):
+        return "A1" if alias == "size" else None
+
+    def getContents(self, cell):
+        return self.cells[cell]
+
+    def set(self, cell, value):
+        self.cells[cell] = value
+
+    @property
+    def size(self):
+        return Quantity(float(self.cells["A1"].split()[0]))
+
+
+class ParamDoc(Doc):
+    """A document whose body's length follows a parameter (size + 47 mm along
+    X), with FreeCAD's transaction calls: openTransaction keeps the values,
+    abortTransaction puts them back."""
+
+    def __init__(self, holder="varset", follow=True, breaks_at=None):
+        super().__init__()
+        self.follow, self.breaks_at = follow, breaks_at
+        if holder == "varset":
+            self.h = self.add("VarSet", "App::VarSet", size=Quantity(55.0))
+        else:
+            self.h = Sheet("Params", "Spreadsheet::Sheet")
+            self.Objects.append(self.h)
+        self.body = self.add("Body", "PartDesign::Body")
+        self.sketch = self.add("Sketch", "Sketcher::SketchObject",
+                               ExpressionEngine=[("Constraints.place", "VarSet.size"), ("Constraints.front", "<<VarSet>>.size + 20 mm"),
+                                                 ("Constraints.other", "sizeX + 1")])
+        self.txn = None
+        self.recomputes = 0
+        self.recompute()
+
+    def size(self):
+        return checks.number(self.h.size)
+
+    def recompute(self):
+        self.recomputes += 1
+        x = self.size() + 47 if self.follow else 102
+        self.body.Shape = Shape(1000, (x, 22, 47))
+        self.body.valid = not (self.breaks_at is not None and self.size() >= self.breaks_at)
+
+    def openTransaction(self, name):
+        self.txn = (name, self.size(), dict(getattr(self.h, "cells", {}) or {}))
+
+    def abortTransaction(self):
+        _name, size, cells = self.txn
+        if cells:
+            self.h.cells = cells
+        else:
+            self.h.size = Quantity(size)
+        self.txn = None
+
+
+class Parameters(unittest.TestCase):
+    def st(self, check, doc, gui=None):
+        return evaluate(check, Context(doc=doc, gui=gui))
+
+    def test_where_finds_a_feature_by_its_values(self):
+        doc = Doc()
+        doc.add("Hole", "PartDesign::Hole", ThreadSize="M4", HoleCutType="Countersink", Diameter=Quantity(4.5))
+        ok = {"exists": {"type": "PartDesign::Hole", "where": {"ThreadSize": "M4", "HoleCutType": "Countersink", "Diameter": {"ge": 4.3, "le": 5}}}}
+        self.assertEqual(self.st(ok, doc).status, "pass")
+        bad = {"exists": {"type": "PartDesign::Hole", "where": {"ThreadSize": "M5"}}}
+        r = self.st(bad, doc)
+        self.assertEqual((r.status, r.why), ("fail", "there is no hole with Thread size M5 yet"))
+        self.assertEqual(self.st({"exists": {"type": "PartDesign::Hole", "where": {"Diameter": 4.5}}}, doc).status, "pass")
+        self.assertEqual(self.st({"exists": {"type": "PartDesign::Hole", "where": {"Nope": 1}}}, doc).status, "fail")
+        self.assertEqual(checks.problems(ok, "c"), [])
+        self.assertTrue(checks.problems({"exists": {"type": "X::Y", "where": {"A": {"near": 1}}}}, "c"))
+        self.assertTrue(checks.problems({"exists": {"type": "X::Y", "where": []}}, "c"))
+
+    def test_expr_counts_values_bound_to_the_parameter(self):
+        doc = ParamDoc()
+        self.assertEqual(self.st({"expr": "Sketch", "uses": "size", "count": 2}, doc).status, "pass")
+        r = self.st({"expr": "Sketch", "uses": "size", "count": 3}, doc)
+        self.assertEqual(r.why, "2 values of Sketch use size; the step wants 3")  # sizeX + 1 is not size
+        doc.sketch.ExpressionEngine = []
+        self.assertIn("no value of Sketch uses size", self.st({"expr": "Sketch", "uses": "size"}, doc).why)
+        self.assertEqual(self.st({"expr": "Sketch", "uses": "size", "path": "front"}, ParamDoc()).status, "pass")
+        self.assertTrue(checks.problems({"expr": "Sketch"}, "c"))
+        self.assertTrue(checks.problems({"expr": "Sketch", "uses": "size", "count": 0}, "c"))
+
+    def test_follows_tries_the_parameter_and_puts_it_back(self):
+        for holder in ("varset", "sheet"):
+            with self.subTest(holder=holder):
+                doc = ParamDoc(holder)
+                seen = []
+                doc.recompute_was = doc.recompute
+                doc.recompute = lambda d=doc: (seen.append(checks.in_trial()), d.recompute_was())
+                c = {"follows": "size", "object": "Body", "by": 5, "axis": "x", "change": 5}
+                self.assertEqual(self.st(c, doc).status, "pass")
+                self.assertEqual(doc.size(), 55.0)  # put back
+                self.assertEqual(doc.body.Shape.BoundBox.XLength, 102)
+                self.assertTrue(seen and all(seen))  # the window's signals in the trial are not the person's
+                self.assertFalse(checks.in_trial())
+                if holder == "sheet":
+                    self.assertEqual(doc.h.cells["A1"], "55 mm")  # its unit kept
+        r = self.st({"follows": "size", "object": "Body"}, ParamDoc(follow=False))
+        self.assertEqual(r.why, "Body does not follow size: it keeps its size when size changes")
+        r = self.st({"follows": "size", "object": "Body", "axis": "x", "change": 10}, ParamDoc())
+        self.assertIn("grows 5 mm along X", r.why)
+        r = self.st({"follows": "size", "object": "Body"}, ParamDoc(breaks_at=60))
+        self.assertEqual(r.why, "with size at 60 mm, Body has an error")
+        doc = ParamDoc()
+        doc.remove("VarSet")
+        self.assertIn("no parameter size", self.st({"follows": "size", "object": "Body"}, doc).why)
+
+    def test_follows_waits_for_an_open_panel_and_needs_freecad(self):
+        doc = ParamDoc()
+        r = self.st({"follows": "size", "object": "Body"}, doc, gui=GuiState(editing="Sketch"))
+        self.assertEqual(r.status, "pending")
+        self.assertEqual(doc.recomputes, 1)  # nothing tried
+        plain = Doc()
+        plain.add("VarSet", "App::VarSet", size=Quantity(55.0))
+        plain.add("Body", "PartDesign::Body", shape=Shape(1, (1, 1, 1)))
+        self.assertEqual(self.st({"follows": "size", "object": "Body"}, plain).status, "pending")
+        self.assertTrue(checks.problems({"follows": "size"}, "c"))  # no object
+        self.assertTrue(checks.problems({"follows": "size", "object": "B", "change": 5}, "c"))  # change needs axis
+        self.assertTrue(checks.problems({"follows": "size", "object": "B", "axis": "w"}, "c"))
+        self.assertEqual(checks.problems({"follows": "size", "object": "$body", "by": 5, "axis": "x", "change": 5}, "c"), [])
+
+    def test_sketch_external_and_radii(self):
+        doc = Doc()
+        g = [type("Arc", (), {"Radius": 14.5})(), type("Circle", (), {"Radius": 10.5})(), type("Line", (), {})()]
+        sk = doc.add("Inset", "Sketcher::SketchObject", Geometry=g, ExternalGeometry=[(object(), ("Edge3", "Edge7"))])
+        sk.getConstruction = lambda i: False
+        self.assertEqual(self.st({"sketch": "Inset", "external": 2, "radii": [14.5, 10.5]}, doc).status, "pass")
+        self.assertIn("2 outside edges", self.st({"sketch": "Inset", "external": 3}, doc).why)
+        self.assertEqual(self.st({"sketch": "Inset", "radii": [14]}, doc).why, "Inset has no circle or arc of radius 14 mm")
+        sk.getConstruction = lambda i: i == 0  # a construction arc does not count
+        self.assertEqual(self.st({"sketch": "Inset", "radii": [14.5]}, doc).status, "fail")
+        self.assertTrue(checks.problems({"sketch": "S", "radii": [-1]}, "c"))
+        self.assertTrue(checks.problems({"sketch": "S", "external": 0}, "c"))
+
+    def test_trial_signals_are_not_the_persons(self):
+        from agentlink_tutor import observe
+
+        n = observe.BUF.seq
+        checks.TRIAL[0] += 1
+        try:
+            self.assertIsNone(observe.record("rc"))
+        finally:
+            checks.TRIAL[0] -= 1
+        self.assertEqual(observe.BUF.seq, n)
 
 
 if __name__ == "__main__":

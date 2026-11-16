@@ -4,8 +4,10 @@ the session's document and (when there is a window) what the window shows.
 
 A check is a one-key object, the key its kind:
 
-    exists / absent  an object ("$pad", a name) or a query {type, in, label};
-                     a string with "::" is a type ("PartDesign::Pocket")
+    exists / absent  an object ("$pad", a name) or a query {type, in, label,
+                     where}; a string with "::" is a type ("PartDesign::Pocket");
+                     where: {property: value or {eq|lt|gt|le|ge, tol}} (a hole
+                     whose ThreadSize is "M4" and Diameter at least 4.3)
     new              an object of a type made since the step began
     prop             {"prop": "$pad", "name": "Length", "eq"|"lt"|"gt"|"le"|"ge": n,
                      "tol": mm or deg, "unit": "mm"}
@@ -13,7 +15,18 @@ A check is a one-key object, the key its kind:
                      error, a shape (one solid or more for PartDesign features)
     volume           {"volume": "$body", "eq"|…: mm³, "tol"}
     bbox             {"bbox": "$body", "size": [x, y, z], "tol"}
-    sketch           {"sketch": "$s", "closed": true, "dof": 0, "full": true}
+    sketch           {"sketch": "$s", "closed": true, "dof": 0, "full": true,
+                     "external": n (at least n outside edges brought in),
+                     "radii": [14.5] (each a circle's or arc's radius in it)}
+    expr             {"expr": "$sketch", "uses": "size", "count": 2, "path"?}: at
+                     least count of the object's values bound to an expression
+                     naming the parameter (VarSet.size, <<Params>>.size)
+    follows          {"follows": "size", "object": "$body", "by": 5, "axis"?:
+                     "x"|"y"|"z", "change"?: mm, "tol"?}: the part follows the
+                     parameter: size raised by `by` for a moment (inside an undo
+                     transaction that is aborted), the object recomputes with
+                     no error and its size changes (along axis by change);
+                     then everything is put back
     file             {"file": "Part.stl", "min_bytes": 84}: in the session's folder
     selected         "$sketch" or {"object", "sub": "Face"}           (window)
     workbench        "PartDesignWorkbench"                              (window)
@@ -29,17 +42,21 @@ are resolved before a check runs (engine.resolve), so a check sees names.
 
 Add-ons add kinds with hooks.register_reader("tutor_check", fn(kind, spec, ctx))
 answering a Result (or a (status, why) pair), or None when the kind is not
-theirs. Nothing here changes the document.
+theirs. Nothing here changes the document, except follows, which changes
+one parameter for a moment inside a transaction it aborts (TRIAL is set
+while it runs, so the window's signals it raises are not taken for the
+person's).
 """
 import collections
 import os
+import re
 
 from . import words
 
 Result = collections.namedtuple("Result", "status why")
 
 PASS = Result("pass", None)
-DOC_KINDS = ("exists", "absent", "new", "prop", "valid", "volume", "bbox", "sketch", "file")
+DOC_KINDS = ("exists", "absent", "new", "prop", "valid", "volume", "bbox", "sketch", "file", "expr", "follows")
 GUI_KINDS = ("selected", "workbench", "editing", "task_open")
 EVENT_KINDS = ("used",)
 LOGIC_KINDS = ("all", "any", "not")
@@ -181,10 +198,42 @@ def find(ctx, spec, only_new=False):
         found = [o for o in _objects(ctx.doc)
                  if (not q.get("type") or _is_type(o, q["type"]))
                  and (not q.get("label") or getattr(o, "Label", None) == q["label"])
-                 and (inside is None or _inside(o, inside))]
+                 and (inside is None or _inside(o, inside))
+                 and matches(o, q.get("where"))]
     if only_new:
         found = [o for o in found if o.Name not in ctx.before]
     return found
+
+
+def matches(o, where):
+    """True when o's properties are as where says: {name: value} (a number
+    within 1e-6, else the same text: an enumeration's choice), or {name:
+    {eq|lt|gt|le|ge: n, tol}}."""
+    for name, want in (where or {}).items():
+        if not hasattr(o, name):
+            return False
+        have = getattr(o, name)
+        if isinstance(want, dict):
+            if compare(name, have, want).status != "pass":
+                return False
+        elif number(want) is not None and number(have) is not None:
+            if abs(number(have) - number(want)) > 1e-6:
+                return False
+        elif str(have) != str(want):
+            return False
+    return True
+
+
+def _where_words(where):
+    out = []
+    for name, want in (where or {}).items():
+        if isinstance(want, dict):
+            op = next((k for k in CMP if k in want), "eq")
+            word = {"eq": "", "lt": "under ", "gt": "over ", "le": "at most ", "ge": "at least "}[op]
+            out.append(f"{words.prop_words(name)} {word}{_fmt(number(want[op]) if number(want[op]) is not None else want[op])}")
+        else:
+            out.append(f"{words.prop_words(name)} {_fmt(number(want)) if number(want) is not None else want}")
+    return (" with " + " and ".join(out)) if out else ""
 
 
 def describe(spec, doc=None):
@@ -195,7 +244,7 @@ def describe(spec, doc=None):
         return _label(doc, spec) if doc is not None else str(spec)
     t = words.type_words(q["type"]) if q.get("type") else "object"
     where = f" in {_label(doc, q['in'])}" if q.get("in") else ""
-    return t + (f" labelled {q['label']}" if q.get("label") else "") + where
+    return t + (f" labelled {q['label']}" if q.get("label") else "") + _where_words(q.get("where")) + where
 
 
 # ---- numbers ---------------------------------------------------------------
@@ -353,6 +402,202 @@ def _sketch(spec, ctx):
         want = 0 if spec.get("full") else spec["dof"]
         if dof != want:
             return fail(f"{o.Label} has {dof} degrees of freedom; the step wants {want}" + (" (fully constrained)" if want == 0 else ""))
+    if "external" in spec:
+        n = external_count(o)
+        if n < int(spec["external"]):
+            return fail(f"{o.Label} has {n} outside edges brought in; the step wants {int(spec['external'])}"
+                        " (External Geometry)")
+    for r in spec.get("radii") or ():
+        have = radii(o)
+        if not any(abs(h - float(r)) <= float(spec.get("tol", 0.01)) for h in have):
+            return fail(f"{o.Label} has no circle or arc of radius {_fmt(float(r), 'mm')}")
+    return PASS
+
+
+def external_count(o):
+    """How many edges of other objects the sketch brings in (its External
+    Geometry): the sub-elements of ExternalGeometry's links."""
+    n = 0
+    for link in getattr(o, "ExternalGeometry", None) or ():
+        subs = link[1] if isinstance(link, (tuple, list)) and len(link) > 1 else ()
+        subs = [subs] if isinstance(subs, str) else list(subs or ())
+        n += max(1, len(subs))
+    return n
+
+
+def radii(o):
+    """The radii of the sketch's own circles and arcs (not construction)."""
+    out = []
+    for i, g in enumerate(getattr(o, "Geometry", None) or ()):
+        r = getattr(g, "Radius", None)
+        if not isinstance(r, (int, float)) or isinstance(r, bool):
+            continue
+        try:
+            if o.getConstruction(i):
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        out.append(float(r))
+    return out
+
+
+# ---- parameters: bound values, and the part following them --------------------
+
+
+def _param_re(name):
+    """An expression naming the parameter name as a member: VarSet.size,
+    <<My params>>.size, Params.size (not sizeX, not a bare size)."""
+    return re.compile(r"(?:<<[^<>]+>>|\b[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*" + re.escape(name) + r"\b")
+
+
+def bound(o, name, path=None):
+    """[(path, expression)] of o's values bound to an expression that names
+    the parameter."""
+    rx = _param_re(name)
+    out = []
+    for item in getattr(o, "ExpressionEngine", None) or ():
+        if not isinstance(item, (tuple, list)) or len(item) < 2:
+            continue
+        p, e = str(item[0]), str(item[1])
+        if rx.search(e) and (not path or path in p):
+            out.append((p, e))
+    return out
+
+
+def _expr(spec, ctx):
+    o, bad = _one(ctx, spec.get("expr"))
+    if bad:
+        return bad
+    name = spec.get("uses")
+    want = int(spec.get("count", 1))
+    got = bound(o, name, spec.get("path"))
+    if len(got) >= want:
+        return PASS
+    if not got:
+        return fail(f"no value of {o.Label} uses {name} yet: give a dimension the expression of {name}")
+    return fail(f"{len(got)} value{'s' if len(got) != 1 else ''} of {o.Label} use{'s' if len(got) == 1 else ''} {name}; the step wants {want}")
+
+
+TRIAL = [0]  # > 0 while follows changes a parameter for a moment
+
+
+def in_trial():
+    return TRIAL[0] > 0
+
+
+def holder(doc, name):
+    """(object, kind) that holds the parameter name: a variable set with
+    that property ("varset"), else a spreadsheet with that alias ("sheet");
+    (None, None) when there is none."""
+    for o in _objects(doc):
+        t = str(getattr(o, "TypeId", ""))
+        if t.endswith("VarSet") and hasattr(o, name):
+            return o, "varset"
+    for o in _objects(doc):
+        if str(getattr(o, "TypeId", "")).startswith("Spreadsheet::"):
+            try:
+                if o.getCellFromAlias(name):
+                    return o, "sheet"
+            except Exception:  # noqa: BLE001
+                pass
+    return None, None
+
+
+def _get_param(h, kind, name):
+    return number(getattr(h, name, None))
+
+
+def _set_param(h, kind, name, value):
+    if kind == "varset":
+        setattr(h, name, value)
+        return
+    cell = h.getCellFromAlias(name)
+    try:
+        had = str(h.getContents(cell))
+    except Exception:  # noqa: BLE001
+        had = ""
+    unit = "mm" if "mm" in had else ""
+    h.set(cell, f"{value:g} {unit}".strip())
+
+
+def _sizes(o):
+    sh = _shape(o)
+    if sh is None:
+        return None
+    bb = sh.BoundBox
+    return {"x": float(bb.XLength), "y": float(bb.YLength), "z": float(bb.ZLength)}
+
+
+def _broken(doc):
+    out = []
+    for o in _objects(doc):
+        state = [str(x) for x in (getattr(o, "State", None) or [])]
+        bad = "Invalid" in state or "Error" in state
+        try:
+            bad = bad or not o.isValid()
+        except AttributeError:
+            pass
+        if bad:
+            out.append(o.Label)
+    return out
+
+
+def _follows(spec, ctx):
+    name = spec.get("follows")
+    doc = ctx.doc
+    o, bad = _one(ctx, spec.get("object"))
+    if bad:
+        return bad
+    if ctx.gui is not None and (ctx.gui.editing or ctx.gui.task):
+        return pending(f"close the open panel first: the check changes {name} for a moment")
+    h, kind = holder(doc, name)
+    if h is None:
+        return fail(f"there is no parameter {name} yet (a variable set, or a spreadsheet alias)")
+    old = _get_param(h, kind, name)
+    if old is None:
+        return fail(f"{name} in {h.Label} is not a number")
+    if not all(hasattr(doc, a) for a in ("openTransaction", "abortTransaction", "recompute")):
+        return pending("this check needs FreeCAD (it changes the parameter for a moment)")
+    if getattr(doc, "HasPendingTransaction", False):
+        return pending(f"an edit is still open: finish it first, the check changes {name} for a moment")
+    by = float(spec.get("by", 5))
+    tol = float(spec.get("tol", 0.05))
+    base = _sizes(o)
+    if base is None:
+        return fail(f"{o.Label} has no shape yet")
+    TRIAL[0] += 1
+    try:
+        doc.openTransaction("Tutor check")
+        try:
+            _set_param(h, kind, name, old + by)
+            doc.recompute()
+            after = _sizes(o)
+            broken = _broken(doc)
+        finally:
+            doc.abortTransaction()
+            if _get_param(h, kind, name) != old:
+                _set_param(h, kind, name, old)
+            doc.recompute()
+    finally:
+        TRIAL[0] -= 1
+    shown = _fmt(old + by, "mm")
+    if broken:
+        return fail(f"with {name} at {shown}, {', '.join(broken[:3])} {'has' if len(broken) == 1 else 'have'} an error")
+    if after is None:
+        return fail(f"with {name} at {shown}, {o.Label} has no shape")
+    axis = spec.get("axis")
+    moved = {k: after[k] - base[k] for k in base}
+    if axis:
+        d = moved[axis]
+        if "change" in spec:
+            want = float(spec["change"])
+            if abs(d - want) > tol:
+                return fail(f"when {name} grows {_fmt(by, 'mm')}, {o.Label} grows {_fmt(d, 'mm')} along {axis.upper()}; the step wants {_fmt(want, 'mm')}")
+        elif abs(d) <= tol:
+            return fail(f"{o.Label} does not follow {name}: it keeps its size along {axis.upper()}")
+        return PASS
+    if all(abs(d) <= tol for d in moved.values()):
+        return fail(f"{o.Label} does not follow {name}: it keeps its size when {name} changes")
     return PASS
 
 
@@ -486,7 +731,7 @@ def _not(spec, ctx):
 
 
 EVAL = {"exists": _exists, "absent": _absent, "new": _new, "prop": _prop, "valid": _valid, "volume": _volume, "bbox": _bbox,
-        "sketch": _sketch, "file": _file, "selected": _selected, "workbench": _workbench, "editing": _editing,
+        "sketch": _sketch, "file": _file, "expr": _expr, "follows": _follows, "selected": _selected, "workbench": _workbench, "editing": _editing,
         "task_open": _task_open, "used": _used, "all": _all, "any": _any, "not": _not}
 
 
@@ -505,8 +750,9 @@ def kind_of(check):
 
 def operand(check, kind):
     """What a kind reads: its own value, or the whole object for the kinds
-    whose options ride beside the key (prop, volume, bbox, sketch, file)."""
-    if kind in ("prop", "volume", "bbox", "sketch", "file"):
+    whose options ride beside the key (prop, volume, bbox, sketch, file,
+    expr, follows)."""
+    if kind in ("prop", "volume", "bbox", "sketch", "file", "expr", "follows"):
         return check
     if kind in ("selected", "valid") and len(check) > 1:
         return {"object": check[kind], **{k: v for k, v in check.items() if k != kind}}
@@ -614,7 +860,8 @@ def problems(check, where, extra_kinds=()):
     v = check[kind]
     opts = {k for k in check if k != kind}
     allowed = {"prop": {"name", "unit", "tol", *CMP}, "volume": {"tol", *CMP}, "bbox": {"size", "tol"},
-               "sketch": {"closed", "dof", "full"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"}}.get(kind, set())
+               "sketch": {"closed", "dof", "full", "external", "radii", "tol"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
+               "expr": {"uses", "count", "path"}, "follows": {"object", "by", "axis", "change", "tol"}}.get(kind, set())
     if opts - allowed:
         out.append(f"{where}: {kind} takes no {', '.join(sorted(opts - allowed))}")
     if kind in LOGIC_KINDS:
@@ -625,8 +872,19 @@ def problems(check, where, extra_kinds=()):
             out += problems(c, f"{where}.{kind}" + (f"[{i}]" if kind != "not" else ""), extra_kinds)
         return out
     if kind in ("exists", "absent", "new"):
-        if not (isinstance(v, str) and v) and not (isinstance(v, dict) and v and set(v) <= {"type", "in", "label"}):
-            out.append(f"{where}.{kind}: an object, a type (\"PartDesign::Pad\") or {{type, in, label}}")
+        if not (isinstance(v, str) and v) and not (isinstance(v, dict) and v and set(v) <= {"type", "in", "label", "where"}):
+            out.append(f"{where}.{kind}: an object, a type (\"PartDesign::Pad\") or {{type, in, label, where}}")
+        elif isinstance(v, dict) and "where" in v:
+            w = v["where"]
+            if not (isinstance(w, dict) and w):
+                out.append(f"{where}.{kind}.where: {{property: value}}, such as {{\"ThreadSize\": \"M4\"}}")
+            else:
+                for pn, pv in w.items():
+                    if isinstance(pv, dict):
+                        if not any(k in pv for k in CMP) or set(pv) - set(CMP) - {"tol"}:
+                            out.append(f"{where}.{kind}.where.{pn}: a value, or {{eq|lt|gt|le|ge: n, tol}}")
+                    elif not isinstance(pv, (str, int, float, bool)):
+                        out.append(f"{where}.{kind}.where.{pn}: a value, or {{eq|lt|gt|le|ge: n, tol}}")
     elif kind == "prop":
         if not isinstance(check.get("name"), str):
             out.append(f"{where}: prop needs name (the property)")
@@ -639,6 +897,27 @@ def problems(check, where, extra_kinds=()):
         size = check.get("size")
         if not (isinstance(size, list) and len(size) == 3):
             out.append(f"{where}: bbox needs size [x, y, z] (mm)")
+    elif kind == "expr":
+        if not isinstance(v, str):
+            out.append(f"{where}.expr: an object")
+        if not (isinstance(check.get("uses"), str) and check["uses"].isidentifier()):
+            out.append(f"{where}: expr needs uses (the parameter's name, such as size)")
+        if "count" in check and not (isinstance(check["count"], int) and not isinstance(check["count"], bool) and check["count"] >= 1):
+            out.append(f"{where}: count is a whole number, 1 or more")
+    elif kind == "follows":
+        if not (isinstance(v, str) and v.isidentifier()):
+            out.append(f"{where}.follows: the parameter's name (size)")
+        if not isinstance(check.get("object"), str):
+            out.append(f"{where}: follows needs object (the body or feature that should change)")
+        if check.get("axis") not in (None, "x", "y", "z"):
+            out.append(f"{where}: axis is x, y or z")
+        if "change" in check and "axis" not in check:
+            out.append(f"{where}: change needs axis")
+        for k in ("by", "change", "tol"):
+            if k in check and number(check[k]) is None:
+                out.append(f"{where}: {k} is a number (mm)")
+        if number(check.get("by", 5)) == 0:
+            out.append(f"{where}: by is not 0")
     elif kind == "file":
         if not (isinstance(v, str) and v and os.path.basename(v) == v and not v.startswith(".")):
             out.append(f"{where}.file: a plain file name in the session's folder, no path")
@@ -657,4 +936,10 @@ def problems(check, where, extra_kinds=()):
     elif kind in ("selected", "valid", "sketch"):
         if not isinstance(v, str):
             out.append(f"{where}.{kind}: an object")
+    if kind == "sketch" and "radii" in check:
+        r = check["radii"]
+        if not (isinstance(r, list) and r and all(number(x) is not None and number(x) > 0 for x in r)):
+            out.append(f"{where}: radii is a list of radii (mm)")
+    if kind == "sketch" and "external" in check and not (isinstance(check["external"], int) and check["external"] >= 1):
+        out.append(f"{where}: external is a whole number, 1 or more")
     return out
