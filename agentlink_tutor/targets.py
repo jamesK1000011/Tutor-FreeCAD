@@ -28,9 +28,15 @@ command's name and shortcut).
             close, reset, help); the Tasks tab's header when that tab is
             not in front (a Combo View tab, or a dock tabbed with others)
     tree    the object's row in the Model tab, matched by its label under
-            its document's row (a folded parent's row when the branch is
-            folded or not filled in yet; it is never unfolded here: in demo
-            mode the lesson's own hands unfold it first, gui_run.UI.prepare)
+            its document's row (which may read the document's Label or Name,
+            with a * or a " : 1" at its end); the Model tab's header with
+            "Open the Model tab." when that tab is not in front (the Tutor's
+            Agent Link tab or the Tasks tab is); a folded parent's row when
+            the branch is folded or not filled in yet (it is never unfolded
+            here: in demo mode the lesson's own hands bring the Model tab to
+            the front and unfold it first, gui_run.UI.prepare). Not found:
+            the reason names each tree searched, shown or hidden, and
+            whether it holds the document's row
     face, edge, sub   lit in the 3D view through the annotation layer,
             never through FreeCAD's selection
     dock    a dock by its title (Report view, Python console …), or the

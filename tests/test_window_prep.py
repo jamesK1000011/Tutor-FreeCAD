@@ -429,7 +429,8 @@ class TreeRows(unittest.TestCase):
         self.assertEqual(note, "inside BikeStem *, which is folded: its row is ringed")
         # Unfolded and still no row: the object has none.
         w = self.win(Tree(Item("Application", Item("BikeStem"))))
-        self.assertEqual(w.tree_row(body), (None, "Body is not in the Model tree under BikeStem (BikeStem holds: nothing)"))
+        self.assertEqual(w.tree_row(body), (None, "Body is not in the Model tree under BikeStem (BikeStem holds: nothing);"
+                                                  " searched: a Model tree, shown, BikeStem row 'BikeStem'"))
         w = self.win(Tree(Item("Application", Item("BikeStem*", Item("Body ")))))
         self.assertEqual(w.tree_row(body)[1], None)  # matched by label, ends trimmed
 
@@ -543,7 +544,8 @@ class LazyRows(unittest.TestCase):
         w, _t, _p = self.setup_tree(body_row)
         got, why = w.tree_row(sk)
         self.assertIsNone(got)
-        self.assertEqual(why, "Sketch is not in the Model tree under TutorStem2 (Body holds: nothing)")
+        self.assertEqual(why, "Sketch is not in the Model tree under TutorStem2 (Body holds: nothing);"
+                              " searched: a Model tree, shown, TutorStem2 row 'TutorStem2'")
         sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
         try:
             self.assertEqual(self.ui(w)._tree_open(w, sk, window.ancestors), "Sketch shown in the tree")
@@ -603,6 +605,135 @@ class LazyRows(unittest.TestCase):
         mw = types.SimpleNamespace(findChildren=lambda cls: [t, t, sub])
         w = window.Window(gui=types.SimpleNamespace(getMainWindow=lambda: mw), hooks=object())
         self.assertEqual(w.trees(), [t, sub])
+
+
+# ---- the live check of bike-stem-1 step 13: the Model tree inside a tab not in front ------
+
+class TreeW(QWidget):
+    """A Model tree widget in a tab page: rows read as ever, laid out (a
+    row's rect) only while it shows; expandItem notes whether it showed."""
+
+    def __init__(self, parent, app, pending):
+        super().__init__(parent, cls=window.TREE)
+        self.app, self.pending, self.expanded_hidden = app, pending, []
+
+    def topLevelItemCount(self):
+        return 1
+
+    def topLevelItem(self, i):
+        return self.app
+
+    def viewport(self):
+        return self
+
+    def visualItemRect(self, it):
+        h = 18 if self.isVisible() else 0
+        return types.SimpleNamespace(x=lambda: 0, y=lambda: 0, width=lambda: 100 if h else 0, height=lambda: h)
+
+    def expandItem(self, it):
+        if not self.isVisible():
+            self.expanded_hidden.append(it.t)
+        LazyTree.expandItem(self, it)
+
+    def collapseItem(self, it):
+        it.exp = False
+
+
+class HiddenTab(QtCase):
+    def objs(self, doc_label="TutorStem3"):
+        doc = types.SimpleNamespace(Label=doc_label, Name="TutorStem3", Objects=[])
+        body = types.SimpleNamespace(Name="Body", Label="Body", Document=doc, InList=[], Group=[])
+        sk = types.SimpleNamespace(Name="Sketch", Label="Sketch", Document=doc, InList=[body],
+                                   getParentGeoFeatureGroup=lambda: body)
+        body.Group.append(sk)
+        body.ViewObject = types.SimpleNamespace(claimChildren=lambda: list(body.Group))
+        doc.Objects += [body, sk]
+        return doc, body, sk
+
+    def combo(self, doc_row="TutorStem3", dock_tree=False):
+        """Model | Tasks | Agent Link, the Agent Link tab in front (the
+        Tutor lives there); a hidden Tree view dock beside, not filled in."""
+        dock = QDockWidget(self.mw, "Combo View")
+        tabs = QTabWidget(dock, ["Model", "Tasks", "Agent Link"])
+        model, _tasks, _al = tabs.page("Model"), tabs.page("Tasks"), tabs.page("Agent Link")
+        tabs.setCurrentIndex(2)
+        pending = []
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), LazyItem("Sketch", filled=True))
+        app = Item("Application", LazyItem(doc_row, body_row, filled=True, expanded=True))
+        tree = TreeW(model, app, pending)
+        other = None
+        if dock_tree:
+            tv = QDockWidget(self.mw, "Tree view")
+            tv._vis = False
+            other = TreeW(tv, Item("Application"), [])
+        w = self.win()
+
+        def pump():
+            while pending:
+                it = pending.pop(0)
+                it.kids = list(it.later)
+        w.pump = pump
+        return w, tabs, tree, other
+
+    def ui(self):
+        ui = gui_run.UI()
+        ui._mw = lambda: self.mw
+        ui._update = lambda: None
+        return ui
+
+    def test_guided_rings_the_model_tab_first(self):
+        _d, _b, sk = self.objs()
+        w, tabs, _tree, _o = self.combo()
+        got, note = w.tree_row(sk)
+        self.assertEqual(note, window.MODEL_TAB)
+        self.assertIs(got["widget"], tabs.bar)
+        self.assertEqual(got["rect"](), (0, 0, 60, 20))  # the Model tab, not Tasks or Agent Link
+        f = targets.resolve({"tree": "Sketch"}, 1, types.SimpleNamespace(
+            obj=lambda r: sk, tree_row=lambda o: (got, note), visible=lambda s: None))
+        self.assertEqual(f.text, "Open the Model tab.")
+
+    def test_demo_brings_the_model_tab_before_unfolding(self):
+        _d, _b, sk = self.objs()
+        w, tabs, tree, other = self.combo(dock_tree=True)
+        sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
+        try:
+            got = self.ui()._tree_open(w, sk, window.ancestors)
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertEqual(got, "Sketch shown in the tree")
+        self.assertEqual(tabs.current, 0)
+        self.assertEqual(tree.expanded_hidden, [])  # nothing unfolded while hidden
+        self.assertFalse(other.isVisible())  # the empty Tree view dock left closed
+        row, note = w.tree_row(sk)
+        self.assertIsNone(note)
+        self.assertEqual(row["rect"](), (0, 0, 100, 18))
+
+    def test_document_row_with_a_star_or_a_view_number_or_its_name(self):
+        for text in ("TutorStem3 : 1", "TutorStem3*", "TutorStem3 : 1*", "TutorStem3* : 1"):
+            with self.subTest(text=text):
+                self.mw = QWidget(name="MainWindow")
+                _d, _b, sk = self.objs()
+                w, tabs, _t, _o = self.combo(doc_row=text)
+                tabs.setCurrentIndex(0)
+                self.assertEqual(w.tree_row(sk)[1], "inside Body, which is folded: its row is ringed")
+        # The row reads the document's Name, its Label changed.
+        self.mw = QWidget(name="MainWindow")
+        _d, _b, sk = self.objs(doc_label="Bike stem")
+        w, tabs, _t, _o = self.combo(doc_row="TutorStem3")
+        tabs.setCurrentIndex(0)
+        self.assertEqual(w.tree_row(sk)[1], "inside Body, which is folded: its row is ringed")
+        self.assertTrue(window._doc_is("Bike stem : 2", ("Bike stem", "TutorStem3")))
+        self.assertFalse(window._doc_is("Bike stem 2", ("Bike stem", "TutorStem3")))
+
+    def test_not_found_says_which_trees_were_searched(self):
+        _d, _b, sk = self.objs()
+        w, tabs, _tree, _other = self.combo(doc_row="Unnamed", dock_tree=True)
+        tabs.setCurrentIndex(0)
+        got, why = w.tree_row(sk)
+        self.assertIsNone(got)
+        self.assertEqual(why, "Sketch is not in the Model tree under TutorStem3; searched: "
+                              "Combo View, Model tab, shown, no TutorStem3 row (rows: Application, Unnamed); "
+                              "Tree view, hidden, no TutorStem3 row (rows: Application)")
 
 
 # ---- T4: the workbench a step needs ---------------------------------------------------------
