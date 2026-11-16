@@ -10,6 +10,31 @@ Tutor is an add-on for [Agent Link for FreeCAD](https://github.com/jamesK1000011
 and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
+<!-- screenshot: the pocket lesson's first step, guided: the callout over the 3D view with its arrow to the ringed New Sketch button, the Tutor tab beside the tree -->
+
+## Install
+
+Tutor is not in the Addon Manager's own catalog yet. Add it, and Agent
+Link, as custom repositories:
+
+1. In FreeCAD, open **Edit › Preferences › Addon Manager**.
+2. Under **Custom repositories**, add both of these, branch `main`:
+   - `https://github.com/jamesK1000011/AgentLink-FreeCAD`
+   - `https://github.com/jamesK1000011/Tutor-FreeCAD`
+3. Open **Tools › Addon manager**, install **Agent Link**, then **Tutor**.
+4. Restart FreeCAD. The Tutor tab is in Agent Link's panel.
+
+<!-- screenshot: Addon Manager preferences with both custom repositories added -->
+
+Add both repositories. Tutor depends on the add-on "Agent Link"; when Agent
+Link's repository is not in the list, the Addon Manager takes that name for
+a Python package, and the install fails.
+
+Needs FreeCAD 1.1 or newer and
+[Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD).
+
+## What it does
+
 Status: early. Three starter lessons (pad a sketch, cut a pocket and drill
 a hole, export an STL) run in two modes, switchable at any step:
 
@@ -66,7 +91,12 @@ workbench: when a toolbar is hidden it says so, and the agent may call
 A lesson is a data file (`agentlink_tutor/lessons/*.lesson.json`, checked
 against `agentlink_tutor/data/lesson.schema.json`): steps with what to say,
 what to point at, how to check the step is done, and how to do it for you.
-Lessons hold no code. Their words are Simplified Technical English
+Lessons hold no code. A command in a lesson's words is named by a token in
+bold, `**{PartDesign_NewSketch|New Sketch}**`: the step shows the command's
+menu text as this FreeCAD gives it (so the step and the window agree in
+every release and language), and the words after `|` where FreeCAD cannot
+be asked. The person never reads an internal name (`Sketcher::SketchObject`,
+`PartDesign_Pad`): a lesson that writes one is not loaded. Their words are Simplified Technical English
 (short imperative sentences, one instruction each; the rules are in
 `agentlink_tutor/data/ste_rules.json`, after ASD-STE100 Issue 9), with an
 optional one-line "why" per step that "Show explanations" turns on or off.
@@ -86,9 +116,20 @@ and languages. Other add-ons can ship their own lessons.
   sent anywhere, except in answers to the agent's own calls.
 - Your lesson progress is kept in FreeCAD's settings on this computer only.
 
+## Callout
+
+The callout sits over the 3D view, on the edge nearest what it points at
+(under the toolbars for a toolbar button), with an arrow to the ring, so it
+covers no toolbar or panel. It shows the instruction (numbered when it has
+more than one line), the why line apart in smaller, dimmer text, and, only
+after you act or ask for a hint, why the step is not done yet.
+
 ## Tests
 
     python3 -m pytest -q tests
+
+CI runs them on every push and pull request
+([tests workflow](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/.github/workflows/tests.yml)).
 
 The replay tests need FreeCAD and an Agent Link checkout (`AGENTLINK_SRC`, or
 `agentlink-freecad` beside this folder); the tutor tool's tests need the

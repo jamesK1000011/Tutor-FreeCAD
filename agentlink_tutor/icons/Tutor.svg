@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Tutor contributors -->
+<!-- SPDX-License-Identifier: LGPL-2.1-or-later -->
+<!-- Tutor for FreeCAD: a mortarboard over a cube. Original drawing. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Tutor</title>
+  <g stroke="#1f2a36" stroke-width="2" stroke-linejoin="round">
+    <!-- the cube -->
+    <path d="M32 30 L52 40 L32 50 L12 40 Z" fill="#8fc1ef"/>
+    <path d="M12 40 L32 50 L32 62 L12 52 Z" fill="#3f84c8"/>
+    <path d="M52 40 L32 50 L32 62 L52 52 Z" fill="#2a64a0"/>
+    <!-- the cap's crown -->
+    <path d="M20 17 L20 25 C20 29 44 29 44 25 L44 17 Z" fill="#2b2f36"/>
+    <!-- the board -->
+    <path d="M32 4 L58 15 L32 26 L6 15 Z" fill="#3a3f47"/>
+  </g>
+  <!-- the tassel -->
+  <path d="M32 15 L50 19 L50 30" fill="none" stroke="#f2b632" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="50" cy="32" r="3" fill="#f2b632" stroke="#1f2a36" stroke-width="1.5"/>
+  <circle cx="32" cy="15" r="2" fill="#f2b632"/>
+</svg>

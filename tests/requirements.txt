@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# What the headless tests need (CI: .github/workflows/tests.yml). The add-on
+# itself needs nothing beyond FreeCAD and Agent Link.
+pytest>=8

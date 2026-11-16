@@ -24,5 +24,42 @@ class Files(unittest.TestCase):
         self.assertEqual(listed, tracked, "FILES is stale: regenerate it (see the comment at the top of this test)")
 
 
+class Release(unittest.TestCase):
+    """What the Addon Manager and a release need: the icon, the version
+    named in the changelog, an install section naming both repositories."""
+
+    def read(self, name):
+        with open(os.path.join(HERE, name), encoding="utf-8") as f:
+            return f.read()
+
+    def test_package_icon_and_version(self):
+        import re
+        import xml.dom.minidom
+
+        pkg = xml.dom.minidom.parseString(self.read("package.xml"))
+        icons = [n.firstChild.data.strip() for n in pkg.getElementsByTagName("icon")]
+        self.assertTrue(icons, "package.xml names no icon")
+        for icon in icons:
+            path = os.path.join(HERE, icon)
+            self.assertTrue(os.path.isfile(path), icon)
+            svg = xml.dom.minidom.parse(path).documentElement
+            self.assertEqual(svg.tagName, "svg")
+            self.assertNotIn("<image", self.read(icon))  # drawn, no embedded picture
+        version = pkg.getElementsByTagName("version")[0].firstChild.data.strip()
+        log = self.read("CHANGELOG.md")
+        self.assertIn("## [Unreleased]", log)
+        self.assertRegex(log, r"\n## \[" + re.escape(version) + r"\]")
+
+    def test_readme_install_and_links(self):
+        import re
+
+        readme = self.read("README.md")
+        self.assertIn("## Install", readme)
+        for repo in ("https://github.com/jamesK1000011/AgentLink-FreeCAD", "https://github.com/jamesK1000011/Tutor-FreeCAD"):
+            self.assertIn(repo, readme)
+        for link in re.findall(r"\]\(([^)]+)\)", readme):
+            self.assertRegex(link, r"^(https?://|#)", f"relative link {link}: README is read off GitHub too")
+
+
 if __name__ == "__main__":
     unittest.main()
