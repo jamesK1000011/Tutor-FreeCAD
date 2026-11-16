@@ -33,6 +33,17 @@ def _label_text(t):
 
 
 MODEL_TAB = "the Model tab is not in front: open it (its tab is ringed)"
+# Panels FreeCAD may put inside another dock (1.1's Combo View holds the
+# Property view in its Model tab), by the class of the panel's widget.
+PANELS = {
+    "property view": ("Gui::PropertyView", "Gui::PropertyEditor::PropertyEditor"),
+    "tree view": (TREE,),
+    "model": (TREE,),
+    "tasks": (TASKVIEW,),
+    "selection view": ("Gui::DockWnd::SelectionView",),
+    "report view": ("Gui::DockWnd::ReportOutput",),
+    "python console": ("Gui::PythonConsole",),
+}
 
 
 class Window:
@@ -144,10 +155,52 @@ class Window:
         whose dropdown holds cmd (Agent Link's targets.group_buttons)."""
         from agentlink import targets
 
-        if not hasattr(targets, "group_buttons"):
-            return []  # an older Agent Link
         ov = self.overlay()
-        return [(b, ov.visible(b) if ov is not None else "not drawable", m, a) for b, m, a in targets.group_buttons(cmd, self.mw())]
+        got = list(targets.group_buttons(cmd, self.mw())) if hasattr(targets, "group_buttons") else []
+        if not got:
+            got = self._groups_by_text(cmd)
+        return [(b, ov.visible(b) if ov is not None else "not drawable", m, a) for b, m, a in got]
+
+    def _groups_by_text(self, cmd):
+        """[(button, menu, action)]: toolbar buttons whose dropdown holds an
+        item with cmd's menu text, for a dropdown whose items carry neither
+        the command's objectName nor its CommandName (so Agent Link's
+        group_buttons misses them). The command's own buttons are left out."""
+        from agentlink.targets import norm
+
+        _QtCore, _QtGui, QtW = _qt()
+        want = norm((self.command_info(cmd) or {}).get("menuText"))
+        if not want:
+            return []
+        own = {id(w) for w, _h in self.command_buttons(cmd)}
+        out = []
+        for b in self.mw().findChildren(QtW.QToolButton):
+            try:
+                if id(b) in own:
+                    continue
+                d = b.defaultAction()
+                menus = [m for m in (b.menu(), d.menu() if d is not None else None) if m is not None]
+                for m in dict.fromkeys(menus):
+                    a = next((x for x in m.actions() if not x.isSeparator() and norm(x.text()) == want), None)
+                    if a is not None:
+                        out.append((b, m, a))
+                        break
+            except RuntimeError:
+                continue
+        return out
+
+    def dropdown_spec(self, button):
+        """The ring for a dropdown button: its ▾ arrow when the button has
+        one beside it (a menu-button popup), else the whole button."""
+        _QtCore, _QtGui, QtW = _qt()
+        return dropdown_spec(button, QtW)
+
+    def overflow(self, w):
+        """The » button of the toolbar w sits in, as a ring spec, when that
+        toolbar shows but w does not (the toolbar is too short and w is in
+        its overflow); else None."""
+        _QtCore, _QtGui, QtW = _qt()
+        return overflow_of(w, QtW)
 
     # ---- menus -------------------------------------------------------------------
     def menu_titles(self):
@@ -261,19 +314,23 @@ class Window:
                 return b
         return None
 
-    def _tab_header(self, w):
-        """The tab of the QTabWidget w sits in, as a ring spec, or None."""
+    def _tab_header(self, w, title=False):
+        """The tab that brings w to the front, as a ring spec, or None: the
+        tab of the QTabWidget w sits in that is not in front, else the tab
+        of the dock w is in when that dock is tabbed behind another.
+        title: (spec, the tab's text)."""
         _QtCore, _QtGui, QtW = _qt()
-        page, p = w, w.parentWidget()
-        while p is not None:
-            if isinstance(p, QtW.QStackedWidget) and isinstance(p.parentWidget(), QtW.QTabWidget):
-                tabs = p.parentWidget()
-                i = tabs.indexOf(page)
-                if i >= 0:
-                    bar = tabs.tabBar()
-                    return {"widget": bar, "rect": (lambda b=bar, k=i: _r(b.tabRect(k)))}
-            page, p = p, p.parentWidget()
-        return None
+        got = tab_of(w, QtW, self.mw())
+        if got is None:
+            return None
+        bar, i = got
+        spec = {"widget": bar, "rect": (lambda b=bar, k=i: _r(b.tabRect(k)))}
+        if title:
+            try:
+                return spec, str(bar.tabText(i)).replace("&", "")
+            except RuntimeError:
+                return spec, "other"
+        return spec
 
     # ---- the model tree ------------------------------------------------------------
     def trees(self):
@@ -313,7 +370,26 @@ class Window:
                 tree = t
                 break
         if item is None:
-            return None, f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
+            # Not filled in yet (FreeCAD adds a folded branch's rows when it
+            # is first unfolded): the nearest parent that has a row, then the
+            # document's own row.
+            for anc in [getattr(a, "Label", None) for a in ancestors(obj)] + [None]:
+                for t in trees:
+                    try:
+                        it = _find_item(t, anc, doc, strict=True) if anc else _doc_item(t, doc)
+                        # Only a folded row hides rows not filled in yet; an
+                        # unfolded one without it: the object has no row.
+                        if it is not None and it.isExpanded():
+                            it = None
+                    except RuntimeError:
+                        it = None
+                    if it is not None:
+                        tree, item = t, it
+                        break
+                if item is not None:
+                    break
+            if item is None:
+                return None, f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
         note = None
         # A folded branch is never unfolded: its nearest shown parent's row is ringed.
         top, p = item, item.parent()
@@ -321,7 +397,7 @@ class Window:
             if not p.isExpanded():
                 top = p
             p = p.parent()
-        if top is not item:
+        if top is not item or not _same(item.text(0), label):
             note = f"inside {top.text(0)}, which is folded: its row is ringed"
         row_label = top.text(0)
         if not tree.isVisible():
@@ -346,14 +422,50 @@ class Window:
 
     # ---- docks and views ---------------------------------------------------------
     def dock(self, title):
+        """A dock by its title; else the panel of that name inside another
+        dock (FreeCAD 1.1's Property view sits in the Combo View's Model
+        tab): the panel when it shows, else (the ring of the tab that
+        brings it to the front, "inside the Model tab, …")."""
         from agentlink.targets import norm
 
         _QtCore, _QtGui, QtW = _qt()
         want = norm(title)
-        for d in self.mw().findChildren(QtW.QDockWidget):
-            if norm(d.windowTitle()) == want or norm(d.objectName()) == want:
-                return {"widget": d}
+        docks = [d for d in self.mw().findChildren(QtW.QDockWidget) if norm(d.windowTitle()) == want or norm(d.objectName()) == want]
+        shown = [d for d in docks if _shown(d)]
+        if shown:
+            return {"widget": shown[0]}
+        panels = self.panels(title)
+        for p in panels:
+            if _shown(p):
+                return {"widget": p}
+        for p in panels:
+            head = self._tab_header(p, title=True)
+            if head is not None:
+                spec, tab = head
+                return spec, f"inside the {tab} tab, which is not in front: its tab is ringed"
+        if docks:
+            return {"widget": docks[0]}
         return None
+
+    def panels(self, title):
+        """The widgets that are the panel called title wherever it is put:
+        by its class (PANELS) or its objectName (spaces ignored)."""
+        from agentlink.targets import norm
+
+        _QtCore, _QtGui, QtW = _qt()
+        want = norm(title)
+        classes = PANELS.get(want, ())
+        bare = want.replace(" ", "")
+        out = []
+        for w in self.mw().findChildren(QtW.QWidget):
+            try:
+                if isinstance(w, QtW.QDockWidget):
+                    continue
+                if _cls(w) in classes or (bare and norm(w.objectName()).replace(" ", "") == bare):
+                    out.append(w)
+            except RuntimeError:
+                continue
+        return out
 
     def view3d(self):
         _QtCore, _QtGui, QtW = _qt()
@@ -476,14 +588,14 @@ def _find_item(tree, label, doc_label=None, strict=False):
         it = stack.pop(0)
         if it is None:
             continue
-        if str(it.text(0)).strip() == str(label).strip() and it.parent() is not None:
+        if _same(it.text(0), label) and it.parent() is not None:
             hits.append(it)
         stack += [it.child(j) for j in range(it.childCount())]
 
     def in_doc(it):
         p = it.parent()
         while p is not None:
-            if p.text(0) == doc_label:
+            if _same(p.text(0), doc_label):
                 return True
             p = p.parent()
         return False
@@ -494,6 +606,147 @@ def _find_item(tree, label, doc_label=None, strict=False):
     return (mine or hits or [None])[0]
 
 
+def _same(text, label):
+    """A tree row's text is label: spaces at the ends and a changed
+    document's trailing * left out."""
+    a = str(text or "").strip()
+    b = str(label or "").strip()
+    return a == b or a.rstrip("*").strip() == b
+
+
+def _doc_item(tree, doc_label):
+    """The document's own row (the application's child), or None."""
+    if not doc_label:
+        return None
+    for i in range(tree.topLevelItemCount()):
+        top = tree.topLevelItem(i)
+        if top is None:
+            continue
+        if _same(top.text(0), doc_label):
+            return top
+        for j in range(top.childCount()):
+            c = top.child(j)
+            if c is not None and _same(c.text(0), doc_label):
+                return c
+    return None
+
+
+def ancestors(obj, depth=12):
+    """The objects obj sits inside, nearest first: its body or part (the
+    parent geo feature group), else the group whose Group holds it."""
+    out, seen, o = [], set(), obj
+    for _ in range(depth):
+        p = None
+        try:
+            p = o.getParentGeoFeatureGroup() if hasattr(o, "getParentGeoFeatureGroup") else None
+        except Exception:  # noqa: BLE001
+            p = None
+        if p is None:
+            for q in getattr(o, "InList", None) or ():
+                try:
+                    if o in (getattr(q, "Group", None) or ()):
+                        p = q
+                        break
+                except Exception:  # noqa: BLE001
+                    continue
+        name = getattr(p, "Name", None)
+        if p is None or name in seen:
+            break
+        seen.add(name)
+        out.append(p)
+        o = p
+    return out
+
+
+def tab_of(w, QtW, mw=None):
+    """(tab bar, index) of the tab that brings w to the front, or None:
+    the nearest QTabWidget page holding w that is not its current page,
+    else the main window's tab of the dock holding w when it is tabbed
+    behind another. Plain: works on anything with Qt's methods."""
+    page, p = w, w.parentWidget()
+    dock = None
+    while p is not None:
+        if isinstance(p, QtW.QStackedWidget) and isinstance(p.parentWidget(), QtW.QTabWidget):
+            tabs = p.parentWidget()
+            i = tabs.indexOf(page)
+            if i >= 0 and (tabs.currentIndex() != i or not _shown(w)):
+                return tabs.tabBar(), i
+        if dock is None and isinstance(p, QtW.QDockWidget):
+            dock = p
+        page, p = p, p.parentWidget()
+    if dock is not None and mw is not None:
+        want = str(dock.windowTitle())
+        for bar in mw.findChildren(QtW.QTabBar):
+            try:
+                if bar.parentWidget() is not mw:
+                    continue
+                for i in range(bar.count()):
+                    if str(bar.tabText(i)) == want:
+                        return bar, i
+            except RuntimeError:
+                continue
+    return None
+
+
+def front_steps(w, QtW, mw=None):
+    """What brings w to the front, outermost first, as (kind, widget, arg):
+    ("dock", dock, None) a closed or tabbed dock shown, ("tab", tabwidget,
+    index) a tab made current, ("scroll", area, w) scrolled to. Read only:
+    gui_run.UI.bring does them (demo mode, the lesson's own hands)."""
+    out, page, p = [], w, w.parentWidget()
+    while p is not None:
+        if isinstance(p, QtW.QStackedWidget) and isinstance(p.parentWidget(), QtW.QTabWidget):
+            tabs = p.parentWidget()
+            i = tabs.indexOf(page)
+            if i >= 0 and tabs.currentIndex() != i:
+                out.append(("tab", tabs, i))
+        elif isinstance(p, QtW.QScrollArea) and p.widget() is not None and p.widget() is page:
+            out.append(("scroll", p, w))
+        elif isinstance(p, QtW.QDockWidget) and not _shown(p):
+            out.append(("dock", p, None))
+        page, p = p, p.parentWidget()
+    return list(reversed(out))
+
+
+def dropdown_spec(button, QtW):
+    """{widget, rect?}: a menu-button popup's ▾ arrow (the strip at its
+    right, as wide as the style's menu indicator), else the button."""
+    try:
+        TB = QtW.QToolButton
+        popup = getattr(TB, "MenuButtonPopup", None)
+        if popup is None:
+            popup = TB.ToolButtonPopupMode.MenuButtonPopup
+        if button.popupMode() != popup:
+            return {"widget": button}
+        St = QtW.QStyle
+        pm = getattr(St, "PM_MenuButtonIndicator", None)
+        if pm is None:
+            pm = St.PixelMetric.PM_MenuButtonIndicator
+        aw = int(button.style().pixelMetric(pm, None, button) or 12)
+    except Exception:  # noqa: BLE001
+        return {"widget": button}
+    return {"widget": button, "rect": (lambda b=button, a=aw: (max(0, b.width() - a), 0, min(a, b.width()), b.height()))}
+
+
+def overflow_of(w, QtW):
+    """The » (extension) button of w's toolbar as a ring spec, when the
+    toolbar shows, w does not and the » does; else None."""
+    if _shown(w):
+        return None
+    p = w.parentWidget() if w is not None else None
+    while p is not None and not isinstance(p, QtW.QToolBar):
+        p = p.parentWidget()
+    if p is None or not _shown(p):
+        return None
+    for b in p.findChildren(QtW.QToolButton):
+        try:
+            if b.objectName() == "qt_toolbar_ext_button" and _shown(b):
+                return {"widget": b}
+        except RuntimeError:
+            continue
+    return None
+
+
 def _has_doc(tree, doc_label):
     stack = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
     depth = 0
@@ -502,7 +755,7 @@ def _has_doc(tree, doc_label):
         for it in stack:
             if it is None:
                 continue
-            if it.text(0) == doc_label:
+            if _same(it.text(0), doc_label):
                 return True
             nxt += [it.child(j) for j in range(it.childCount())]
         stack, depth = nxt, depth + 1

@@ -203,10 +203,18 @@ class Commands(unittest.TestCase):
         self.assertEqual(ov.shows[0]["owner"], "tutor")
 
     def test_hidden_toolbar_says_which_workbench(self):
-        out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Press Pad."})
+        # Guided: the person is told to switch first (an STE step before
+        # the instruction's own), with the workbench selector ringed.
+        out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Select the sketch. Press Pad."})
+        m = out["shown"][0]
+        self.assertEqual(m["note"], "toolbar hidden: Part Design is not the active workbench; call workbench activate first")
+        self.assertEqual(ov.shows[0]["specs"], [{"widget": "wb-tabs", "badge": 1}])
+        self.assertEqual(ov.shows[0]["say"], "1. Select the sketch.\n2. Switch to the Part Design workbench ①.\n3. Press Pad.")
+        # No selector to ring: missing, with the menu path in the words.
+        out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Press Pad."}, Win(selector=None))
         m = out["missing"][0]
         self.assertEqual(m["why"], "toolbar hidden: Part Design is not the active workbench; call workbench activate first")
-        self.assertEqual(ov.shows[0]["say"], "1. Press Pad.\n2. Pad")  # the callout says it instead
+        self.assertEqual(ov.shows[0]["say"], "1. Switch to the Part Design workbench (View › Workbench › Part Design).\n2. Press Pad.")
         self.assertEqual(out["note"], "nothing ringed; any words for them are in the callout")
 
     def test_unknown_command(self):
@@ -321,7 +329,7 @@ class Dropdowns(unittest.TestCase):
         self.assertEqual(ov.watched, [])
         w = Win(active="PartDesignWorkbench", commands={"Sketcher_CreateRectangle": []}, groups={"Sketcher_CreateRectangle": [("b", "hidden", "m", "a")]})
         out, _, _ = run({"targets": [{"cmd": "Sketcher_CreateRectangle"}]}, w)
-        self.assertEqual(out["missing"][0]["why"], "no toolbar button for it here")
+        self.assertEqual(out["missing"][0]["why"], "its toolbar is hidden or covered")
 
 
 class Benches(unittest.TestCase):
@@ -709,14 +717,16 @@ class WithAgentLink(unittest.TestCase):
         self.assertEqual(tooldata.check(doc), [])
         self.assertEqual(set(doc["entries"]), {"tutor_point", "tutor", "tutor_watch"})
         # The design's budget: about 1,800 characters for the three tutor
-        # tools, raised to 2,000 with batches and the parameter checks (T5/T6).
-        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 2000)
+        # tools, raised to 2,000 with batches and the parameter checks (T5/T6),
+        # and to 2,450 with the live demo's fixes (the lesson's document,
+        # demo's window preparation, the final check, dropdowns, panels).
+        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 2450)
         t = doc["entries"]["tutor"]
         self.assertEqual((t["group"], t["changes"]), ("tutor", False))
-        self.assertLessEqual(len(t["description"]), 950)
+        self.assertLessEqual(len(t["description"]), 1250)
         d = doc["entries"]["tutor_point"]
         self.assertEqual(d["group"], "tutor")
-        self.assertLessEqual(len(d["description"]), 600)
+        self.assertLessEqual(len(d["description"]), 780)
         self.assertFalse(d["changes"])
 
     def test_family_declares_no_echo_and_is_not_lean(self):

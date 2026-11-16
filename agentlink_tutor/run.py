@@ -108,6 +108,8 @@ class Controller:
         self._seq_at = None
         self._holding = False
         self.acted = False  # the person acted since the step in front began (verdict_due)
+        self.done_before = False  # demo: the step's check already held when it came up
+        self.prepared = None  # demo: what the lesson's hands did to show the step (workbench, tab, tree)
 
     # ---- reading ----------------------------------------------------------------
 
@@ -125,6 +127,10 @@ class Controller:
         if self.stepping and self.e.step.get("targets"):
             t = self.targets or {"resolved": 0, "missing": [NO_WINDOW]}
             st["targets"] = {"resolved": t.get("resolved", 0), "missing": list(t.get("missing") or [])[:3]}
+            if self.done_before and self.e.passed and self.e.mode == "demo":
+                st["targets"]["note"] = "already done: next goes on"
+        if self.stepping and self.prepared:
+            st["prepared"] = list(self.prepared)[:3]
         if self.stepping and self.targets and self.targets.get("callout"):
             # Where the person reads the step: bubble (over the 3D view),
             # overlay (Agent Link's callout) or none; why when not the bubble.
@@ -147,6 +153,8 @@ class Controller:
         while its feature exists (OK pressed with another value): the
         feature's tree row instead, and how to open it again."""
         e = self.e
+        if e.mode == "demo" and self.done_before and e.passed:
+            return [], None  # already done: nothing to ring, Next goes on
         tg = e.hint_targets()
         if e.mode == "guided" and task_targets(e.step) and not e.passed and self.panel_closed():
             name = edit_target(e)
@@ -215,12 +223,18 @@ class Controller:
         return observe.BUF.since(self.step_seq)
 
     def _changed(self):
+        entered = False
         if self.stepping and self.e.index != self._seq_at:
             from . import observe
 
             self._seq_at = self.e.index
             self.step_seq = observe.BUF.seq
             self.acted = False
+            self.done_before = False
+            self.prepared = None
+            entered = True
+        if entered and self.e.mode == "demo" and not self.e.passed:
+            self._already_done()
         if self.ui is not None and self.stepping and self.e.mode == "demo" and not self.e.passed and task_targets(self.e.step):
             # Demo: the feature's task panel opened, so its field and OK are
             # ringed and the person sees them change.
@@ -228,6 +242,17 @@ class Controller:
                 self.ui.open_task(self.e)
             except Exception:  # noqa: BLE001
                 pass
+        if entered and self.ui is not None and self.e.mode == "demo" and not self.done_before and hasattr(self.ui, "prepare"):
+            # Demo: the window put the way the step's targets need it (the
+            # command's workbench active, the Tasks or Model tab in front,
+            # the object's tree row unfolded), so each target can be ringed.
+            was, self.busy = self.busy, True  # its workbench call is the lesson's own, not re-checked
+            try:
+                self.prepared = self.ui.prepare(self.e) or None
+            except Exception as err:  # noqa: BLE001
+                self.prepared = [f"not prepared: {err}"[:80]]
+            finally:
+                self.busy = was
         if self.ui is not None and self.stepping and self.e.index != self._framed:
             self._framed = self.e.index
             # Reduced motion: the camera is not turned between steps.
@@ -252,6 +277,25 @@ class Controller:
                 fn(self)
             except Exception:  # noqa: BLE001
                 pass
+
+    def _already_done(self):
+        """Demo: a step whose check holds as it comes up (an earlier step's
+        calls did it, or the window is already so: no sketch open for a
+        "Close" step) is passed now, with nothing to ring; Next goes on.
+        The check is read without following a branch."""
+        from . import checks
+
+        e = self.e
+        s = e.step or {}
+        if "check" not in s:
+            return
+        try:
+            r = checks.evaluate(engine_mod.resolve(s["check"], e.bindings), e.context())
+        except Exception:  # noqa: BLE001
+            return
+        if r.status == "pass":
+            e.check()
+            self.done_before = e.passed
 
     def _hold(self):
         """Lesson done: the last step's rings and lit faces stay up for
@@ -378,6 +422,17 @@ class Controller:
         e.check()
         if e.index != at:
             return  # a known wrong turn: its branch step first
+        if e.mode == "demo" and e.result is not None and e.result.status == "pending" and self.ui is not None:
+            # Demo: a check that cannot be told with a panel open (a check
+            # that changes a parameter for a moment) gets a quiet window and
+            # one more try, so the lesson ends with its verdict.
+            try:
+                self.ui.settle(e._doc())
+            except Exception:  # noqa: BLE001
+                pass
+            e.check()
+            if e.index != at:
+                return
         if e.passed:
             self.passed_note = e.position()
         e.next()
@@ -468,7 +523,13 @@ class Controller:
         if e.state not in ("step", "done"):
             return None
         if e.state == "done":
-            line = "tutor: lesson done" + (f", skipped {', '.join(sorted(e.skipped))}" if e.skipped else "")
+            # The same verdict as tutor status: complete, the last check as
+            # it stood when the lesson ended, and what was skipped.
+            line = "tutor: lesson complete"
+            if e.final is not None:
+                fin = {"pass": "passed", "fail": "not passed", "pending": "not told", "not run": "not run"}.get(e.final["check"], e.final["check"])
+                line += f", final check {fin}" + (f" ({e.final['why']})" if e.final.get("why") else "")
+            line += f", skipped {', '.join(sorted(e.skipped))}" if e.skipped else ""
         else:
             word = {"pass": "passed", "fail": "not yet", "pending": "pending"}[e.result.status if e.result else "pending"]
             now = f"step {e.position()} {word}"

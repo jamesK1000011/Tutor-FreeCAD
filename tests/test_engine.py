@@ -104,10 +104,15 @@ class Resolve(unittest.TestCase):
 class StateMachine(unittest.TestCase):
     def test_setup_binds_and_enters_first_step(self):
         w, e = make()
+        w.doc.Name = w.doc.Label = "Unnamed"
         st = e.start("demo")
-        self.assertEqual([c[0] for c in w.calls], ["doc_new", "pd_body_new", "sketch_new", "sketch_add"])
+        # The open document is empty: the lesson works in it (no doc_new).
+        self.assertEqual([c[0] for c in w.calls], ["pd_body_new", "sketch_new", "sketch_add"])
+        self.assertEqual(st["document"], "the lesson works in Unnamed: it was open and empty")
         self.assertEqual(e.bindings, {"length": 15, "sketch": "Sketch", "body": "Body"})
         self.assertEqual((st["step"], st["id"], st["check"], st["hint"]), ("1/5", "bench", "pending", 0))
+        e.next()
+        self.assertNotIn("document", e.status())  # said once, at the first step
         self.assertEqual(st["targets"], 1)
 
     def test_demo_walk_with_a_window(self):
@@ -122,7 +127,8 @@ class StateMachine(unittest.TestCase):
             e.next()
         self.assertEqual(seen, ["bench", "pick", "pad", "length", "see"])
         self.assertEqual(e.bindings["pad"], "Pad")
-        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "explain": "on", "step": "done", "skipped": [],
+        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "explain": "on", "step": "done",
+                                      "finished": "lesson complete", "final": {"step": "see", "check": "pass"}, "skipped": [],
                                       "done_for": ["bench", "length", "pad", "pick"]})
 
     def test_headless_window_steps_wait_and_the_rest_pass(self):

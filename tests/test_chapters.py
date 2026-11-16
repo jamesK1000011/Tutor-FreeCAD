@@ -103,7 +103,7 @@ class AfterSetup(unittest.TestCase):
                 e = self.engine(lid, w)
                 st = e.start("guided")
                 done = [c[0] for c in w.calls]
-                want = ["doc_new", "pd_body_new", "sketch_new", "sketch_add", "pd_pad"]
+                want = ["pd_body_new", "sketch_new", "sketch_add", "pd_pad"]  # in the open empty document
                 if lid.endswith("three"):
                     want += ["feature_edit"]  # chapter two's step, done for the person
                 self.assertEqual(done, want)

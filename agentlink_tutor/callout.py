@@ -138,9 +138,17 @@ def merge(c, targets):
     dropdown (its replaces: the command's name) puts its steps ("Open the ▾
     menu of the ringed button ②.", "Select New Sketch.") in place of the
     instruction's step for that command; any other target's words, and a
-    dropdown whose command the instruction does not name, go after."""
+    dropdown whose command the instruction does not name, go after. A
+    target's before (a step the person does first: "Switch to the Part
+    Design workbench.") goes in front of the step that names its command
+    (its names), else first."""
     steps, extra = list(c.steps), []
     for t in targets:
+        before = getattr(t, "before", None)
+        if before:
+            at = names_step(steps, getattr(t, "names", None)) if getattr(t, "names", None) else None
+            lines = [s for s in sentences(before) if s not in steps]
+            steps[(at or 0):(at or 0)] = lines
         text = getattr(t, "text", None)
         if not text:
             continue

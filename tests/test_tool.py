@@ -159,7 +159,8 @@ class ToolCase(unittest.TestCase):
             st = self.tutor(action="next")
             did.append(st.get("id"))
         self.assertEqual(did, ["pick", "pad", "length", "see", None])
-        self.assertEqual([c[0] for c in self.world.calls][4:], ["workbench", "selection", "pd_pad", "feature_edit"])
+        self.assertEqual([c[0] for c in self.world.calls][3:], ["workbench", "selection", "pd_pad", "feature_edit"])
+        self.assertEqual(st["final"], {"step": "see", "check": "pass"})  # the lesson's last check, in the answer
         self.assertEqual(self.world.body().Shape.BoundBox.ZLength, 15)
 
     def test_branch_through_the_agents_answers(self):

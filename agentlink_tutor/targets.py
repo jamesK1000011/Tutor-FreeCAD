@@ -11,9 +11,14 @@ A target that cannot be found never fails the call: it comes back with
 why, and where it helps, words for the callout instead (a menu path, a
 command's name and shortcut).
 
-    cmd     the command's toolbar buttons (QAction by objectName); hidden:
-            "toolbar hidden: Part Design is not the active workbench; call
-            workbench activate first"
+    cmd     the command's toolbar buttons (QAction by objectName); inside a
+            toolbar dropdown: the ▾ arrow of its button, the item ringed
+            once the menu opens; behind a short toolbar's »: that button;
+            hidden with its workbench: "toolbar hidden: Part Design is not
+            the active workbench; call workbench activate first", the
+            workbench selector ringed and "Switch to the Part Design
+            workbench." put before the instruction (demo mode switches it
+            itself first, gui_run.UI.prepare)
     menu    the menubar title, then each title inside as the person opens
             it; on the native macOS menubar the path in words, and the
             command's toolbar button ringed when it has one
@@ -21,15 +26,22 @@ command's name and shortcut).
     task    in the open task dialog: objectName first, then the field a
             label stands for (its buddy), or a button (ok, cancel, apply,
             close, reset, help); the Tasks tab's header when that tab is
-            not in front
-    tree    the object's row in the Model tab (a folded parent's row when
-            the branch is folded; it is never unfolded)
+            not in front (a Combo View tab, or a dock tabbed with others)
+    tree    the object's row in the Model tab, matched by its label under
+            its document's row (a folded parent's row when the branch is
+            folded or not filled in yet; it is never unfolded here: in demo
+            mode the lesson's own hands unfold it first, gui_run.UI.prepare)
     face, edge, sub   lit in the 3D view through the annotation layer,
             never through FreeCAD's selection
-    dock    a dock by its title (Report view, Python console …)
+    dock    a dock by its title (Report view, Python console …), or the
+            panel of that name inside another dock (FreeCAD 1.1's Property
+            view in the Combo View's Model tab): that tab ringed when it is
+            not in front
     view    "3d": the 3D view in front
     ext     an add-on's own kind: hooks.read("tutor_target", spec, window)
 """
+
+import re
 
 from . import lessons
 from . import words as words_mod
@@ -55,6 +67,10 @@ class Found:
         self.marks, self.menu, self.light = [], None, None
         self.dropdown = None
         self.text = self.note = self.why = None
+        # A step the person does first ("Switch to the Part Design
+        # workbench."), put before the instruction's step that names the
+        # command (names); callout.merge.
+        self.before = self.names = None
         # A command reached only through a toolbar dropdown: its name as the
         # window shows it. The callout puts text's steps in place of the
         # instruction's "Push <name>." (callout.merge), not after it.
@@ -71,6 +87,8 @@ class Found:
             v = getattr(self, k)
             if v:
                 out[k] = v
+        if self.before:
+            out["text"] = self.before + (f" {self.text}" if self.text else "")
         return out
 
 
@@ -116,33 +134,98 @@ def _cmd_words(win, cmd):
     return f"{words} ({keys})" if keys else words
 
 
+def _spec(win, how, w):
+    """win's ring spec for widget w (how: dropdown_spec, the ▾ arrow of a
+    dropdown button), or the widget whole."""
+    fn = getattr(win, how, None)
+    if fn is not None:
+        try:
+            got = fn(w)
+            if got:
+                return got
+        except Exception:  # noqa: BLE001
+            pass
+    return {"widget": w}
+
+
+def _overflow(win, w):
+    """The » button of the toolbar w is in, when w is hidden only because
+    that toolbar is too short to show it (its overflow); else None."""
+    fn = getattr(win, "overflow", None)
+    if fn is None:
+        return None
+    try:
+        return fn(w)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _cmd(f, spec, win, _b):
     cmd = spec["cmd"]
     f.what = f"{cmd} button"
     if not win.command_exists(cmd):
         f.why = f"no command {cmd} in this FreeCAD"
         return
-    seen = [w for w, hidden in win.command_buttons(cmd) if hidden is None]
+    own = win.command_buttons(cmd)
+    seen = [w for w, hidden in own if hidden is None]
     if seen:
         f.marks = [{"widget": w} for w in seen]
         return
+    name = _cmd_name(win, cmd)
+    words = _cmd_words(win, cmd)
     # Inside a toolbar dropdown (a group command: the button shows the
-    # group's action): that button ringed, the item inside it once opened.
-    groups = [g for g in (win.command_groups(cmd) if hasattr(win, "command_groups") else []) if g[1] is None]
+    # group's action): the button's ▾ arrow ringed, the item inside it once
+    # the person opens it.
+    every = list(win.command_groups(cmd)) if hasattr(win, "command_groups") else []
+    groups = [g for g in every if g[1] is None]
     if groups:
         button, _hidden, menu, action = groups[0]
-        f.marks = [{"widget": button}]
+        f.marks = [_spec(win, "dropdown_spec", button)]
         f.dropdown = (menu, action)
         f.note = "in the ▾ menu of this button"
-        f.text = f"Open the ▾ menu of the ringed button {words_mod.badge(f.n)}. Select {_cmd_words(win, cmd)}."
-        f.replaces = _cmd_name(win, cmd)
+        f.text = f"Open the ▾ menu of the ringed button {words_mod.badge(f.n)}. Select {words}."
+        f.replaces = name
         return
+    # The toolbar is there but too short: the button (or its dropdown) is
+    # behind the toolbar's » button.
+    for w, _hidden in own:
+        ext = _overflow(win, w)
+        if ext:
+            f.marks = [ext]
+            f.note = "behind the toolbar's » button"
+            f.text = f"Push » at the end of the toolbar {words_mod.badge(f.n)}. Push {words}."
+            f.replaces = name
+            return
+    for button, _hidden, menu, action in every:
+        ext = _overflow(win, button)
+        if ext:
+            f.marks = [ext]
+            f.dropdown = (menu, action)
+            f.note = "behind the toolbar's » button, in a ▾ menu"
+            f.text = f"Push » at the end of the toolbar {words_mod.badge(f.n)}. Open the ▾ menu of the button that holds {name}. Select {words}."
+            f.replaces = name
+            return
     bench = win.workbench_of(cmd)
     active = win.active_workbench()
-    words = _cmd_words(win, cmd)
     if bench and bench != active:
-        f.why = f"toolbar hidden: {_bench(win, bench)} is not the active workbench; call workbench activate first"
-    elif win.command_buttons(cmd):
+        title = _bench(win, bench)
+        f.why = f"toolbar hidden: {title} is not the active workbench; call workbench activate first"
+        # The person switches first (an STE step before the instruction's
+        # own); the workbench selector ringed where it shows.
+        f.names = name
+        sel = None
+        try:
+            sel = win.workbench_selector(bench) if bench in (win.loaded_benches() or [bench]) else None
+        except Exception:  # noqa: BLE001
+            sel = None
+        if sel and win.visible(sel) is None:
+            f.marks = [sel]
+            f.note = f.why
+            f.before = f"Switch to the {title} workbench {words_mod.badge(f.n)}."
+        else:
+            f.before = f"Switch to the {title} workbench (View › Workbench › {title})."
+        return
+    if own or every:
         f.why = "its toolbar is hidden or covered"
     else:
         f.why = "no toolbar button for it here"
@@ -251,6 +334,8 @@ def _tree(f, spec, win, bindings):
         return
     if note == getattr(win, "MODEL_TAB", None) or (note or "").startswith("the Model tab is not in front"):
         f.text = "Open the Model tab."
+    elif "which is folded" in (note or ""):
+        f.text = "Unfold the ringed row in the tree (its arrow)."
     hidden = win.visible(got)
     if hidden:
         f.why = f"its row is {hidden}"
@@ -308,10 +393,19 @@ def _sub(f, spec, win, bindings):
 def _dock(f, spec, win, _b):
     title = spec["dock"]
     f.what = f"panel {title}"
-    got = win.dock(title)
+    got, note = win.dock(title), None
+    if isinstance(got, tuple):  # (the tab that brings it to the front, why)
+        got, note = got
     if got is None:
-        f.why = f"no panel {title}"
+        f.why = note or f"no panel {title}"
         return
+    if note:
+        # Inside a tab that is not in front (the Combo View's Model tab
+        # holds the Property view): that tab ringed, and the words.
+        f.note = note
+        m = re.match(r"inside the (.+?) tab\b", note)
+        if m:
+            f.text = f"Open the {m.group(1)} tab."
     hidden = win.visible(got)
     if hidden:
         f.why = f"{title} is {'closed' if hidden == 'hidden' else hidden}"

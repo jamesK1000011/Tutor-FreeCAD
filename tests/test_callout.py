@@ -466,6 +466,7 @@ class Docs(World):
         for name in ("WindowTest", "Other"):
             d = Doc()
             d.Name = d.Label = name
+            d.add("Box", "Part::Box")  # the person's own work: the lesson makes its own document
             self.docs[name] = d
         self.session = self.front = front
 
@@ -516,7 +517,7 @@ class LessonDocument(unittest.TestCase):
                 names = [n for n, _a in w.calls]
                 self.assertEqual(names[:2], ["doc_new", "doc_switch"])
                 self.assertEqual(w.calls[1][1], {"document": "PocketLesson", "front": True})
-                self.assertEqual(w.docs["WindowTest"].Objects, [])  # nothing made in the document that was in front
+                self.assertEqual([o.Name for o in w.docs["WindowTest"].Objects], ["Box"])  # nothing made in the document that was in front
                 self.assertEqual({o.TypeId for o in w.docs["PocketLesson"].Objects},
                                  {"PartDesign::Body", "Sketcher::SketchObject", "PartDesign::Pad"})
                 self.assertIs(e._doc(), w.docs["PocketLesson"])
