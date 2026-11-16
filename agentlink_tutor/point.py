@@ -55,6 +55,7 @@ def point(args, win, hooks=None, bindings=None, timer=None):
         raise Refusal("invalid_input", f"targets: at most {MAX_TARGETS} at once")
     if ms is not None and (not isinstance(ms, int) or isinstance(ms, bool) or not 500 <= ms <= MS_MAX):
         raise Refusal("invalid_input", f"ms: 500 to {MS_MAX}, or leave it out to keep them until the next call")
+    tg = [lessons.normal_target(spec) for spec in tg]
     for i, spec in enumerate(tg):
         try:
             lessons.target_kind(spec)
@@ -112,7 +113,10 @@ def point(args, win, hooks=None, bindings=None, timer=None):
             except Exception:
                 pass
             obj, subs = f.light
-            r = ann.light(obj, subs, owner=OWNER, colour=colour) or {}
+            try:  # numbered in the view too (an older Agent Link draws no number)
+                r = ann.light(obj, subs, owner=OWNER, colour=colour, badge=f.n) or {}
+            except TypeError:
+                r = ann.light(obj, subs, owner=OWNER, colour=colour) or {}
             if not r.get("lit"):
                 f.light = None
                 f.why = "; ".join(f"{s}: {w}" for s, w in (r.get("missing") or [])) or "nothing lit"

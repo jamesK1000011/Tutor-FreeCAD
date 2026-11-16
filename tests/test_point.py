@@ -153,7 +153,10 @@ class Ann:
     def __init__(self):
         self.lit, self.clears = [], []
 
-    def light(self, obj, subs, owner="", colour=None):
+    badges = None
+
+    def light(self, obj, subs, owner="", colour=None, badge=None):
+        self.badges = (self.badges or []) + [badge]
         self.lit.append((obj.Name, list(subs), colour))
         bad = [s for s in subs if s.startswith("Face9")]
         return {"lit": [s for s in subs if s not in bad], "missing": [(s, "no such face") for s in bad]}
@@ -314,6 +317,28 @@ class ThreeD(unittest.TestCase):
         self.assertEqual(n[2]["why"], "Face9: no such face")
         self.assertEqual(n[3]["why"], "no object Ghost in the document")
         self.assertEqual(ann.clears, ["tutor"])
+
+    def test_badge_number_in_the_view(self):
+        _out, _ov, ann = run({"targets": [{"cmd": "Std_Undo"}, {"sub": "Face6", "of": "Pad"}]})
+        self.assertEqual(ann.badges, [2])
+
+    def test_of_inside_the_query_and_at_for_near(self):
+        seen = []
+        w = Win()
+        w.faces = lambda obj, q: (seen.append(q), (["Face6"], None))[1]
+        out, _, _ = run({"targets": [{"face": {"of": "Pad", "at": [0, 5, 10], "normal": [0, 0, 1]}}]}, w)
+        self.assertEqual(out["shown"][0]["on"], "Face6 of Pad")
+        self.assertEqual(seen, [{"near": [0, 5, 10], "normal": [0, 0, 1]}])
+
+    def test_of_missing_says_where_it_goes(self):
+        from agentlink_tutor import lessons
+
+        with self.assertRaises(lessons.LessonError) as e:
+            lessons.target_kind({"face": {"of": "Pad", "near": [0, 0, 0]}})
+        self.assertIn("put of beside face, not inside it", str(e.exception))
+        with self.assertRaises(lessons.LessonError) as e:
+            lessons.target_kind({"edge": {"near": [0, 0, 0]}})
+        self.assertIn("of, beside edge, names the object", str(e.exception))
 
     def test_no_face_matches(self):
         out, _, _ = run({"targets": [{"face": {"normal": [1, 0, 0]}, "of": "Pad"}]}, Win(faces=[]))
