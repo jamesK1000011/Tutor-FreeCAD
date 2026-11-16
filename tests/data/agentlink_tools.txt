@@ -149,6 +149,7 @@ fem_add
 fem_linearize
 fem_mesh
 gui_input
+gui_unstick
 guide_read
 history_diff
 history_redo
