@@ -205,8 +205,36 @@ def target_kind(spec):
     if k in ("face", "edge") and not (isinstance(v, dict) and v):
         raise LessonError(f"target {k}: a query such as {{normal: [0, 0, 1], largest: true}}")
     if k in ("face", "sub", "edge") and not isinstance(spec.get("of"), str):
-        raise LessonError(f"target {k}: of names the object (\"$pad\")")
+        inside = isinstance(v, dict) and "of" in v
+        raise LessonError(f"target {k}: put of beside {k}, not inside it: {{{k}: {{...}}, of: \"Pad\"}}" if inside
+                          else f"target {k}: of, beside {k}, names the object: {{{k}: {{...}}, of: \"Pad\"}}")
     return k
+
+
+# Query words taken for the ones facepick knows (at: near).
+QUERY_ALIASES = {"at": "near", "point": "near"}
+
+
+def normal_target(spec):
+    """spec as the agent may write it, made the one form: of written inside
+    a face or edge query moved beside it, and at (or point) taken for near.
+    Anything else is left for target_kind to judge."""
+    if not isinstance(spec, dict):
+        return spec
+    out = dict(spec)
+    for k in ("face", "edge"):
+        q = out.get(k)
+        if isinstance(q, dict):
+            q = dict(q)
+            if "of" in q and "of" not in out:
+                out["of"] = q.pop("of")
+            for a, b in QUERY_ALIASES.items():
+                if a in q and b not in q:
+                    q[b] = q.pop(a)
+            out[k] = q
+    if isinstance(out.get("sub"), dict) and set(out["sub"]) == {"name", "of"} and "of" not in out:
+        out["of"], out["sub"] = out["sub"]["of"], out["sub"]["name"]
+    return out
 
 
 # ---- checking a lesson -----------------------------------------------------

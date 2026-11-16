@@ -119,13 +119,22 @@ def _make():
             self._library = None
             lay = QtW.QVBoxLayout(self)
             lay.setContentsMargins(6, 6, 6, 6)
-            row = QtW.QHBoxLayout()
+            # The list takes the whole row in a narrow dock, Start below it;
+            # sized to a minimum, not to its longest title, so the style cuts
+            # a long title with … and the tooltip holds it whole.
             self.pick = QtW.QComboBox()
             self.pick.setAccessibleName("Lessons")
+            pol = getattr(QtW.QComboBox, "AdjustToMinimumContentsLengthWithIcon", None)
+            if pol is None:
+                pol = QtW.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+            self.pick.setSizeAdjustPolicy(pol)
+            self.pick.setMinimumContentsLength(12)
             self.start = QtW.QPushButton("Start")
             self.start.setToolTip("Start the lesson: it sets up a document, then shows each step.")
-            row.addWidget(self.pick, 1)
+            lay.addWidget(self.pick)
+            row = QtW.QHBoxLayout()
             row.addWidget(self.start)
+            row.addStretch(1)
             lay.addLayout(row)
             self.head = QtW.QLabel()
             f = QtGui.QFont(self.head.font())
@@ -175,7 +184,7 @@ def _make():
             self.b["stop"].clicked.connect(lambda: self._step("stop"))
             self.ask.clicked.connect(self._ask)
             self.question.returnPressed.connect(self._ask)
-            self.pick.currentIndexChanged.connect(lambda _i: self._buttons())
+            self.pick.currentIndexChanged.connect(lambda _i: (self._buttons(), self._pick_tip()))
             self._pointed = False
             self.fill()
 
@@ -206,14 +215,17 @@ def _make():
                 rows = lesson_rows(lib.listing(lessons.Progress(), ver, api, benches))
                 keep = self.pick.currentData()
                 self.pick.clear()
+                tip = getattr(QtCore.Qt, "ToolTipRole", None) or QtCore.Qt.ItemDataRole.ToolTipRole
                 for lid, text in rows:
                     self.pick.addItem(text, lid)
+                    self.pick.setItemData(self.pick.count() - 1, text, tip)
                 if keep:
                     i = self.pick.findData(keep)
                     if i >= 0:
                         self.pick.setCurrentIndex(i)
                 if not rows:
                     self.pick.addItem("No lessons for this FreeCAD", None)
+                self._pick_tip()
             except Exception as e:  # noqa: BLE001
                 self.line.setText(f"Lessons could not be read: {e}")
             self._show()
@@ -230,6 +242,10 @@ def _make():
             self.hint.setVisible(bool(hint))
             self._buttons()
             self._point(e)
+
+        def _pick_tip(self):
+            tip = getattr(QtCore.Qt, "ToolTipRole", None) or QtCore.Qt.ItemDataRole.ToolTipRole
+            self.pick.setToolTip(str(self.pick.itemData(self.pick.currentIndex(), tip) or ""))
 
         def _buttons(self):
             on = buttons_on(live.engine())
