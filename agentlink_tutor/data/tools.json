@@ -43,7 +43,7 @@
   },
   "tutor": {
    "group": "tutor",
-   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤8}, mode}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English: the validator refuses others with reasons. Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; a rider line (tutor: step n/m …) joins your other answers.",
+   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤30}, mode}; longer: batches, each with setup {after: id before}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English (imperative, one instruction per sentence, ≤20 words, UI names in bold, optional why): the validator refuses others with reasons. Checks include new {type, where: {Prop: v}}, sketch {dof}, expr {uses, count}, follows (part follows a parameter). Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; a rider line (tutor: step n/m …) joins your other answers.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -69,7 +69,7 @@
        "string",
        "object"
       ],
-      "description": "start: a lesson id (or its last part), or an inline lesson."
+      "description": "start: a lesson id (or its last part), or an inline lesson (≤30 steps; setup {after: id} to go on from a lesson before)."
      },
      "mode": {
       "type": "string",

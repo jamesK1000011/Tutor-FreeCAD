@@ -94,7 +94,7 @@ class ToolCase(unittest.TestCase):
         self.progress = lessons.Progress(params=lessons._Memory())
         from agentlink_tutor import fam_tutor
 
-        fam_tutor._LIB.clear()
+        lessons.installed_library(refresh=True)
 
     def tearDown(self):
         live.set_controller(None)
@@ -190,10 +190,19 @@ class ToolCase(unittest.TestCase):
                                                            "do": [{"tool": "pd_body_new"}]}]}, mode="demo")
         self.assertEqual(st["step"], "1/1")
         self.assertEqual(self.tutor(action="next")["step"], "done")
-        refused, body = self.call("tutor", action="start", lesson={"id": "inline.x", "title": "Nine", "steps": [
-            {"id": f"s{i}", "say": "x"} for i in range(9)]})
+        refused, body = self.call("tutor", action="start", lesson={"id": "inline.x", "title": "Thirty-one", "steps": [
+            {"id": f"s{i}", "say": "x"} for i in range(31)]})
         self.assertTrue(refused)
-        self.assertIn("8 steps or fewer", body["error"]["message"])
+        self.assertIn("30 steps or fewer", body["error"]["message"])
+        # A longer job in batches: the second comes after the first (its result
+        # holds in the document in front, so it goes on there).
+        st = self.tutor(action="start", lesson={"id": "inline.batch2", "title": "Batch two", "setup": {"after": "inline.body"},
+                                                "steps": [{"id": "c", "say": "Look at the body.", "check": {"exists": "PartDesign::Body"}}]})
+        self.assertEqual(st["step"], "1/1")
+        refused, body = self.call("tutor", action="start", lesson={"id": "inline.batch3", "title": "Batch three",
+                                                                   "setup": {"after": "inline.nothing"}, "steps": [{"id": "a", "say": "x"}]})
+        self.assertTrue(refused)
+        self.assertIn("no lesson inline.nothing", body["error"]["message"])
         refused, body = self.call("tutor", action="start", lesson={"id": "inline.y", "title": "Bad tool",
                                                                    "steps": [{"id": "a", "say": "x", "do": [{"tool": "nope"}]}]})
         self.assertIn("no tool nope", body["error"]["message"])

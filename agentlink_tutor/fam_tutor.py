@@ -29,13 +29,28 @@ def _timer(ms, fn):
         pass
 
 
-_LIB = {}
-
-
 def library():
-    if "lib" not in _LIB:
-        _LIB["lib"] = lessons.core_library()
-    return _LIB["lib"]
+    """The Tutor's lessons and every installed add-on's (lessons/ beside
+    its agentlink_families module, or its LESSONS)."""
+    return lessons.installed_library()
+
+
+class LessonsService:
+    """hooks.service("lessons"): what an add-on (or Agent Link core) uses to
+    hand the Tutor a lessons folder by name; without the Tutor nothing
+    reads them."""
+
+    @staticmethod
+    def register_folder(folder, owner):
+        lessons.register_folder(folder, owner)
+
+    @staticmethod
+    def ids():
+        return sorted(library().lessons())
+
+
+if hasattr(hooks, "provide"):
+    hooks.provide("lessons", LessonsService())
 
 
 # The lesson in hand follows the agent's and the person's calls (re-checked

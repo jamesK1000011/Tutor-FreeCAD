@@ -4,8 +4,9 @@
 A lesson is one <name>.lesson.json in a lessons/ folder, checked against
 data/lesson.schema.json and then for what a schema cannot say:
 
-- setup is one of {doc: "new"}, {fixture: "x.FCStd"} or {calls: [...]}
-  (bind may ride beside any of them);
+- setup is one of {doc: "new"}, {fixture: "x.FCStd"}, {calls: [...]} or
+  {after: "<lesson id>"} (bind may ride beside any of them): after makes
+  the lesson the next chapter of another, which it starts from (chain());
 - step ids are unique; next and goto name steps;
 - every "$var" is defined (vars, setup.bind or a step's bind);
 - each check uses the closed vocabulary (checks.py), or a kind an installed
@@ -22,8 +23,15 @@ data/lesson.schema.json and then for what a schema cannot say:
 
 A lesson's id starts with the package that ships it ("agentlink_tutor.pd.pad-
 sketch"), so two add-ons' lessons never collide. Lessons the agent writes
-on the fly (inline) are named "inline.<name>", have 8 steps or fewer and
-live for the session only.
+on the fly (inline) are named "inline.<name>", have INLINE_MAX_STEPS (30)
+steps or fewer and live for the session only; a longer job goes in batches,
+each inline lesson after the one before (setup.after), as stored courses
+go chapter by chapter.
+
+Add-ons ship lessons too (addon_folders): a lessons/ folder beside an
+add-on's agentlink_families module (or the folders its LESSONS names), its
+lessons' ids starting with the add-on's package name. installed_library()
+holds the Tutor's own and every add-on's.
 
 Progress is kept as id@version lines in FreeCAD's parameters
 (Mod/AgentLink/Tutor, Done), on this computer only.
@@ -40,10 +48,10 @@ SCHEMA_PATH = os.path.join(HERE, "data", "lesson.schema.json")
 CORE_DIR = os.path.join(HERE, "lessons")
 PACKAGE = __name__.rpartition(".")[0]
 SCHEMA_VERSION = 1
-INLINE_MAX_STEPS = 8
+INLINE_MAX_STEPS = 30
 INLINE_PREFIX = "inline."
 SUFFIX = ".lesson.json"
-SETUP_KINDS = ("doc", "fixture", "calls")
+SETUP_KINDS = ("doc", "fixture", "calls", "after")
 VAR = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)$")
 
 # Target specs: one kind each, with the options that may ride beside it.
@@ -299,10 +307,19 @@ def expected_values(check, vars_=None):
                     out.add(float(v))
             elif k == "size" and isinstance(v, list):
                 out.update(float(val(x)) for x in v if isinstance(val(x), (int, float)))
+            elif k == "radii" and isinstance(v, list):
+                out.update(float(val(x)) for x in v if isinstance(val(x), (int, float)) and not isinstance(val(x), bool))
             elif k == "file" and isinstance(v, str):
                 out.add(v)
             elif k in ("all", "any", "not"):
                 walk(v)
+            elif k in ("exists", "absent", "new") and isinstance(v, dict):
+                for w in (v.get("where") or {}).values():
+                    w = val(w)
+                    if isinstance(w, dict):
+                        walk(w)
+                    elif isinstance(w, (int, float)) and not isinstance(w, bool):
+                        out.add(float(w))
     walk(check)
     out.discard(0.0)
     return out
@@ -371,12 +388,19 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
         return out
     setup = lesson.get("setup") or {}
     if "setup" in lesson and sum(k in setup for k in SETUP_KINDS) != 1:
-        out.append("setup: one of doc, fixture or calls")
+        out.append("setup: one of doc, fixture, calls or after")
+    if isinstance(setup.get("after"), str) and setup["after"] == lesson["id"]:
+        out.append("setup.after: a lesson does not come after itself")
+    if "result" in lesson:
+        out += checks.problems(lesson["result"], "result", extra_kinds)
+        if refs(lesson["result"]) - set((lesson.get("vars") or {}).keys()):
+            out.append("result: name objects by a query ({exists: {type, where}}), not by a step's binding; a later chapter reads it")
     if inline:
         if not lesson["id"].startswith(INLINE_PREFIX):
             out.append(f"id: an inline lesson is named {INLINE_PREFIX}<name>")
         if len(lesson["steps"]) > INLINE_MAX_STEPS:
-            out.append(f"steps: an inline lesson has {INLINE_MAX_STEPS} steps or fewer")
+            out.append(f"steps: an inline lesson has {INLINE_MAX_STEPS} steps or fewer; write a longer job in batches, "
+                       "each a lesson with setup {after: the one before}")
         if "fixture" in setup:
             out.append("setup.fixture: an inline lesson has no files")
     ids = [s["id"] for s in lesson["steps"]]
@@ -473,7 +497,14 @@ class Library:
                     self._refuse(path, f"id {lesson['id']} is already taken")
                     continue
                 lesson["_folder"] = folder
+                lesson["_owner"] = owner
                 found[lesson["id"]] = lesson
+        for lid in list(found):
+            try:
+                found[lid]["_after"] = chain(found[lid], found.get)
+            except LessonError as e:
+                self._refuse(lid + SUFFIX, str(e))
+                found.pop(lid)
         self._lessons = found
 
     def _refuse(self, path, why):
@@ -497,8 +528,13 @@ class Library:
         for lid, l in sorted(self.lessons().items()):
             if not requirements_met(l, freecad, api, workbenches):
                 continue
-            out.append({"id": lid, "title": l["title"], "minutes": l.get("minutes"),
-                        "done": bool(progress and progress.done(lid, l["version"]))})
+            row = {"id": lid, "title": l["title"], "minutes": l.get("minutes"),
+                   "done": bool(progress and progress.done(lid, l["version"]))}
+            if l.get("course"):
+                row["course"] = f"{l['course']['id']} {l['course']['chapter']}"
+            if l.get("_owner") and l["_owner"] != PACKAGE:
+                row["from"] = l["_owner"]
+            out.append(row)
         return out
 
 
@@ -506,6 +542,103 @@ def core_library(tools=None):
     lib = Library(tools)
     lib.add_folder(CORE_DIR, PACKAGE)
     return lib
+
+
+# ---- add-ons' lessons ----------------------------------------------------------
+
+FAMILIES_SUFFIX = ".agentlink_families"
+
+
+def _skipped():
+    """Add-on modules Agent Link left out (another API): their lessons too."""
+    try:
+        from agentlink import families
+
+        return {x.get("module") for x in getattr(families, "SKIPPED", ()) or () if isinstance(x, dict)}
+    except Exception:  # noqa: BLE001  (no Agent Link: tests)
+        return set()
+
+
+def addon_folders(modules=None):
+    """(folder, owner) for each add-on's lessons: every agentlink_families
+    module Agent Link loaded (modules: name -> module; sys.modules by
+    default), but the Tutor's own and any it left out. The folders are the
+    ones its LESSONS names (a folder or a list, beside the module), else
+    lessons/ beside it when there is one. The owner is the add-on's package
+    name: its lessons' ids start with it."""
+    mods = sys.modules if modules is None else modules
+    skipped = _skipped()
+    out = []
+    for name in sorted(n for n in list(mods) if n.endswith(FAMILIES_SUFFIX)):
+        owner = name[: -len(FAMILIES_SUFFIX)]
+        mod = mods.get(name)
+        if mod is None or owner == PACKAGE or "." in owner or name in skipped:
+            continue
+        here = os.path.dirname(os.path.abspath(getattr(mod, "__file__", "") or ""))
+        if not here:
+            continue
+        named = getattr(mod, "LESSONS", None)
+        if isinstance(named, str):
+            named = [named]
+        folders = [os.path.join(here, f) for f in (named or ["lessons"]) if isinstance(f, str)]
+        for f in folders:
+            if os.path.isdir(f):
+                out.append((f, owner))
+    return out
+
+
+_INSTALLED = {}
+
+
+def installed_library(tools=None, refresh=False, modules=None):
+    """The Tutor's lessons and every installed add-on's (addon_folders),
+    plus folders given to the lessons service (register_folder); made
+    once, again with refresh."""
+    lib = _INSTALLED.get("lib")
+    if lib is None or refresh:
+        lib = core_library(tools)
+        for folder, owner in addon_folders(modules) + list(_REGISTERED):
+            lib.add_folder(folder, owner)
+        _INSTALLED["lib"] = lib
+    return lib
+
+
+_REGISTERED = []
+
+
+def register_folder(folder, owner):
+    """An add-on's lessons folder given by name (the lessons service:
+    hooks.service("lessons").register_folder(folder, owner)); the library
+    takes it at once."""
+    if not (isinstance(folder, str) and isinstance(owner, str) and owner.isidentifier()):
+        raise LessonError("register_folder(folder, owner): a folder, and the add-on's package name")
+    if (folder, owner) not in _REGISTERED:
+        _REGISTERED.append((folder, owner))
+    lib = _INSTALLED.get("lib")
+    if lib is not None:
+        lib.add_folder(folder, owner)
+
+
+# ---- chapters ---------------------------------------------------------------------
+
+
+def chain(lesson, lookup):
+    """The lessons a lesson comes after, the first chapter first ([] when
+    its setup has no after). lookup(id) -> a lesson or None. A missing
+    chapter or a loop raises LessonError."""
+    out, seen, cur = [], {lesson.get("id")}, lesson
+    while True:
+        after = ((cur.get("setup") or {}).get("after"))
+        if not after:
+            return out
+        if after in seen:
+            raise LessonError(f"setup.after: the chapters go round in a loop at {after}")
+        prev = lookup(after)
+        if prev is None:
+            raise LessonError(f"setup.after: no lesson {after} (it comes before this one)")
+        seen.add(after)
+        out.insert(0, prev)
+        cur = prev
 
 
 def requirements_met(lesson, freecad=None, api=None, workbenches=None):
@@ -521,13 +654,17 @@ def requirements_met(lesson, freecad=None, api=None, workbenches=None):
     return True
 
 
-def inline(lesson, tools=None, extra_kinds=()):
-    """A lesson the agent wrote, checked: named inline.<name>, 8 steps or fewer."""
+def inline(lesson, tools=None, extra_kinds=(), lookup=None):
+    """A lesson the agent wrote, checked: named inline.<name>, 30 steps or
+    fewer (a longer job: batches, each after the one before). lookup(id):
+    the lessons its setup.after may name (stored ones, and this session's
+    inline ones)."""
     if isinstance(lesson, dict):
         lesson = {"schema": SCHEMA_VERSION, "version": "0.0.0", **lesson}
     problems = check(lesson, tools, extra_kinds, inline=True)
     if problems:
         raise LessonError("; ".join(problems[:5]))
+    lesson["_after"] = chain(lesson, lookup or (lambda _id: None))
     return lesson
 
 
