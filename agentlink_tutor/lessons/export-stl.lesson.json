@@ -6,34 +6,154 @@
  "summary": "Check the part is one sound solid, select it, and export it as an STL mesh a slicer reads.",
  "level": "first-steps",
  "minutes": 3,
- "tags": ["export", "stl", "3d-printing"],
- "requires": {"freecad": ">=1.0", "agentlink_api": ">=1,<2"},
+ "tags": [
+  "export",
+  "stl",
+  "3d-printing"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2"
+ },
  "setup": {
   "calls": [
-   {"tool": "doc_new", "args": {"name": "ExportLesson"}},
-   {"tool": "pd_body_new", "args": {}},
-   {"tool": "sketch_new", "args": {"plane": "XY"}},
-   {"tool": "sketch_add", "args": {"items": [{"kind": "rectangle", "center": [0, 0], "size": [30, 30], "dims": true}]}},
-   {"tool": "pd_pad", "args": {"length": 5}}
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "ExportLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        30,
+        30
+       ],
+       "dims": true
+      }
+     ]
+    }
+   },
+   {
+    "tool": "pd_pad",
+    "args": {
+     "length": 5
+    }
+   }
   ],
-  "bind": {"body": {"exists": "PartDesign::Body"}}
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
  },
  "steps": [
-  {"id": "sound", "say": "First make sure the part is one sound solid: a slicer needs a closed shape.",
-   "explain": "An STL is only triangles. If the solid has a gap or two pieces, the mesh will too, and the print may fail.",
-   "targets": [{"tree": "$body"}],
-   "check": {"valid": "$body", "solid": true},
-   "do": [{"tool": "body_check", "args": {"body": "$body"}}]},
-  {"id": "pick", "say": "Click **Body** in the tree to select it.",
-   "targets": [{"tree": "$body"}],
-   "check": {"selected": "$body"},
-   "hints": ["It is in the Model tab, on the left.", "Its row is ringed."],
-   "do": [{"tool": "selection", "args": {"objects": ["$body"]}}]},
-  {"id": "export", "say": "Choose **File › Export**, pick **STL Mesh** as the type, and save it as Part.stl.",
-   "explain": "Export writes only what is selected. STL is the mesh format every slicer reads.",
-   "targets": [{"menu": "Std_Export"}, {"cmd": "Std_Export"}],
-   "check": {"any": [{"file": "Part.stl", "min_bytes": 284}, {"used": "Std_Export"}]},
-   "hints": ["Export is in the File menu, under Save.", "In the dialog, set the file type to STL Mesh.", "Name: Part.stl, type: STL Mesh (*.stl)."],
-   "do": [{"tool": "export", "args": {"objects": ["$body"], "format": "stl", "path": "Part.stl"}}]}
+  {
+   "id": "sound",
+   "say": "Make sure that the part is one closed solid.",
+   "why": "A gap or two pieces in the solid can make the print fail.",
+   "targets": [
+    {
+     "tree": "$body"
+    }
+   ],
+   "check": {
+    "valid": "$body",
+    "solid": true
+   },
+   "do": [
+    {
+     "tool": "body_check",
+     "args": {
+      "body": "$body"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pick",
+   "say": "Click **Body** in the tree.",
+   "targets": [
+    {
+     "tree": "$body"
+    }
+   ],
+   "check": {
+    "selected": "$body"
+   },
+   "hints": [
+    "Look in the Model tab, on the left.",
+    "The ring shows its row."
+   ],
+   "do": [
+    {
+     "tool": "selection",
+     "args": {
+      "objects": [
+       "$body"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "export",
+   "say": "Select **File › Export**. Set the type to **STL Mesh**. Save the file as Part.stl.",
+   "why": "STL is the mesh format that all slicers read.",
+   "targets": [
+    {
+     "menu": "Std_Export"
+    },
+    {
+     "cmd": "Std_Export"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "file": "Part.stl",
+      "min_bytes": 284
+     },
+     {
+      "used": "Std_Export"
+     }
+    ]
+   },
+   "hints": [
+    "Export is in the File menu, under Save.",
+    "In the dialog, set the file type to STL Mesh.",
+    "Name: Part.stl, type: STL Mesh (*.stl)."
+   ],
+   "do": [
+    {
+     "tool": "export",
+     "args": {
+      "objects": [
+       "$body"
+      ],
+      "format": "stl",
+      "path": "Part.stl"
+     }
+    }
+   ]
+  }
  ]
 }

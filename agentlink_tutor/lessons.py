@@ -14,6 +14,8 @@ data/lesson.schema.json and then for what a schema cannot say:
   is the window's job);
 - each call names a tool Agent Link knows, when the caller says which tools
   there are;
+- its words are Simplified Technical English (ste.py, data/ste_rules.json:
+  one instruction per sentence, action verbs, short sentences, no passive);
 - the hint ladder keeps its rungs: hints 1 and 2 (a nudge, the field) never
   say a value the step's check wants (a number or a file name); only hint 3
   does (hint_problems).
@@ -380,6 +382,9 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
             if c["tool"] not in tools:
                 out.append(f"{where}: no tool {c['tool']}")
     out += hint_problems(lesson)
+    from . import ste
+
+    out += ste.lesson_problems(lesson)
     if detours(lesson) >= set(ids):
         out.append("steps: every step is a branch's target; the lesson has no main path")
     return out

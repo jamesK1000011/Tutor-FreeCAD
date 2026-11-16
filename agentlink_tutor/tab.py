@@ -55,6 +55,13 @@ def step_words(status):
     return (head, st.get("say") or "", hint)
 
 
+def why_line(status):
+    """The step's short explainer for the tab (empty when explanations are
+    off: the state carries none then)."""
+    st = status or {}
+    return st.get("because") or "" if "lesson" in st and st.get("step") != "done" else ""
+
+
 def check_line(status):
     """The step's check result in words for the tab."""
     st = status or {}
@@ -176,8 +183,23 @@ def _make():
             self.check = QtW.QLabel()
             self.check.setWordWrap(True)
             self.check.setAccessibleName("Tutor check")
-            for w in (self.head, self.say, self.check, self.hint):
+            self.why = QtW.QLabel()
+            self.why.setWordWrap(True)
+            fw = QtGui.QFont(self.why.font())
+            fw.setItalic(True)
+            if fw.pointSizeF() > 0:
+                fw.setPointSizeF(fw.pointSizeF() * 0.9)
+            self.why.setFont(fw)
+            self.why.setAccessibleName("Why this step")
+            for w in (self.head, self.say, self.why, self.check, self.hint):
                 lay.addWidget(w)
+            from . import prefs
+
+            self.explain = QtW.QCheckBox("Show explanations")
+            self.explain.setToolTip("A short line under each step that says why. Off: only the steps.")
+            self.explain.setChecked(prefs.explainers())
+            self.explain.toggled.connect(self._explain)
+            lay.addWidget(self.explain)
             grid = QtW.QGridLayout()
             self.b = {}
             for i, (key, text, tip) in enumerate((
@@ -265,6 +287,14 @@ def _make():
             self.head.setText(head)
             self.say.setText(say)
             self.say.setAccessibleDescription(say)
+            why = why_line(status)
+            self.why.setText(why)
+            self.why.setVisible(bool(why))
+            c2 = live.controller()
+            if c2 is not None and self.explain.isChecked() != bool(c2.e.explain):
+                self.explain.blockSignals(True)
+                self.explain.setChecked(bool(c2.e.explain))
+                self.explain.blockSignals(False)
             line = check_line(status)
             self.check.setText(line)
             self.check.setVisible(bool(line))
@@ -334,6 +364,15 @@ def _make():
             except Exception as err:  # noqa: BLE001  (a refused call: its words)
                 self.line.setText(str(err))
                 self._show()
+
+        def _explain(self, on):
+            c = live.controller()
+            if c is not None:
+                self._show(c.set_explain(bool(on)))
+            else:
+                from . import prefs
+
+                prefs.set_explainers(bool(on))
 
         def _mode(self, _i=None):
             c = live.controller()

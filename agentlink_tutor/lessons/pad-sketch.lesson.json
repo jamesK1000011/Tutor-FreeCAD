@@ -6,49 +6,265 @@
  "summary": "Turn a closed 2D sketch into a 3D block with Pad, then set its length.",
  "level": "first-steps",
  "minutes": 4,
- "tags": ["partdesign", "pad", "sketch"],
- "requires": {"freecad": ">=1.0", "agentlink_api": ">=1,<2", "workbenches": ["PartDesignWorkbench"]},
+ "tags": [
+  "partdesign",
+  "pad",
+  "sketch"
+ ],
+ "requires": {
+  "freecad": ">=1.0",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench"
+  ]
+ },
  "setup": {
   "calls": [
-   {"tool": "doc_new", "args": {"name": "PadLesson"}},
-   {"tool": "pd_body_new", "args": {}},
-   {"tool": "sketch_new", "args": {"plane": "XY"}},
-   {"tool": "sketch_add", "args": {"items": [{"kind": "rectangle", "center": [0, 0], "size": [40, 20], "dims": true}]}}
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "PadLesson"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY"
+    }
+   },
+   {
+    "tool": "sketch_add",
+    "args": {
+     "items": [
+      {
+       "kind": "rectangle",
+       "center": [
+        0,
+        0
+       ],
+       "size": [
+        40,
+        20
+       ],
+       "dims": true
+      }
+     ]
+    }
+   }
   ],
-  "bind": {"sketch": {"exists": "Sketcher::SketchObject"}, "body": {"exists": "PartDesign::Body"}}
+  "bind": {
+   "sketch": {
+    "exists": "Sketcher::SketchObject"
+   },
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
  },
- "vars": {"length": 15},
+ "vars": {
+  "length": 15
+ },
  "steps": [
-  {"id": "bench", "say": "Switch to the **Part Design** workbench.",
-   "targets": [{"wb": "PartDesignWorkbench"}],
-   "check": {"workbench": "PartDesignWorkbench"},
-   "hints": ["The workbench list is in the toolbar at the top.", "It is ringed: pick Part Design from it."],
-   "do": [{"tool": "workbench", "args": {"activate": "Part Design"}}]},
-  {"id": "pick", "say": "Click the sketch in the tree to select it.",
-   "targets": [{"tree": "$sketch"}],
-   "check": {"selected": "$sketch"},
-   "hints": ["It is under Body in the Model tab, on the left.", "Its row is ringed."],
-   "do": [{"tool": "selection", "args": {"objects": ["$sketch"]}}]},
-  {"id": "pad", "say": "Press **Pad**.",
-   "explain": "Pad pushes a closed sketch straight out to make a solid.",
-   "targets": [{"cmd": "PartDesign_Pad"}, {"menu": "PartDesign_Pad"}],
-   "check": {"new": "PartDesign::Pad"},
-   "bind": {"pad": {"new": "PartDesign::Pad"}},
-   "hints": ["Pad is the yellow block with an arrow up, in the Part Design toolbar.", "It is ringed."],
-   "do": [{"tool": "pd_pad", "args": {"sketch": "$sketch", "length": 10}}],
-   "branches": [{"when": {"new": "PartDesign::Pocket"}, "goto": "undo-pocket", "say": "That was Pocket, which cuts. Let's undo it."}]},
-  {"id": "length", "say": "Set **Length** to 15 mm, then press **OK**.",
-   "targets": [{"task": {"name": "lengthEdit", "label": "Length"}}, {"task": {"button": "ok"}}],
-   "check": {"all": [{"prop": "$pad", "name": "Length", "eq": "$length", "tol": 0.01, "unit": "mm"}, {"task_open": null}, {"valid": "$pad"}]},
-   "hints": ["The Length box is in the Tasks panel.", "This box sets how far the sketch is pushed out; OK finishes.", "Length = 15 mm."],
-   "do": [{"tool": "feature_edit", "args": {"feature": "$pad", "set": {"Length": "$length"}}}]},
-  {"id": "see", "say": "Done: a 40 × 20 × 15 mm block. Its top face is lit.",
-   "targets": [{"face": {"normal": [0, 0, 1], "largest": true}, "of": "$pad"}],
-   "check": {"all": [{"bbox": "$body", "size": [40, 20, 15], "tol": 0.01}, {"volume": "$body", "eq": 12000, "tol": 1}]}},
-  {"id": "undo-pocket", "say": "Press **Undo** (⌘Z).",
-   "targets": [{"cmd": "Std_Undo"}],
-   "check": {"absent": "PartDesign::Pocket"},
-   "do": [{"tool": "history_undo", "args": {}}],
-   "next": "pad"}
+  {
+   "id": "bench",
+   "say": "Select the **Part Design** workbench.",
+   "targets": [
+    {
+     "wb": "PartDesignWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "PartDesignWorkbench"
+   },
+   "hints": [
+    "Find the workbench list in the toolbar at the top.",
+    "The ring shows the list. Select Part Design in it."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "Part Design"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pick",
+   "say": "Click the sketch in the tree.",
+   "targets": [
+    {
+     "tree": "$sketch"
+    }
+   ],
+   "check": {
+    "selected": "$sketch"
+   },
+   "hints": [
+    "Look under Body in the Model tab, on the left.",
+    "The ring shows its row."
+   ],
+   "do": [
+    {
+     "tool": "selection",
+     "args": {
+      "objects": [
+       "$sketch"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Push **Pad**.",
+   "why": "Pad pushes a closed sketch out to make a solid.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    },
+    {
+     "menu": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Pad"
+   },
+   "bind": {
+    "pad": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find the yellow block with an arrow up in the Part Design toolbar.",
+    "The ring shows the Pad button."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$sketch",
+      "length": 10
+     }
+    }
+   ],
+   "branches": [
+    {
+     "when": {
+      "new": "PartDesign::Pocket"
+     },
+     "goto": "undo-pocket",
+     "say": "That was Pocket, which cuts. Undo it."
+    }
+   ]
+  },
+  {
+   "id": "length",
+   "say": "Set **Length** to 15 mm. Push **OK**.",
+   "targets": [
+    {
+     "task": {
+      "name": "lengthEdit",
+      "label": "Length"
+     }
+    },
+    {
+     "task": {
+      "button": "ok"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$pad",
+      "name": "Length",
+      "eq": "$length",
+      "tol": 0.01,
+      "unit": "mm"
+     },
+     {
+      "task_open": null
+     },
+     {
+      "valid": "$pad"
+     }
+    ]
+   },
+   "hints": [
+    "Find the Length box in the Tasks panel.",
+    "This box sets how far Pad pushes the sketch out.",
+    "Length = 15 mm."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$pad",
+      "set": {
+       "Length": "$length"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a 40 × 20 × 15 mm block. The top face shows in colour.",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       0,
+       1
+      ],
+      "largest": true
+     },
+     "of": "$pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": "$body",
+      "size": [
+       40,
+       20,
+       15
+      ],
+      "tol": 0.01
+     },
+     {
+      "volume": "$body",
+      "eq": 12000,
+      "tol": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "undo-pocket",
+   "say": "Push **Undo** (⌘Z).",
+   "targets": [
+    {
+     "cmd": "Std_Undo"
+    }
+   ],
+   "check": {
+    "absent": "PartDesign::Pocket"
+   },
+   "do": [
+    {
+     "tool": "history_undo",
+     "args": {}
+    }
+   ],
+   "next": "pad"
+  }
  ]
 }

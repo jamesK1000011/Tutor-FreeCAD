@@ -214,6 +214,22 @@ class ToolCase(unittest.TestCase):
         _, body = self.call("workbench", activate="Part Design")
         self.assertNotIn("rider", body)  # over: nothing rides
 
+    def test_explain_round_trip(self):
+        from agentlink_tutor import prefs
+
+        self.addCleanup(prefs._MEM.values.clear)
+        self.assertEqual(self.tutor(action="explain", on=False)["explain"], "off")
+        st = self.tutor(action="start", lesson="pad-sketch")
+        self.assertEqual(st["explain"], "off")
+        self.tutor(action="skip"), self.tutor(action="skip")
+        st = self.tutor(action="status")
+        self.assertNotIn("because", st)
+        self.assertIn("because", self.tutor(action="status", detail=True))
+        st = self.tutor(action="explain", on=True)
+        self.assertEqual((st["explain"], st["because"]), ("on", "Pad pushes a closed sketch out to make a solid."))
+        refused, body = self.call("tutor", action="explain")
+        self.assertTrue(refused)
+
     def test_refused_demo_step_says_why(self):
         self.world.gui = None  # no window: workbench is refused
         self.tutor(action="start", lesson="pad-sketch", mode="demo")

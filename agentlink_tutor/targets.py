@@ -122,7 +122,7 @@ def _cmd(f, spec, win, _b):
         f.marks = [{"widget": button}]
         f.dropdown = (menu, action)
         f.note = "in the ▾ menu of this button"
-        f.text = f"{_cmd_words(win, cmd)}: open the ▾ menu of the ringed button"
+        f.text = f"Open the ▾ menu of the ringed button. Select {_cmd_words(win, cmd)}."
         return
     bench = win.workbench_of(cmd)
     active = win.active_workbench()
@@ -237,7 +237,7 @@ def _tree(f, spec, win, bindings):
         f.why = note or "not in the Model tab"
         return
     if note == getattr(win, "MODEL_TAB", None) or (note or "").startswith("the Model tab is not in front"):
-        f.text = f"Open the Model tab, then {getattr(obj, 'Label', ref)}"
+        f.text = "Open the Model tab."
     hidden = win.visible(got)
     if hidden:
         f.why = f"its row is {hidden}"

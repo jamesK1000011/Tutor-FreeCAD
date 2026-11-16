@@ -3,8 +3,8 @@
 fly), and walked in demo or guided mode, answering the lesson's compact
 state (under 600 characters).
 
-    {action: list|start|next|back|hint|skip|do|stop|status,
-     lesson?, mode?: demo|guided, query?, detail?}
+    {action: list|start|next|back|hint|skip|do|stop|status|explain,
+     lesson?, mode?: demo|guided, query?, detail?, on?}
 
 The lesson in hand is the Tutor tab's too (live.py): the person's buttons
 and the agent's calls move the same lesson.
@@ -90,6 +90,14 @@ def tutor(a, session, lib, progress=None):
             if c is not None and c.stepping:
                 out["running"] = f"{c.e.lesson['id']} step {c.e.position()}"
             return out
+        if action == "explain":
+            if not isinstance(a.get("on"), bool):
+                raise Refusal("invalid_input", "explain: on, true or false")
+            if c is not None and c.e.state in ("step", "done"):
+                return c.act("explain", on=a["on"])
+            from . import prefs
+
+            return {"explain": "on" if prefs.set_explainers(a["on"]) else "off"}
         if action == "start":
             ref = a.get("lesson")
             if isinstance(ref, str) and ref.strip().startswith("{"):
@@ -109,7 +117,7 @@ def tutor(a, session, lib, progress=None):
             raise Refusal("invalid_state", "no lesson running: tutor {action: \"list\"}, then {action: \"start\", lesson}")
         if c.e.state == "done" and action not in ("status", "stop"):
             raise Refusal("invalid_state", "the lesson is done: start another, or status")
-        out = c.act(action, mode=mode, detail=bool(a.get("detail")))
+        out = c.act(action, mode=mode, detail=bool(a.get("detail")), on=a.get("on"))
         if action == "stop":
             live.set_controller(None)
         return out

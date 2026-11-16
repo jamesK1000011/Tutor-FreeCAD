@@ -35,7 +35,7 @@ ADVANCE_MS = 600
 HOLD_MS = 10000  # the last step's rings stay this long after the lesson is done
 VIEWS = ("isometric", "front", "top", "right", "left", "rear", "bottom")
 SPATIAL = ("face", "edge", "sub")
-ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do")
+ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do", "explain")
 NO_WINDOW = "no window: nothing ringed"
 
 
@@ -83,8 +83,12 @@ def task_targets(step):
 
 
 class Controller:
-    def __init__(self, engine, timer=None, show=None, ui=None):
+    def __init__(self, engine, timer=None, show=None, ui=None, prefs=None):
+        from . import prefs as prefs_mod
+
         self.e = engine
+        self.prefs = prefs  # FreeCAD's parameters, or a stand-in (tests)
+        self.e.explain = prefs_mod.explainers(prefs)
         self.timer = timer
         self.show = show
         self.ui = ui
@@ -142,20 +146,21 @@ class Controller:
         return tg, None
 
     def callout(self):
-        """The callout's words for the step in front: what to do, in demo
-        why, and the hint or why not yet."""
+        """The callout's words for the step in front: the instruction, its
+        why line under it when explanations are on, then the hint or why it
+        is not done yet."""
         if not self.stepping:
             return None
         e, s = self.e, self.e.step
         lines = [e.said or s.get("say")]
-        if e.mode == "demo" and s.get("explain"):
-            lines.append(s["explain"])
+        if e.explain and s.get("why") and not e.said:
+            lines.append(s["why"])
         if e.hint:
             lines.append(e.hint_text())
         elif e.result is not None and e.result.status == "fail" and e.result.why:
             lines.append(f"Not yet: {e.result.why}.")
         if e.passed and e.mode == "demo":
-            lines.append("Done. Next goes on.")
+            lines.append("Done. Push Next.")
         again = self.shown()[1]
         if again:
             lines.insert(1, again)
@@ -233,9 +238,21 @@ class Controller:
         self._changed()
         return self.state()
 
-    def act(self, action, mode=None, detail=False):
+    def set_explain(self, on):
+        """Explanations on or off, kept as the person's preference."""
+        from . import prefs as prefs_mod
+
+        self.e.explain = prefs_mod.set_explainers(on, self.prefs)
+        self._changed()
+        return self.state()
+
+    def act(self, action, mode=None, detail=False, on=None):
         """One of ACTIONS, after switching to mode when it is given. The
-        compact state."""
+        compact state. explain: on (True or False) sets the explanations."""
+        if action == "explain":
+            if on is None:
+                raise engine_mod.TutorError("explain: on, true or false")
+            return self.set_explain(on)
         if action not in ACTIONS:
             raise engine_mod.TutorError(f"action: one of {', '.join(ACTIONS)}")
         if action != "status":

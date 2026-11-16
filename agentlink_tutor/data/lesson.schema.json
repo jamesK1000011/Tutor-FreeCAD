@@ -160,11 +160,13 @@
     "say": {
      "type": "string",
      "minLength": 1,
-     "maxLength": 240
+     "maxLength": 240,
+     "description": "The instruction, in Simplified Technical English (ste.py): each sentence one instruction, starting with an action verb, at most 20 words; UI names in **bold**."
     },
     "explain": {
      "type": "string",
-     "maxLength": 1200
+     "maxLength": 1200,
+     "description": "A longer note for the agent (status detail); never in the callout."
     },
     "targets": {
      "type": "array",
@@ -236,6 +238,12 @@
       "keep"
      ],
      "description": "This step's view when it comes up (fitted); left out, a step lighting faces or edges takes the lesson's view."
+    },
+    "why": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 120,
+     "description": "The explainer: one short sentence, at most 15 words, shown under the instruction when explanations are on."
     }
    }
   }

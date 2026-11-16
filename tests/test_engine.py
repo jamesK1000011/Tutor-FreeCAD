@@ -122,7 +122,7 @@ class StateMachine(unittest.TestCase):
             e.next()
         self.assertEqual(seen, ["bench", "pick", "pad", "length", "see"])
         self.assertEqual(e.bindings["pad"], "Pad")
-        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "step": "done", "skipped": [],
+        self.assertEqual(e.status(), {"lesson": "agentlink_tutor.pd.pad-sketch", "mode": "demo", "explain": "on", "step": "done", "skipped": [],
                                       "done_for": ["bench", "length", "pad", "pick"]})
 
     def test_headless_window_steps_wait_and_the_rest_pass(self):
@@ -183,12 +183,12 @@ class StateMachine(unittest.TestCase):
         e.next(), e.next()
         w("pd_pocket", {"length": 5})  # the wrong button
         st = e.check()
-        self.assertEqual((st["id"], st["say"], st["step"]), ("undo-pocket", "That was Pocket, which cuts. Let's undo it.", "3/5"))
+        self.assertEqual((st["id"], st["say"], st["step"]), ("undo-pocket", "That was Pocket, which cuts. Undo it.", "3/5"))
         self.assertEqual(e.check()["check"], "fail")
         w("history_undo", {})
         self.assertEqual(e.check()["check"], "pass")
         st = e.next()
-        self.assertEqual((st["id"], st["say"]), ("pad", "Press **Pad**."))
+        self.assertEqual((st["id"], st["say"]), ("pad", "Push **Pad**."))
         w("pd_pad", {"length": 10})
         self.assertEqual(e.check()["check"], "pass")
 
@@ -207,10 +207,10 @@ class StateMachine(unittest.TestCase):
         e.next()  # pick: two hints, a do
         e.check()
         st = e.raise_hint()
-        self.assertEqual((st["hint"], st["hint_text"]), (1, "It is under Body in the Model tab, on the left."))
+        self.assertEqual((st["hint"], st["hint_text"]), (1, "Look under Body in the Model tab, on the left."))
         self.assertNotIn("do_it", st)
         st = e.raise_hint()
-        self.assertEqual((st["hint"], st["hint_text"]), (2, "Its row is ringed."))
+        self.assertEqual((st["hint"], st["hint_text"]), (2, "The ring shows its row."))
         st = e.raise_hint()
         self.assertEqual(st["hint"], 3)
         self.assertTrue(st["do_it"])
