@@ -356,7 +356,17 @@ class Controller:
         e = self.e
         e._need_step()
         if e.mode == "demo" and not e.passed and e.step.get("do"):
-            # Do the step in front, then go on and wait at the next one.
+            # Do the step in front, then go on and wait at the next one. A
+            # step whose check already holds (done by an earlier step, or by
+            # the person before the mode switch) is not done again.
+            at = e.index
+            if "check" in e.step and e.check()["check"] == "pass":
+                if e.index == at:
+                    self.passed_note = e.position()
+                    e.next()
+                return
+            if e.index != at:
+                return  # a known wrong turn: its branch step first
             self._do()
             if not e.passed:
                 return  # refused or not done: stays, with why

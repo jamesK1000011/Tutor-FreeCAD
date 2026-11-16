@@ -16,6 +16,9 @@ A check is a one-key object, the key its kind:
     volume           {"volume": "$body", "eq"|…: mm³, "tol"}
     bbox             {"bbox": "$body", "size": [x, y, z], "tol"}
     sketch           {"sketch": "$s", "closed": true, "dof": 0, "full": true,
+                     "dof_max": n (n degrees of freedom or fewer: progress,
+                     whatever the order), "count": n (lines and curves),
+                     "dims": [47] (each a driving dimension's value, mm),
                      "external": n (at least n outside edges brought in),
                      "radii": [14.5] (each a circle's or arc's radius in it)}
     expr             {"expr": "$sketch", "uses": "size", "count": 2, "path"?}: at
@@ -207,13 +210,17 @@ def find(ctx, spec, only_new=False):
 
 def matches(o, where):
     """True when o's properties are as where says: {name: value} (a number
-    within 1e-6, else the same text: an enumeration's choice), or {name:
-    {eq|lt|gt|le|ge: n, tol}}."""
+    within 1e-6, else the same text: an enumeration's choice), {name:
+    {eq|lt|gt|le|ge: n, tol}}, or {name: {set: true}} (it has the property,
+    and it holds something: a link, a value)."""
     for name, want in (where or {}).items():
         if not hasattr(o, name):
             return False
         have = getattr(o, name)
-        if isinstance(want, dict):
+        if isinstance(want, dict) and "set" in want:
+            if bool(want["set"]) != (have is not None and have != "" and have != [] and have != ()):
+                return False
+        elif isinstance(want, dict):
             if compare(name, have, want).status != "pass":
                 return False
         elif number(want) is not None and number(have) is not None:
@@ -227,7 +234,9 @@ def matches(o, where):
 def _where_words(where):
     out = []
     for name, want in (where or {}).items():
-        if isinstance(want, dict):
+        if isinstance(want, dict) and "set" in want:
+            out.append(f"{words.prop_words(name)}" if want["set"] else f"no {words.prop_words(name)}")
+        elif isinstance(want, dict):
             op = next((k for k in CMP if k in want), "eq")
             word = {"eq": "", "lt": "under ", "gt": "over ", "le": "at most ", "ge": "at least "}[op]
             out.append(f"{words.prop_words(name)} {word}{_fmt(number(want[op]) if number(want[op]) is not None else want[op])}")
@@ -402,6 +411,23 @@ def _sketch(spec, ctx):
         want = 0 if spec.get("full") else spec["dof"]
         if dof != want:
             return fail(f"{o.Label} has {dof} degrees of freedom; the step wants {want}" + (" (fully constrained)" if want == 0 else ""))
+    if "dof_max" in spec:
+        try:
+            o.solve()
+        except Exception:
+            pass
+        dof = getattr(o, "DoF", None)
+        if dof is None:
+            return pending(f"{o.Label}'s degrees of freedom cannot be read in this FreeCAD")
+        if dof > int(spec["dof_max"]):
+            return fail(f"{o.Label} has {dof} degrees of freedom; the step wants {int(spec['dof_max'])} or fewer")
+    if "count" in spec:
+        n = len(own_geometry(o))
+        if n < int(spec["count"]):
+            return fail(f"{o.Label} has {n} lines or curves; the step wants {int(spec['count'])}")
+    for d in spec.get("dims") or ():
+        if not any(abs(h - float(d)) <= float(spec.get("tol", 0.01)) for h in dims(o)):
+            return fail(f"{o.Label} has no dimension of {_fmt(float(d), 'mm')} yet")
     if "external" in spec:
         n = external_count(o)
         if n < int(spec["external"]):
@@ -423,6 +449,35 @@ def external_count(o):
         subs = [subs] if isinstance(subs, str) else list(subs or ())
         n += max(1, len(subs))
     return n
+
+
+DIM_TYPES = ("Distance", "DistanceX", "DistanceY", "Radius", "Diameter")
+
+
+def dims(o):
+    """The values (mm, without sign) of the sketch's driving dimensions."""
+    out = []
+    for c in getattr(o, "Constraints", None) or ():
+        if getattr(c, "Type", None) in DIM_TYPES and getattr(c, "Driving", True):
+            v = number(getattr(c, "Value", None))
+            if v is not None:
+                out.append(abs(v))
+    return out
+
+
+def own_geometry(o):
+    """The sketch's own lines and curves (not construction, not points)."""
+    out = []
+    for i, g in enumerate(getattr(o, "Geometry", None) or ()):
+        if type(g).__name__ == "Point":
+            continue
+        try:
+            if o.getConstruction(i):
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        out.append(g)
+    return out
 
 
 def radii(o):
@@ -860,7 +915,7 @@ def problems(check, where, extra_kinds=()):
     v = check[kind]
     opts = {k for k in check if k != kind}
     allowed = {"prop": {"name", "unit", "tol", *CMP}, "volume": {"tol", *CMP}, "bbox": {"size", "tol"},
-               "sketch": {"closed", "dof", "full", "external", "radii", "tol"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
+               "sketch": {"closed", "dof", "full", "external", "radii", "tol", "dof_max", "count", "dims"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
                "expr": {"uses", "count", "path"}, "follows": {"object", "by", "axis", "change", "tol"}}.get(kind, set())
     if opts - allowed:
         out.append(f"{where}: {kind} takes no {', '.join(sorted(opts - allowed))}")
@@ -880,7 +935,10 @@ def problems(check, where, extra_kinds=()):
                 out.append(f"{where}.{kind}.where: {{property: value}}, such as {{\"ThreadSize\": \"M4\"}}")
             else:
                 for pn, pv in w.items():
-                    if isinstance(pv, dict):
+                    if isinstance(pv, dict) and set(pv) == {"set"}:
+                        if not isinstance(pv["set"], bool):
+                            out.append(f"{where}.{kind}.where.{pn}.set: true or false")
+                    elif isinstance(pv, dict):
                         if not any(k in pv for k in CMP) or set(pv) - set(CMP) - {"tol"}:
                             out.append(f"{where}.{kind}.where.{pn}: a value, or {{eq|lt|gt|le|ge: n, tol}}")
                     elif not isinstance(pv, (str, int, float, bool)):
@@ -940,6 +998,13 @@ def problems(check, where, extra_kinds=()):
         r = check["radii"]
         if not (isinstance(r, list) and r and all(number(x) is not None and number(x) > 0 for x in r)):
             out.append(f"{where}: radii is a list of radii (mm)")
+    if kind == "sketch" and "dims" in check:
+        r = check["dims"]
+        if not (isinstance(r, list) and r and all(number(x) is not None and number(x) > 0 for x in r)):
+            out.append(f"{where}: dims is a list of dimensions (mm)")
+    for k in ("dof_max", "count"):
+        if kind == "sketch" and k in check and not (isinstance(check[k], int) and not isinstance(check[k], bool) and check[k] >= 0):
+            out.append(f"{where}: {k} is a whole number")
     if kind == "sketch" and "external" in check and not (isinstance(check["external"], int) and check["external"] >= 1):
         out.append(f"{where}: external is a whole number, 1 or more")
     return out

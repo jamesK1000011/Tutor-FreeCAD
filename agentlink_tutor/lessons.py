@@ -307,7 +307,7 @@ def expected_values(check, vars_=None):
                     out.add(float(v))
             elif k == "size" and isinstance(v, list):
                 out.update(float(val(x)) for x in v if isinstance(val(x), (int, float)))
-            elif k == "radii" and isinstance(v, list):
+            elif k in ("radii", "dims") and isinstance(v, list):
                 out.update(float(val(x)) for x in v if isinstance(val(x), (int, float)) and not isinstance(val(x), bool))
             elif k == "file" and isinstance(v, str):
                 out.add(v)
