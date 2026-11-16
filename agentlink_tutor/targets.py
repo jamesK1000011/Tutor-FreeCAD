@@ -41,6 +41,8 @@ class Found:
 
     marks   overlay specs ({widget, rect?, viewport?})
     menu    titles to ring through the overlay's menu()
+    dropdown (menu, action): the item inside a toolbar button's dropdown,
+            ringed when the person opens it (overlay watch_menu)
     light   (object, [sub-element names]) for the annotation layer
     text    words for the callout in place of (or beside) a ring
     note    a remark on what was found ("already active")
@@ -50,6 +52,7 @@ class Found:
     def __init__(self, n, kind, what=""):
         self.n, self.kind, self.what = n, kind, what
         self.marks, self.menu, self.light = [], None, None
+        self.dropdown = None
         self.text = self.note = self.why = None
 
     def shown(self):
@@ -110,6 +113,16 @@ def _cmd(f, spec, win, _b):
     seen = [w for w, hidden in win.command_buttons(cmd) if hidden is None]
     if seen:
         f.marks = [{"widget": w} for w in seen]
+        return
+    # Inside a toolbar dropdown (a group command: the button shows the
+    # group's action): that button ringed, the item inside it once opened.
+    groups = [g for g in (win.command_groups(cmd) if hasattr(win, "command_groups") else []) if g[1] is None]
+    if groups:
+        button, _hidden, menu, action = groups[0]
+        f.marks = [{"widget": button}]
+        f.dropdown = (menu, action)
+        f.note = "in the ▾ menu of this button"
+        f.text = f"{_cmd_words(win, cmd)}: open the ▾ menu of the ringed button"
         return
     bench = win.workbench_of(cmd)
     active = win.active_workbench()

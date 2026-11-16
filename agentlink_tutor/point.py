@@ -103,6 +103,9 @@ def point(args, win, hooks=None, bindings=None, timer=None):
             # Kept on the overlay (drawn as soon as it shows), said now.
             f.marks = []
             f.why = f.why or f"it is {hid[0]}"
+        if f.dropdown and f.marks and hasattr(ov, "watch_menu"):
+            menu, action = f.dropdown
+            ov.watch_menu(menu, action, owner=OWNER, handle=got.get("handle"), badge=f.n)
         if f.menu:
             r = ov.menu(f.menu, badge=f.n, owner=OWNER, handle=got.get("handle")) or {}
             if r.get("native"):
