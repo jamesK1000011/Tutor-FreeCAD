@@ -82,6 +82,9 @@ class Win:
     def menu_titles(self):
         return ["File", "Edit", "Part"]
 
+    def menu_path_of(self, cmd):
+        return next((list(t) for t, c in self.menus.items() if c == cmd), None)
+
     def menu_info(self, titles):
         got = self.menus.get(tuple(titles))
         if got is None:
@@ -240,6 +243,47 @@ class Menus(unittest.TestCase):
         m = out["missing"][0]
         self.assertIn("cannot be drawn over", m["why"])
         self.assertEqual(m["text"], "Menu: Part Design › Create an additive feature › Pad")
+
+    def test_menu_by_command_reads_this_windows_path(self):
+        path = ("Part Design", "Additive Features", "Pad")  # FreeCAD 1.1.3's own submenu
+        w = Win(menus={path: "PartDesign_Pad"})
+        out, ov, _ = run({"targets": [{"menu": "PartDesign_Pad"}]}, w)
+        self.assertEqual(ov.menus, [(path, 1, 7)])
+        out, _, _ = run({"targets": [{"menu": "PartDesign_Pad"}]}, Win(active="SketcherWorkbench"))
+        why = out["missing"][0]["why"]
+        self.assertIn("Pad is in no menu of this window", why)
+        self.assertIn("comes with Part Design", why)
+
+    def test_path_to_walks_submenus(self):
+        class A:
+            def __init__(self, text, name="", menu=None, sep=False):
+                self.t, self.n, self.m, self.sep = text, name, menu, sep
+
+            def text(self):
+                return self.t
+
+            def objectName(self):
+                return self.n
+
+            def menu(self):
+                return self.m
+
+            def isSeparator(self):
+                return self.sep
+
+        class M:
+            def __init__(self, *acts):
+                self.acts = list(acts)
+
+            def actions(self):
+                return self.acts
+
+        add = M(A("&Pad", "PartDesign_Pad"), A("Revolution", "PartDesign_Revolution"))
+        bar = [A("&File", menu=M(A("Export…", "Std_Export"))),
+               A("&Part Design", menu=M(A("", sep=True), A("Additive Features", menu=add)))]
+        self.assertEqual(window.path_to(bar, "PartDesign_Pad"), ["Part Design", "Additive Features", "Pad"])
+        self.assertEqual(window.path_to(bar, "Std_Export"), ["File", "Export…"])
+        self.assertIsNone(window.path_to(bar, "PartDesign_Pocket"))
 
     def test_missing_title_names_the_workbench_menu(self):
         out, _, _ = run({"targets": [{"menu": self.PATH}]})
@@ -460,6 +504,86 @@ class Item:
         return self.exp
 
 
+class Dead:
+    """A Qt wrapper whose C++ object FreeCAD deleted: every call raises."""
+
+    def __getattr__(self, k):
+        def gone(*a, **kw):
+            raise RuntimeError("Internal C++ object (PySide6.QtWidgets.QTreeWidget) already deleted.")
+
+        return gone
+
+
+class LiveItem(Item):
+    dead = False
+
+    def objectName(self):
+        if self.dead:
+            raise RuntimeError("Internal C++ object already deleted.")
+        return ""
+
+
+class FakeTree:
+    def __init__(self, app, visible=True):
+        self.app, self.visible = app, visible
+
+    def metaObject(self):
+        return types.SimpleNamespace(className=lambda: window.TREE)
+
+    def objectName(self):
+        return ""
+
+    def isVisible(self):
+        return self.visible
+
+    def topLevelItemCount(self):
+        return 1
+
+    def topLevelItem(self, i):
+        return self.app
+
+    def viewport(self):
+        return self
+
+    def visualItemRect(self, it):
+        n = 0 if it.t == "Sketch" else 1
+        return types.SimpleNamespace(x=lambda: 0, y=lambda: 20 * n, width=lambda: 100, height=lambda: 18)
+
+
+class RebuiltTree(unittest.TestCase):
+    def setUp(self):
+        self.was = window._qt
+        window._qt = lambda: (None, None, types.SimpleNamespace(QTreeWidget=object))
+
+    def tearDown(self):
+        window._qt = self.was
+
+    def win(self, trees):
+        mw = types.SimpleNamespace(findChildren=lambda cls: list(trees))
+        return window.Window(gui=types.SimpleNamespace(getMainWindow=lambda: mw), hooks=object())
+
+    def test_a_deleted_tree_is_passed_over_and_the_row_found_again(self):
+        sk = LiveItem("Sketch")
+        trees = [Dead(), FakeTree(LiveItem("Application", LiveItem("Doc", LiveItem("Body", sk))))]
+        w = self.win(trees)
+        obj = types.SimpleNamespace(Label="Sketch", Document=types.SimpleNamespace(Label="Doc"))
+        got, note = w.tree_row(obj)
+        self.assertIsNone(note)
+        self.assertEqual(got["rect"](), (0, 0, 100, 18))
+        # FreeCAD rebuilds the tree: the old one dies, a new one holds a new row.
+        sk.dead = True
+        trees[:] = [Dead(), FakeTree(LiveItem("Application", LiveItem("Doc", LiveItem("Body", LiveItem("Sketch")))))]
+        self.assertEqual(got["rect"](), (0, 0, 100, 18))
+        trees[:] = [Dead()]
+        self.assertEqual(w.trees(), [])
+        self.assertEqual(w.tree_row(obj), (None, "no Model tree in this window"))
+
+    def test_alive(self):
+        self.assertFalse(window.alive(None))
+        self.assertFalse(window.alive(Dead()))
+        self.assertTrue(window.alive(FakeTree(None)))
+
+
 class TreeItems(unittest.TestCase):
     def test_finds_the_row_in_its_document(self):
         a = Item("Sketch")
@@ -469,6 +593,13 @@ class TreeItems(unittest.TestCase):
         self.assertIs(window._find_item(tree, "Sketch", "DocB"), b)
         self.assertIs(window._find_item(tree, "Sketch"), a)
         self.assertIsNone(window._find_item(tree, "Ghost", "DocA"))
+
+
+class Plain(unittest.TestCase):
+    def test_markdown_off_in_the_callout(self):
+        self.assertEqual(point.plain("Switch to the **Part Design** workbench."), "Switch to the Part Design workbench.")
+        self.assertEqual(point.plain("Press __Pad__, then `OK`; 2 * 3 stays."), "Press Pad, then OK; 2 * 3 stays.")
+        self.assertEqual(point.callout("Press **Pad**.", []), "Press Pad.")
 
 
 class TabWords(unittest.TestCase):

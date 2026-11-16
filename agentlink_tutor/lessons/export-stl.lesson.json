@@ -31,7 +31,7 @@
    "do": [{"tool": "selection", "args": {"objects": ["$body"]}}]},
   {"id": "export", "say": "Choose **File › Export**, pick **STL Mesh** as the type, and save it as Part.stl.",
    "explain": "Export writes only what is selected. STL is the mesh format every slicer reads.",
-   "targets": [{"menu": ["File", "Export…"]}, {"cmd": "Std_Export"}],
+   "targets": [{"menu": "Std_Export"}, {"cmd": "Std_Export"}],
    "check": {"any": [{"file": "Part.stl", "min_bytes": 284}, {"used": "Std_Export"}]},
    "hints": ["Export is in the File menu, under Save.", "In the dialog, set the file type to STL Mesh.", "Name: Part.stl, type: STL Mesh (*.stl)."],
    "do": [{"tool": "export", "args": {"objects": ["$body"], "format": "stl", "path": "Part.stl"}}]}

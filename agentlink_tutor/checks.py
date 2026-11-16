@@ -380,12 +380,31 @@ def _selected(spec, ctx):
     return fail(f"{what} is not selected")
 
 
+def bench_text(name):
+    """A workbench as its selector names it ("Part Design" for
+    PartDesignWorkbench): FreeCAD's MenuText where there is a window, else
+    from the class name."""
+    if not name:
+        return name
+    try:
+        import FreeCADGui
+
+        text = FreeCADGui.listWorkbenches()[name].MenuText
+        if text:
+            return str(text)
+    except Exception:  # noqa: BLE001
+        pass
+    short = name[:-len("Workbench")] if name.endswith("Workbench") else name
+    return BENCH_WORDS.get(short, short)
+
+
 def _workbench(spec, ctx):
     if ctx.gui is None:
         return pending(NO_WINDOW)
     if ctx.gui.workbench == spec:
         return PASS
-    return fail(f"the {ctx.gui.workbench or 'current'} workbench is active, not {spec}")
+    have = bench_text(ctx.gui.workbench) if ctx.gui.workbench else "another"
+    return fail(f"{have} is the active workbench, not {bench_text(spec)}")
 
 
 def _editing(spec, ctx):
@@ -505,7 +524,8 @@ def evaluate(check, ctx):
 
 
 # Workbench names as their selector shows them, where the two differ.
-BENCH_WORDS = {"PartDesign": "Part Design", "Part": "Part", "BIM": "BIM", "Assembly": "Assembly", "Fem": "FEM", "Cam": "CAM", "Mesh": "Mesh"}
+BENCH_WORDS = {"PartDesign": "Part Design", "TechDraw": "TechDraw", "Fem": "FEM", "Cam": "CAM", "Path": "CAM",
+               "MeshPart": "Mesh", "OpenSCAD": "OpenSCAD", "Start": "Start"}
 
 
 def _label(doc, ref):
@@ -539,9 +559,7 @@ def exact(check, doc=None):
     if kind in ("task_open", "editing") and check.get(kind) is None:
         return "then press OK"
     if kind == "workbench":
-        name = str(check[kind])
-        name = name[:-len("Workbench")] if name.endswith("Workbench") else name
-        return f"the {BENCH_WORDS.get(name, name)} workbench"
+        return f"the {bench_text(str(check[kind]))} workbench"
     if kind == "selected":
         ref = check[kind]
         return f"select {_label(doc, ref)}" + (f" ({check['sub'].lower()})" if check.get("sub") else "")

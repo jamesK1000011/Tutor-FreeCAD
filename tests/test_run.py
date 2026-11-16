@@ -30,6 +30,32 @@ class Clock:
         return n
 
 
+class FakeUI:
+    """The lesson's window hands on the stand-in world's window state."""
+
+    def __init__(self, world):
+        self.w = world
+        self.log = []
+
+    def settle(self):
+        self.log.append("settle")
+        g = self.w.gui
+        if g is not None:
+            g.editing = g.task = None
+            g.selection = []
+
+    def open_task(self, e):
+        name = run.edit_target(e)
+        self.log.append(("open", name))
+        if self.w.gui is not None and self.w.gui.task is None and name:
+            self.w.gui.editing, self.w.gui.task = name, "PartDesign_Pad"
+
+    def close_task(self):
+        self.log.append("close")
+        if self.w.gui is not None:
+            self.w.gui.editing = self.w.gui.task = None
+
+
 class Who:
     def __init__(self, by):
         self.by = by
@@ -173,6 +199,61 @@ class Demo(unittest.TestCase):
         act(w, c, "workbench", {}, who=AGENT)
         self.assertEqual((c.e.step["id"], c.state()["check"]), ("bench", "pass"))  # waits for Next
         self.assertEqual(c.act("next")["id"], "pick")
+
+
+class QuietWindow(unittest.TestCase):
+    QUIET = {"all": [{"task_open": None}, {"editing": None}]}
+
+    def test_setup_leaves_no_sketch_open(self):
+        from agentlink_tutor import checks
+
+        w, c = make()
+        w.opens_sketch = True
+        c.ui = FakeUI(w)
+        c.start("demo")
+        self.assertEqual(w.gui.editing, None)
+        self.assertEqual(checks.evaluate(self.QUIET, c.e.context()).status, "pass")
+        self.assertEqual(c.ui.log[0], "settle")
+
+    def test_without_settling_the_sketch_stays_open(self):
+        from agentlink_tutor import checks
+
+        w, c = make()
+        w.opens_sketch = True
+        c.start("demo")
+        self.assertEqual(checks.evaluate(self.QUIET, c.e.context()).status, "fail")
+
+    def test_demo_opens_the_task_panel_its_targets_are_in(self):
+        rung = []
+        w, c = make(show=lambda ctl: rung.append((ctl.e.step["id"], w.gui.task)) or {"resolved": 2, "missing": []})
+        w.opens_sketch = True
+        c.ui = FakeUI(w)
+        c.start("demo")
+        for _ in range(3):
+            c.act("next")  # bench, pick, pad: now at length, waiting
+        self.assertEqual(c.e.step["id"], "length")
+        self.assertIn(("open", "Pad"), c.ui.log)
+        self.assertEqual(rung[-1], ("length", "PartDesign_Pad"))  # ringed with the panel open
+        st = c.act("next")  # closes the panel, sets 15 mm: passes
+        self.assertEqual(st["id"], "see")
+        self.assertIn("close", c.ui.log)
+        self.assertEqual(w.body().Shape.BoundBox.ZLength, 15)
+
+    def test_guided_opens_nothing(self):
+        w, c = make()
+        c.ui = FakeUI(w)
+        c.start("guided")
+        for _ in range(3):
+            c.act("next")
+        self.assertNotIn("open", [x[0] for x in c.ui.log if isinstance(x, tuple)])
+
+    def test_edit_target(self):
+        w, c = make()
+        c.start("guided")
+        self.assertIsNone(run.edit_target(c.e))  # bench: workbench has none
+        c.e.bindings["pad"] = "Pad001"
+        c.act("next"), c.act("next"), c.act("next")
+        self.assertEqual(run.edit_target(c.e), "Pad001")
 
 
 class Switching(unittest.TestCase):

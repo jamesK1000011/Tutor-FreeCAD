@@ -198,8 +198,8 @@ def target_kind(spec):
     v = spec[k]
     if k in ("cmd", "wb", "tree", "dock", "view", "sub", "ext") and not (isinstance(v, str) and v):
         raise LessonError(f"target {k}: a name")
-    if k == "menu" and not (isinstance(v, list) and v and all(isinstance(x, str) and x for x in v)):
-        raise LessonError("target menu: the titles in order, [\"Part Design\", …, \"Pad\"]")
+    if k == "menu" and not (isinstance(v, str) and v) and not (isinstance(v, list) and v and all(isinstance(x, str) and x for x in v)):
+        raise LessonError("target menu: the command's name (\"PartDesign_Pad\", its path read from the window), or the titles in order")
     if k == "task" and not (isinstance(v, str) and v) and not (isinstance(v, dict) and v and set(v) <= {"name", "label", "button"}):
         raise LessonError("target task: a label, or {name, label, button}")
     if k in ("face", "edge") and not (isinstance(v, dict) and v):

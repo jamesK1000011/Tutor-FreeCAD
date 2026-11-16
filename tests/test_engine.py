@@ -21,6 +21,8 @@ class World:
         self.gui = None
         self.calls = []
         self.undo = []
+        # As Agent Link's echo in the window: a new sketch is opened in the Sketcher.
+        self.opens_sketch = False
 
     def body(self):
         return next(o for o in self.doc.Objects if o.TypeId == "PartDesign::Body")
@@ -45,6 +47,8 @@ class World:
         if name == "sketch_new":
             sk = self.doc.add("Sketch", "Sketcher::SketchObject", inside=self.body(), shape=Shape(0, solids=0), DoF=0)
             sk.solve = lambda: 0
+            if self.opens_sketch and self.gui is not None:
+                self.gui.editing, self.gui.task = sk.Name, "Sketcher_SketchObject"
             return False, {"sketch": sk.Label}
         if name == "sketch_add":
             sk = next(o for o in self.doc.Objects if o.TypeId == "Sketcher::SketchObject")

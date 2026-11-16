@@ -2,12 +2,15 @@
 """A lesson running: the engine (engine.py) driven in time, for the Tutor tab
 and the agent's tutor tool alike.
 
-    Controller(engine, timer=None, show=None, by=None)
+    Controller(engine, timer=None, show=None, ui=None)
 
 timer(ms, fn) runs fn later on the window's thread (a Qt single shot); None
 runs it at once (headless, and the tests). show(controller) rings the step's
 targets and puts its words in the callout, answering {resolved, missing:
-[why]}; None draws nothing (no window).
+[why]}; None draws nothing (no window). ui: the window's hands for the
+lesson itself (gui_run.UI): settle() after setup (no sketch left open, no
+task dialog, nothing selected), open_task(engine) to open the feature a demo
+step's task-panel targets live in, close_task() before its do.
 
 Demo mode: next does the step in front through the tools (its do: the echo
 shows each call, one undo step each), then goes on to the following step
@@ -33,11 +36,33 @@ ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do")
 NO_WINDOW = "no window: nothing ringed"
 
 
+EDIT_KEYS = ("feature", "object", "sketch")
+
+
+def edit_target(engine):
+    """The object a step's do works on (its feature, object or sketch
+    argument, bindings resolved), whose task panel holds the step's task
+    targets; None when the do names none."""
+    s = engine.step or {}
+    for c in s.get("do") or ():
+        args = engine_mod.resolve(c.get("args") or {}, engine.bindings)
+        for k in EDIT_KEYS:
+            if isinstance(args.get(k), str) and args[k]:
+                return args[k]
+    return None
+
+
+def task_targets(step):
+    """True when some of the step's targets are in a task panel."""
+    return any(isinstance(t, dict) and "task" in t for t in (step or {}).get("targets") or ())
+
+
 class Controller:
-    def __init__(self, engine, timer=None, show=None, by=None):
+    def __init__(self, engine, timer=None, show=None, ui=None):
         self.e = engine
         self.timer = timer
         self.show = show
+        self.ui = ui
         self.busy = False  # the engine's own calls in hand (setup, do)
         self._token = None  # the auto-advance waiting; any move drops it
         self._poked = False
@@ -85,6 +110,13 @@ class Controller:
     # ---- after each change ---------------------------------------------------------
 
     def _changed(self):
+        if self.ui is not None and self.stepping and self.e.mode == "demo" and not self.e.passed and task_targets(self.e.step):
+            # Demo: the feature's task panel opened, so its field and OK are
+            # ringed and the person sees them change.
+            try:
+                self.ui.open_task(self.e)
+            except Exception:  # noqa: BLE001
+                pass
         if self.show is not None:
             try:
                 self.targets = self.show(self) if self.stepping else self.show(None)
@@ -109,6 +141,10 @@ class Controller:
         self.busy = True
         try:
             self.e.start(mode, fixtures=fixtures)
+            if self.ui is not None:
+                # The person starts from a quiet window: setup's sketch closed,
+                # no task dialog, nothing selected.
+                self.ui.settle()
         finally:
             self.busy = False
         self._changed()
@@ -147,6 +183,8 @@ class Controller:
     def _do(self):
         self.busy = True
         try:
+            if self.ui is not None and task_targets(self.e.step):
+                self.ui.close_task()  # the panel opened to show it; the do sets the value
             self.e.do()
         finally:
             self.busy = False

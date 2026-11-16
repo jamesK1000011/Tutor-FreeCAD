@@ -31,7 +31,7 @@
    "do": [{"tool": "selection", "args": {"objects": ["$sketch"]}}]},
   {"id": "pad", "say": "Press **Pad**.",
    "explain": "Pad pushes a closed sketch straight out to make a solid.",
-   "targets": [{"cmd": "PartDesign_Pad"}, {"menu": ["Part Design", "Create an additive feature", "Pad"]}],
+   "targets": [{"cmd": "PartDesign_Pad"}, {"menu": "PartDesign_Pad"}],
    "check": {"new": "PartDesign::Pad"},
    "bind": {"pad": {"new": "PartDesign::Pad"}},
    "hints": ["Pad is the yellow block with an arrow up, in the Part Design toolbar.", "It is ringed."],

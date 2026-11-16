@@ -12,6 +12,8 @@ window, none without. call_done and rider are what Agent Link calls
 NOW = {"ctl": None}
 # The window's state for checks in place of checks.gui_state (tests only).
 GUI = None
+# The lesson's window hands in place of gui_run.UI (tests only).
+UI = None
 # fn(controller or None) for each change of the lesson in hand (the tab).
 WATCHERS = []
 
@@ -82,13 +84,14 @@ def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, pr
         gui = GUI or (checks.gui_state if win else (lambda: None))
     e = engine_mod.Engine(lesson, call=call, doc=doc, gui=gui, out_dir=out_dir,
                           progress=progress if progress is not None else lessons.Progress())
-    timer = show = None
+    timer = show = ui = None
     if win:
         from . import gui_run
 
         timer = gui_run.timer
         show = gui_run.shower(session)
-    c = run.Controller(e, timer=timer, show=show)
+        ui = gui_run.UI(session)
+    c = run.Controller(e, timer=timer, show=show, ui=UI or ui)
     set_controller(c)
     if win:
         from . import gui_run

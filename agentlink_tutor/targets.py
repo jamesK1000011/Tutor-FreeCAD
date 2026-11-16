@@ -125,6 +125,21 @@ def _cmd(f, spec, win, _b):
 
 def _menu(f, spec, win, _b):
     titles = spec["menu"]
+    if isinstance(titles, str):
+        # A command's name: its path is read from this window's menus, so a
+        # lesson holds no titles (they change between releases and languages).
+        cmd = titles
+        found = win.menu_path_of(cmd)
+        if not found:
+            name = (win.command_info(cmd) or {}).get("menuText") or cmd
+            f.what = f"menu {name}"
+            f.why = f"{name} is in no menu of this window"
+            wb = win.workbench_of(cmd)
+            if wb and win.active_workbench() != wb:
+                f.why += f" (its menu comes with {win.bench_title(wb)}; call workbench activate first)"
+            f.text = f"Menu: {name}"
+            return
+        titles = found
     path = " › ".join(titles)
     f.what = f"menu {path}"
     info = win.menu_info(titles) or {}

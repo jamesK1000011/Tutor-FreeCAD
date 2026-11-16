@@ -42,7 +42,7 @@ While a lesson runs, a rider line (`tutor: step 3/5 passed; now step 4/5
 pending`) joins the agent's other answers when the step's state changes.
 
 `tutor_point`: `{targets: [spec],
-say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: [titles]}`, `{wb}`,
+say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: "PartDesign_Pad"}` (its path read from the window; titles in a list also work), `{wb}`,
 `{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
 `{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
 answer lists what is shown and, for the rest, why not. It never switches
@@ -54,7 +54,9 @@ workbench: when a toolbar is hidden it says so, and the agent may call
 A lesson is a data file (`agentlink_tutor/lessons/*.lesson.json`, checked
 against `agentlink_tutor/data/lesson.schema.json`): steps with what to say,
 what to point at, how to check the step is done, and how to do it for you.
-Lessons hold no code. Other add-ons can ship their own lessons.
+Lessons hold no code. A menu is named by its command (`{menu:
+"PartDesign_Pad"}`), never by titles, which change between FreeCAD releases
+and languages. Other add-ons can ship their own lessons.
 
 ## Privacy
 

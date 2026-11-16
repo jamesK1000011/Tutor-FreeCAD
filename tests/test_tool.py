@@ -86,6 +86,10 @@ class ToolCase(unittest.TestCase):
         self.world = World()
         self.world.gui = GuiState("StartWorkbench")
         live.GUI = lambda: self.world.gui
+        self.world.opens_sketch = True  # as the echo does in the window
+        from test_run import FakeUI
+
+        live.UI = FakeUI(self.world)
         self.session, self.srv = build(self.world)
         self.progress = lessons.Progress(params=lessons._Memory())
         from agentlink_tutor import fam_tutor
@@ -95,6 +99,7 @@ class ToolCase(unittest.TestCase):
     def tearDown(self):
         live.set_controller(None)
         live.GUI = None
+        live.UI = None
         hooks.restore(self.saved)
         os.environ.pop(hooks.AS_USER_ENV, None)
         if self.env is not None:
@@ -121,6 +126,7 @@ class ToolCase(unittest.TestCase):
         step of the Pad lesson; the lesson follows them."""
         st = self.tutor(action="start", lesson="pad-sketch", mode="guided")
         self.assertEqual((st["step"], st["id"], st["check"]), ("1/5", "bench", "pending"))
+        self.assertEqual((self.world.gui.editing, self.world.gui.task), (None, None))  # setup left nothing open
         riders = []
         for tool, args in (("workbench", {"activate": "Part Design"}), ("selection", {"objects": [self.sketch()]}),
                            ("pd_pad", {"sketch": self.sketch(), "length": 10}), ("feature_edit", {"feature": "Pad", "set": {"Length": 15}})):
