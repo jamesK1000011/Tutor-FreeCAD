@@ -62,4 +62,5 @@ tests/test_replay_t3_fc.py
 tests/test_run.py
 tests/test_ste.py
 tests/test_tool.py
+tests/test_window_prep.py
 tools/gen_agentlink_tools.py

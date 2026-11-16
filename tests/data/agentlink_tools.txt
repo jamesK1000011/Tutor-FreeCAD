@@ -397,6 +397,8 @@ text_document
 tool_groups
 units_convert
 usage_report
+varset_new
+varset_set
 view_maps
 view_render
 view_snapshot

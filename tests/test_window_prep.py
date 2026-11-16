@@ -429,7 +429,7 @@ class TreeRows(unittest.TestCase):
         self.assertEqual(note, "inside BikeStem *, which is folded: its row is ringed")
         # Unfolded and still no row: the object has none.
         w = self.win(Tree(Item("Application", Item("BikeStem"))))
-        self.assertEqual(w.tree_row(body), (None, "Body is not in the Model tree under BikeStem"))
+        self.assertEqual(w.tree_row(body), (None, "Body is not in the Model tree under BikeStem (BikeStem holds: nothing)"))
         w = self.win(Tree(Item("Application", Item("BikeStem*", Item("Body ")))))
         self.assertEqual(w.tree_row(body)[1], None)  # matched by label, ends trimmed
 
@@ -439,6 +439,170 @@ class TreeRows(unittest.TestCase):
         part = types.SimpleNamespace(Name="Part", Group=[body], InList=[])
         body.InList = [part]
         self.assertEqual([a.Name for a in window.ancestors(sk)], ["Body", "Part"])
+
+
+# ---- the live check of bike-stem-1 steps 13 and 14: a row filled in lazily -----------------
+
+class LazyItem(Item):
+    """A row whose children FreeCAD fills in only once it is unfolded, and
+    only when Qt next runs its events (pump)."""
+
+    def __init__(self, text, *later, expanded=False, filled=False):
+        super().__init__(text, *(later if filled else ()), expanded=expanded)
+        self.later = list(later)
+        for k in later:
+            k.p = self
+
+    def setExpanded(self, on):
+        self.exp = on
+
+
+class LazyTree(Tree):
+    def __init__(self, app, pending):
+        super().__init__(app)
+        self.pending = pending
+
+    def expandItem(self, it):
+        if not it.exp:
+            it.exp = True
+            if isinstance(it, LazyItem) and not it.kids:
+                self.pending.append(it)
+
+    def collapseItem(self, it):
+        it.exp = False
+
+
+class LazyRows(unittest.TestCase):
+    def setUp(self):
+        self.was = window._qt
+        window._qt = lambda: (None, None, types.SimpleNamespace(QTreeWidget=object))
+
+    def tearDown(self):
+        window._qt = self.was
+
+    def objs(self, pad=False):
+        doc = types.SimpleNamespace(Label="TutorStem2", Name="TutorStem2", Objects=[])
+        body = types.SimpleNamespace(Name="Body", Label="Body", Document=doc, InList=[], Group=[])
+        sk = types.SimpleNamespace(Name="Sketch", Label="Sketch", Document=doc, InList=[body],
+                                   getParentGeoFeatureGroup=lambda: body)
+        body.Group.append(sk)
+        body.ViewObject = types.SimpleNamespace(claimChildren=lambda: list(body.Group))
+        doc.Objects += [body, sk]
+        if pad:
+            p = types.SimpleNamespace(Name="Pad", Label="Pad", Document=doc, InList=[body],
+                                      getParentGeoFeatureGroup=lambda: body)
+            p.ViewObject = types.SimpleNamespace(claimChildren=lambda: [sk])
+            body.Group.append(p)
+            sk.InList = [body, p]
+            doc.Objects.append(p)
+            return doc, body, sk, p
+        return doc, body, sk
+
+    def setup_tree(self, body_row, extra_trees=()):
+        pending = []
+        app = Item("Application", LazyItem("TutorStem2", body_row, LazyItem("Params", filled=True), filled=True, expanded=True))
+        tree = LazyTree(app, pending)
+        trees = [tree, *extra_trees]
+        mw = types.SimpleNamespace(findChildren=lambda cls: list(trees))
+        w = window.Window(gui=types.SimpleNamespace(getMainWindow=lambda: mw), hooks=object())
+
+        def pump():
+            while pending:
+                it = pending.pop(0)
+                it.kids = list(it.later)
+        w.pump = pump
+        return w, tree, pending
+
+    def ui(self, win):
+        ui = gui_run.UI()
+        ui.bring = lambda w: False
+        ui._update = lambda: None
+        return ui
+
+    def test_unfolded_and_filled_in_after_qt_runs(self):
+        _doc, body, sk = self.objs()
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), LazyItem("Sketch", filled=True))
+        w, _t, _p = self.setup_tree(body_row)
+        self.assertEqual(w.tree_row(sk)[1], "inside Body, which is folded: its row is ringed")
+        fake = types.SimpleNamespace(getDocument=lambda n: None)
+        sys.modules["FreeCADGui"] = fake
+        try:
+            got = self.ui(w)._tree_open(w, sk, window.ancestors)
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertEqual(got, "Sketch shown in the tree")
+        row, note = w.tree_row(sk)
+        self.assertIsNone(note)
+        self.assertIsNotNone(row)
+
+    def test_a_row_unfolded_before_it_was_filled_in_is_unfolded_again(self):
+        # The Body row reads unfolded but holds no rows yet: the old lookup
+        # said "not in the Model tree" even after preparing.
+        _doc, body, sk = self.objs()
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), LazyItem("Sketch", filled=True), expanded=True)
+        w, _t, _p = self.setup_tree(body_row)
+        got, why = w.tree_row(sk)
+        self.assertIsNone(got)
+        self.assertEqual(why, "Sketch is not in the Model tree under TutorStem2 (Body holds: nothing)")
+        sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
+        try:
+            self.assertEqual(self.ui(w)._tree_open(w, sk, window.ancestors), "Sketch shown in the tree")
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertIsNone(w.tree_row(sk)[1])
+
+    def test_a_sketch_under_its_pad(self):
+        _doc, body, sk, pad = self.objs(pad=True)
+        self.assertEqual([a.Name for a in window.ancestors(sk)], ["Pad", "Body"])
+        pad_row = LazyItem("Pad", LazyItem("Sketch", filled=True))
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), pad_row)
+        w, _t, _p = self.setup_tree(body_row)
+        sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
+        try:
+            self.assertEqual(self.ui(w)._tree_open(w, sk, window.ancestors), "Sketch shown in the tree")
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertTrue(pad_row.exp)
+        self.assertIsNone(w.tree_row(sk)[1])
+
+    def test_folded_pad_rings_the_pad(self):
+        _doc, body, sk, pad = self.objs(pad=True)
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), LazyItem("Pad", LazyItem("Sketch", filled=True)),
+                            filled=True, expanded=True)
+        w, _t, _p = self.setup_tree(body_row)
+        self.assertEqual(w.tree_row(sk)[1], "inside Pad, which is folded: its row is ringed")
+
+    def test_the_second_tree_a_tree_view_dock(self):
+        _doc, body, sk = self.objs()
+        empty = Tree(Item("Application", Item("Other")))
+        body_row = LazyItem("Body", LazyItem("Sketch", filled=True), filled=True, expanded=True)
+        w, tree, _p = self.setup_tree(body_row)
+        trees = [empty, tree]
+        w._gui = types.SimpleNamespace(getMainWindow=lambda: types.SimpleNamespace(findChildren=lambda cls: list(trees)))
+        got, note = w.tree_row(sk)
+        self.assertIsNone(note)
+        self.assertIs(got["widget"], tree)
+
+    def test_matched_by_label_then_by_name(self):
+        doc, body, sk = self.objs()
+        sk.Label = "Base profile"
+        body_row = LazyItem("Body", LazyItem("Sketch", filled=True), filled=True, expanded=True)
+        w, _t, _p = self.setup_tree(body_row)
+        self.assertIsNone(w.tree_row(sk)[1])  # its row reads its Name
+        body_row.kids[0].t = "Base profile"
+        self.assertIsNone(w.tree_row(sk)[1])
+        # Another object carries the Name as its Label: that row is not taken.
+        body_row.kids[0].t = "Sketch"
+        doc.Objects.append(types.SimpleNamespace(Name="Sketch001", Label="Sketch"))
+        self.assertIsNone(w.tree_row(sk)[0])
+
+    def test_trees_seen_once_and_a_subclass_counts(self):
+        t = Tree(Item("Application"))
+        sub = Tree(Item("Application"))
+        sub.metaObject = lambda: types.SimpleNamespace(className=lambda: "Gui::MyTreeWidget")
+        mw = types.SimpleNamespace(findChildren=lambda cls: [t, t, sub])
+        w = window.Window(gui=types.SimpleNamespace(getMainWindow=lambda: mw), hooks=object())
+        self.assertEqual(w.trees(), [t, sub])
 
 
 # ---- T4: the workbench a step needs ---------------------------------------------------------

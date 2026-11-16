@@ -335,17 +335,35 @@ class Window:
     # ---- the model tree ------------------------------------------------------------
     def trees(self):
         """The window's Model trees, found afresh each time (FreeCAD deletes
-        and rebuilds them: a wrapper kept from before is dead), the shown
-        one first; dead ones left out."""
+        and rebuilds them: a wrapper kept from before is dead): the Combo
+        View's and any Tree view dock, floating ones too, the shown one
+        first; dead ones left out."""
         _QtCore, _QtGui, QtW = _qt()
-        out = []
-        for t in self.mw().findChildren(QtW.QTreeWidget):
+        found = list(self.mw().findChildren(QtW.QTreeWidget))
+        try:  # a dock torn off as its own window
+            for top in QtW.QApplication.topLevelWidgets():
+                if top is not self.mw():
+                    found += list(top.findChildren(QtW.QTreeWidget))
+        except Exception:  # noqa: BLE001  (no application: a stand-in)
+            pass
+        out, seen = [], set()
+        for t in found:
             try:
-                if alive(t) and _cls(t) == TREE:
+                if alive(t) and _is_tree(t) and id(t) not in seen:
+                    seen.add(id(t))
                     out.append((0 if t.isVisible() else 1, len(out), t))
             except RuntimeError:
                 continue
         return [t for _v, _i, t in sorted(out, key=lambda x: x[:2])]
+
+    def pump(self):
+        """Let Qt run what waits (FreeCAD fills an unfolded row's children
+        in, and lays the rows out, from the event loop)."""
+        try:
+            QtCore = _qt()[0]
+            QtCore.QCoreApplication.processEvents()
+        except Exception:  # noqa: BLE001
+            pass
 
     def tree_row(self, obj):
         label = obj.Label
@@ -363,7 +381,7 @@ class Window:
         tree = item = None
         for t in trees:
             try:
-                item = _find_item(t, label, doc, strict=True)
+                item = _find_obj(t, obj, doc)
             except RuntimeError:  # deleted while read
                 item = None
             if item is not None:
@@ -371,25 +389,36 @@ class Window:
                 break
         if item is None:
             # Not filled in yet (FreeCAD adds a folded branch's rows when it
-            # is first unfolded): the nearest parent that has a row, then the
-            # document's own row.
-            for anc in [getattr(a, "Label", None) for a in ancestors(obj)] + [None]:
-                for t in trees:
-                    try:
-                        it = _find_item(t, anc, doc, strict=True) if anc else _doc_item(t, doc)
-                        # Only a folded row hides rows not filled in yet; an
-                        # unfolded one without it: the object has no row.
-                        if it is not None and it.isExpanded():
-                            it = None
-                    except RuntimeError:
-                        it = None
-                    if it is not None:
-                        tree, item = t, it
-                        break
-                if item is not None:
+            # is first unfolded): down from the document's row along the
+            # rows that hold the object, the deepest one found; a folded
+            # one is ringed. Unfolded without it: the object has no row.
+            seen = []
+            for t in trees:
+                try:
+                    row = _doc_item(t, doc)
+                    for nxt in list(reversed(ancestors(obj))) + [obj]:
+                        if row is None or not row.isExpanded():
+                            break
+                        got = _child_row(row, nxt)
+                        if got is None:
+                            seen.append(row)
+                            row = None
+                            break
+                        row = got
+                except RuntimeError:
+                    row = None
+                if row is not None and not row.isExpanded():
+                    tree, item = t, row
                     break
             if item is None:
-                return None, f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
+                why = f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
+                if seen:
+                    try:
+                        kids = [str(seen[0].child(j).text(0)) for j in range(min(seen[0].childCount(), 8))]
+                        why += f" ({seen[0].text(0)} holds: {', '.join(kids) or 'nothing'})"
+                    except (RuntimeError, AttributeError):
+                        pass
+                return None, why
         note = None
         # A folded branch is never unfolded: its nearest shown parent's row is ringed.
         top, p = item, item.parent()
@@ -397,7 +426,7 @@ class Window:
             if not p.isExpanded():
                 top = p
             p = p.parent()
-        if top is not item or not _same(item.text(0), label):
+        if top is not item or not any(_same(item.text(0), n) for n in _names(obj)):
             note = f"inside {top.text(0)}, which is folded: its row is ringed"
         row_label = top.text(0)
         if not tree.isVisible():
@@ -614,6 +643,51 @@ def _same(text, label):
     return a == b or a.rstrip("*").strip() == b
 
 
+def _is_tree(w):
+    """A FreeCAD Model tree (Gui::TreeWidget, or a class built on it)."""
+    c = _cls(w)
+    c = str(c)
+    return c == TREE or (c.startswith("Gui::") and c.endswith("TreeWidget"))
+
+
+def _names(obj):
+    """What a row of obj may read: its Label, else its Name (unless another
+    object of the document carries that Name as its Label)."""
+    out = [getattr(obj, "Label", None)]
+    name = getattr(obj, "Name", None)
+    if name not in out and not _label_taken(obj, name):
+        out.append(name)
+    return [n for n in out if n]
+
+
+def _child_row(row, obj):
+    """obj's row among row's children (Label first, then Name), or None."""
+    kids = [row.child(j) for j in range(row.childCount())]
+    for n in _names(obj):
+        for k in kids:
+            if k is not None and _same(k.text(0), n):
+                return k
+    return None
+
+
+def _find_obj(tree, obj, doc_label):
+    """obj's row in the tree, under its document's row: by Label, else by
+    Name when no object of the document carries that Name as a Label."""
+    item = None
+    for n in _names(obj):
+        item = _find_item(tree, n, doc_label, strict=True)
+        if item is not None:
+            break
+    return item
+
+
+def _label_taken(obj, text):
+    try:
+        return any(getattr(o, "Label", None) == text for o in obj.Document.Objects)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _doc_item(tree, doc_label):
     """The document's own row (the application's child), or None."""
     if not doc_label:
@@ -631,8 +705,34 @@ def _doc_item(tree, doc_label):
     return None
 
 
+def _claimer(o):
+    """The object whose tree row holds o's row (a Pad holds its sketch,
+    a Body its features): one of o's InList whose view claims o."""
+    got = []
+    for q in getattr(o, "InList", None) or ():
+        kids = _claimed(q)
+        if kids and o in kids:
+            got.append(q)
+    # Claimed by a body and by a feature the body claims: the feature's
+    # row is the one that holds it.
+    for q in got:
+        if not any(q is not r and q in _claimed(r) for r in got):
+            continue
+        return q
+    return got[0] if got else None
+
+
+def _claimed(q):
+    try:
+        vo = getattr(q, "ViewObject", None)
+        return list(vo.claimChildren() or ()) if vo is not None else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def ancestors(obj, depth=12):
-    """The objects obj sits inside, nearest first: its body or part (the
+    """The objects whose tree rows hold obj's row, nearest first: the one
+    whose view claims it (a Pad its sketch), else its body or part (the
     parent geo feature group), else the group whose Group holds it."""
     out, seen, o = [], set(), obj
     for _ in range(depth):
@@ -641,6 +741,9 @@ def ancestors(obj, depth=12):
             p = o.getParentGeoFeatureGroup() if hasattr(o, "getParentGeoFeatureGroup") else None
         except Exception:  # noqa: BLE001
             p = None
+        claim = _claimer(o)
+        if claim is not None:
+            p = claim
         if p is None:
             for q in getattr(o, "InList", None) or ():
                 try:
