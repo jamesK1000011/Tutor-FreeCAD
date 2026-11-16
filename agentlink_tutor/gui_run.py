@@ -295,7 +295,12 @@ class UI:
 
         got, note = win.tree_row(obj)
         if got is not None and note is None:
-            return None  # its row shows already
+            # Its row is unfolded already; it may still be scrolled away.
+            if scroll_to(win, obj, ancestors):
+                self._update()
+                win.pump()
+                return f"{obj.Label} scrolled into view in the tree"
+            return None
         # The Model tab in front first (the Tutor's own Agent Link tab or
         # the Tasks tab is, during a lesson), Qt let run, so the tree is
         # laid out before any row is unfolded or looked for.
@@ -330,6 +335,13 @@ class UI:
         got, note = win.tree_row(obj)
         if got is None:
             return f"{obj.Label} not shown in the tree: {note}"[:600]
+        # Unfolded, the row can still lie below the tree's bottom edge (a
+        # long history: the ring said "scrolled out of view" on bike-stem-1's
+        # Sketch row): the tree is scrolled to it, as a person would.
+        if scroll_to(win, obj, ancestors):
+            moved = True
+            self._update()
+            win.pump()
         return f"{obj.Label} shown in the tree" if moved else None
 
     def close_task(self):
@@ -423,6 +435,45 @@ def unfold_to(win, obj, ancestors):
                     break
                 row = got
         except RuntimeError:  # deleted while read
+            continue
+    return moved
+
+
+def row_shows(view_h, top, bottom):
+    """Whether a row from top to bottom (pixels in its tree's viewport, which
+    is view_h high) shows whole enough to ring: its middle inside the viewport."""
+    mid = (top + bottom) / 2.0
+    return 0 <= mid <= view_h
+
+
+def scroll_to(win, obj, ancestors):
+    """Each shown Model tree scrolled so obj's row is in view, where it is
+    unfolded but lies outside the viewport. True when a tree was scrolled.
+    Demo only (the lesson's own preparation); nothing is selected, folded
+    or unfolded."""
+    from .window import _child_row, _doc_item, _doc_key
+
+    doc = _doc_key(getattr(obj, "Document", None))
+    path = list(reversed(ancestors(obj))) + [obj]
+    moved = False
+    for t in win.trees():
+        try:
+            if not t.isVisible():
+                continue
+            row = _doc_item(t, doc)
+            for nxt in path:
+                if row is None or not row.isExpanded():
+                    row = None
+                    break
+                row = _child_row(row, nxt)
+            if row is None:
+                continue
+            r = t.visualItemRect(row)
+            if row_shows(t.viewport().height(), r.top(), r.bottom()):
+                continue
+            t.scrollToItem(row)
+            moved = True
+        except (RuntimeError, AttributeError):  # deleted while read; a stand-in tree
             continue
     return moved
 

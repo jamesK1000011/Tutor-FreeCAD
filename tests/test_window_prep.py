@@ -536,6 +536,36 @@ class LazyRows(unittest.TestCase):
         self.assertIsNone(note)
         self.assertIsNotNone(row)
 
+    def test_a_row_below_the_trees_edge_is_scrolled_to(self):
+        # bike-stem-1 steps 13-14: the Sketch row was unfolded but lay below
+        # the tree's bottom edge, and the ring said "scrolled out of view".
+        _doc, body, sk = self.objs()
+        body_row = LazyItem("Body", LazyItem("Origin", filled=True), LazyItem("Sketch", filled=True), expanded=True)
+        body_row.kids = list(body_row.later) if not body_row.kids else body_row.kids
+        w, tree, _p = self.setup_tree(body_row)
+        w.pump()
+        scrolled, where = [], {"y": 400}
+        tree.height = lambda: 200
+        tree.visualItemRect = lambda it: types.SimpleNamespace(
+            x=lambda: 0, y=lambda: where["y"], width=lambda: 100, height=lambda: 18,
+            top=lambda: where["y"], bottom=lambda: where["y"] + 18)
+
+        def scroll(it):
+            scrolled.append(it.text(0))
+            where["y"] = 90
+        tree.scrollToItem = scroll
+        self.assertFalse(gui_run.row_shows(200, 400, 418))
+        self.assertTrue(gui_run.row_shows(200, 90, 108))
+        sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
+        try:
+            got = self.ui(w)._tree_open(w, sk, window.ancestors)
+            again = self.ui(w)._tree_open(w, sk, window.ancestors)
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertEqual(scrolled, ["Sketch"])
+        self.assertIn("Sketch", got)
+        self.assertIsNone(again)  # in view now: nothing more to do
+
     def test_a_row_unfolded_before_it_was_filled_in_is_unfolded_again(self):
         # The Body row reads unfolded but holds no rows yet: the old lookup
         # said "not in the Model tree" even after preparing.
