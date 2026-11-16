@@ -919,5 +919,123 @@ class DocumentAndFinish(unittest.TestCase):
         self.assertEqual(st["final"], {"step": "see", "check": "pass"})
 
 
+# ---- bike-stem-1 steps 13 and 14, live on FreeCAD 1.1.3: the Model dock tabbed behind Tasks ----
+
+class MainTabBar(QTabBar):
+    """The main window's own tab bar over docks it tabs together (FreeCAD
+    1.1: Model, Tasks and a panel are docks of their own)."""
+
+    def __init__(self, parent, texts, current=0):
+        super().__init__(parent, texts)
+        self.cur = current
+
+    def currentIndex(self):
+        return self.cur
+
+
+class TabbedDock(QDockWidget):
+    """A dock in such a tab group. As Qt does, a dock tabbed behind another
+    stays isVisible(): it is parked outside the window. show and raise_
+    make its tab the current one."""
+
+    def __init__(self, parent, title, bar):
+        super().__init__(parent, title)
+        self.bar = bar
+        self.calls = []
+
+    def isFloating(self):
+        return False
+
+    def show(self):
+        self.calls.append("show")
+
+    def raise_(self):
+        self.calls.append("raise")
+        self.bar.cur = self.bar.texts.index(self.title)
+
+
+class DockTree(Tree):
+    """A Model tree inside a dock: rows as Tree, a parent as a widget."""
+
+    def __init__(self, app, parent):
+        super().__init__(app)
+        self._p = parent
+        self.scrolled = []
+
+    def parentWidget(self):
+        return self._p
+
+    def height(self):
+        return 200
+
+    def scrollToItem(self, it):
+        self.scrolled.append(it.text(0))
+
+
+class TabbedDocks(unittest.TestCase):
+    def setUp(self):
+        self.was = window._qt
+        self.qtw = types.SimpleNamespace(**{**vars(QtW), "QTreeWidget": object})
+        window._qt = lambda: (None, None, self.qtw)
+        self.mw = QWidget(name="MainWindow")
+        self.bar = MainTabBar(self.mw, ["Model", "Tasks", "Agent Link"], current=1)  # Tasks in front
+        self.model = TabbedDock(self.mw, "Model", self.bar)
+        self.tasks = TabbedDock(self.mw, "Tasks", self.bar)
+        doc = types.SimpleNamespace(Label="TutorStem", Name="TutorStem", Objects=[])
+        self.body = types.SimpleNamespace(Name="Body", Label="Body", Document=doc, InList=[], Group=[])
+        self.sk = types.SimpleNamespace(Name="Sketch", Label="Sketch", Document=doc, InList=[self.body],
+                                        getParentGeoFeatureGroup=lambda: self.body)
+        self.body.Group.append(self.sk)
+        doc.Objects += [self.body, self.sk]
+        app = Item("Application", Item("TutorStem", Item("Body", Item("Origin"), Item("Sketch"))))
+        self.tree = DockTree(app, self.model)
+        mw = self.mw
+        tree = self.tree
+        find = mw.findChildren
+        mw.findChildren = lambda cls: [tree] if cls is object else find(cls)
+        self.win = window.Window(gui=types.SimpleNamespace(getMainWindow=lambda: mw), hooks=object())
+        self.win.pump = lambda: None
+
+    def tearDown(self):
+        window._qt = self.was
+
+    def test_a_dock_tabbed_behind_is_not_in_front_though_qt_calls_it_visible(self):
+        self.assertTrue(self.tree.isVisible() and self.model.isVisible())
+        self.assertTrue(window.behind(self.tree, self.qtw, self.mw))
+        self.assertFalse(window.behind(self.tasks, self.qtw, self.mw))
+        self.assertFalse(self.win.front(self.tree))
+        self.assertEqual(window.front_steps(self.tree, self.qtw, self.mw), [("dock", self.model, None)])
+        self.assertEqual(window.front_steps(self.tasks, self.qtw, self.mw), [])
+        # Guided: the Model tab is ringed, never the row of a tree that is not on screen.
+        spec, note = self.win.tree_row(self.sk)
+        self.assertIs(spec["widget"], self.bar)
+        self.assertEqual(spec["rect"](), (0, 0, 60, 20))
+        self.assertEqual(note, window.MODEL_TAB)
+
+    def test_demo_brings_the_model_dock_forward_for_a_row_already_unfolded(self):
+        ui = gui_run.UI()
+        ui._mw = lambda: self.mw
+        ui._update = lambda: None
+        sys.modules["FreeCADGui"] = types.SimpleNamespace(getDocument=lambda n: None)
+        try:
+            got = ui._tree_open(self.win, self.sk, window.ancestors)
+            again = ui._tree_open(self.win, self.sk, window.ancestors)
+        finally:
+            sys.modules.pop("FreeCADGui", None)
+        self.assertEqual(got, "Sketch shown in the tree")
+        self.assertEqual(self.model.calls, ["show", "raise"])  # once; no focus call exists on the stand-in to make
+        self.assertEqual(self.bar.cur, 0)
+        self.assertEqual(self.tasks.calls, [])
+        self.assertIsNone(again)
+        row, note = self.win.tree_row(self.sk)
+        self.assertIsNone(note)
+        self.assertIs(row["widget"], self.tree)
+
+    def test_a_tab_bar_qt_no_longer_uses_does_not_count(self):
+        self.bar._vis = False  # hidden: a bar left from an earlier tab group
+        self.assertFalse(window.behind(self.tree, self.qtw, self.mw))
+        self.assertTrue(self.win.front(self.tree))
+
+
 if __name__ == "__main__":
     unittest.main()

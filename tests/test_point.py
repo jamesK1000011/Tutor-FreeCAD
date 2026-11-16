@@ -710,25 +710,25 @@ class WithAgentLink(unittest.TestCase):
             self.echo.NO_ECHO.clear()
             self.echo.NO_ECHO.update(self.no_echo)
 
-    def test_tools_json_is_agent_links_format_and_short(self):
+    def test_tools_json_is_agent_links_format(self):
         from agentlink import tooldata
 
         doc = json.load(open(os.path.join(ROOT, "agentlink_tutor", "data", "tools.json"), encoding="utf-8"))
         self.assertEqual(tooldata.check(doc), [])
         self.assertEqual(set(doc["entries"]), {"tutor_point", "tutor", "tutor_watch"})
-        # The design's budget: about 1,800 characters for the three tutor
-        # tools, raised to 2,000 with batches and the parameter checks (T5/T6),
-        # and to 2,450 with the live demo's fixes (the lesson's document,
-        # demo's window preparation, the final check, dropdowns, panels),
-        # and to 2,550 with a call's else (varset_new, param_set instead).
-        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 2550)
+        # No length budget any more (the hardening pass, 16 Nov 2026: a
+        # description says the inputs, the traps and the reply in full; the
+        # tools are found through tool_groups' index, so the group costs one
+        # row until it is asked for). Each says what its reply holds and
+        # carries search words.
         t = doc["entries"]["tutor"]
         self.assertEqual((t["group"], t["changes"]), ("tutor", False))
-        self.assertLessEqual(len(t["description"]), 1350)
         d = doc["entries"]["tutor_point"]
         self.assertEqual(d["group"], "tutor")
-        self.assertLessEqual(len(d["description"]), 780)
         self.assertFalse(d["changes"])
+        for name, e in doc["entries"].items():
+            self.assertIn("words", e, name)
+            self.assertTrue("The reply" in e["description"] or "The answer" in e["description"], name)
 
     def test_family_declares_no_echo_and_is_not_lean(self):
         import importlib

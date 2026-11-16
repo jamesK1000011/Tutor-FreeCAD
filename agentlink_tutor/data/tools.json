@@ -5,7 +5,7 @@
  "entries": {
   "tutor_point": {
    "group": "tutor",
-   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: \"PartDesign_Pad\"}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of} (of beside the query), {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. A dropdown item: its ▾ arrow ringed. Another workbench's command: the selector ringed, \"Switch to …\" said first. dock finds a panel inside another dock's tab (Property view). Says why any target is not shown.",
+   "description": "Point at FreeCAD's controls for the person: numbered rings and one callout drawn over the window, faces and edges lit in the 3D view. It only draws: it never moves the cursor, takes focus, opens a menu, switches workbench or changes the document. Needs FreeCAD's window. targets (6 at most; ringed and numbered 1, 2, … in order), each an object with one kind: {cmd: \"PartDesign_Pad\"} a command's toolbar button; {menu: \"PartDesign_Pad\"} its menu path (or the menu titles in order as a list); {wb: \"PartDesignWorkbench\"} the workbench selector; {task: \"Length\"} a field of the open task panel by its label, or {task: {name, label, button}} (button: ok, cancel, close …); {tree: \"Sketch\"} an object's row in the Model tree, by Name or Label; {dock: \"Report view\"} a panel; {view: \"3d\"} the 3D view; {face: {normal: [0, 0, 1], largest: true}, of: \"Pad\"} or {edge: {near: [x, y, z]}, of: \"Pad\"} a face or edge found by a query (edge also takes edges: [\"Edge3\"], longest: true, direction: [x, y, z]); {sub: \"Face6\", of: \"Pad\"} a named face or edge. of stands beside the query, not inside it, and names the object; sub-element numbers change when the model changes, so prefer a query. say: the callout's words (300 characters at most). ms: gone after that long (500 to 120000); left out, they stay until the next tutor_point. clear: false keeps the earlier highlights and adds to them; a call with no targets takes everything away. What it does when a control is not on screen (it never fixes the window itself): a command inside a toolbar dropdown gets the dropdown's ▾ arrow ringed, one behind a short toolbar's » gets the » ringed; another workbench's command gets the workbench selector ringed and \"Switch to …\" said first; a tree row inside a folded row gets the folded row ringed; a tree, a task field or a panel whose tab is not in front (FreeCAD 1.1 tabs the Model, Tasks and add-on docks together, and Tasks comes forward whenever a task panel opens) gets that tab ringed with \"open it\" said; a menu path on macOS, whose menubar cannot be drawn over, is put into the callout as words. The reply: shown [{n, kind, on, note, text} for each target ringed or lit; note says when a folded row, a tab or an arrow is ringed in its place, text is what the callout says for it], missing [the same with why: not found, hidden, covered, scrolled out of view, in another window, no such command …], until (\"<ms> ms\" or \"the next tutor_point\"), callout (bubble: over the 3D view; overlay: Agent Link's own; none) with callout_why, and note when nothing could be ringed. Read missing before telling the person to look: a target in missing is not marked on their screen. A lesson (the tutor tool) rings its own targets; use tutor_point for a one-off answer to \"where is …?\".",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -39,11 +39,21 @@
    "changes": false,
    "source": "written for the Tutor",
    "date": "2026-11-16",
-   "activity": "Pointed out controls"
+   "activity": "Pointed out controls",
+   "words": [
+    "highlight",
+    "show where",
+    "ring",
+    "callout",
+    "arrow",
+    "point out button",
+    "where is",
+    "teach"
+   ]
   },
   "tutor": {
    "group": "tutor",
-   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤30}, mode}; longer: batches, each with setup {after: id before}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English (imperative, one instruction per sentence, ≤20 words, UI names in bold, optional why): the validator refuses others with reasons. A call may carry else: [calls], done instead when it is refused (a tool this Agent Link lacks). Checks include new {type, where: {Prop: v}}, sketch {dof}, expr {uses, count}, follows (part follows a parameter). start works in the open document when it is empty, else in a new one with a name not in use (document says which). demo makes the window ready for each step (workbench, Tasks or Model tab, tree unfolded: prepared) and passes a step already done. Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; at the end {step: done, finished, final: the last check}; a rider line (tutor: step n/m …) joins your other answers.",
+   "description": "Run a FreeCAD lesson in the person's own window, step by step, each step checked against the document. Needs FreeCAD's window. action (status when left out): list — the lessons that fit this FreeCAD and its workbenches (query: words of the title, id or a tag; 12 rows at most, more counts the rest, running names a lesson in hand). start — lesson: an id from list (or its last part when only one ends so), or an inline lesson object {id: \"inline.x\", title, steps} of 30 steps at most (a longer one goes in batches: each a start whose lesson has setup {after: the id of the batch before}); mode demo or guided (guided when left out); a lesson already running is stopped first; it works in the open document when that is empty, else in a new document with a name not in use (document in the answer says which), never in the person's own model. next, back, skip, hint, do, stop, status (detail: true also lists the steps to come in remaining), explain {on: true | false} (the short why lines; the choice is kept for the person), watch {on: true | false} (watch mode for tutor_watch: only when the person asks for it). mode given with any other action switches mode. demo: next does the step in front with the lesson's own tool calls (ordinary calls through Agent Link: one undo step each, shown live), then waits for the next next. Before each step demo makes the window ready so the step's targets can be ringed and says what it did in prepared: the command's workbench activated, the Tasks or the Model tab brought to the front (the dock is raised; focus and the cursor are never taken and nothing goes full screen), the object's tree row unfolded and scrolled into view; a step whose check already holds is passed with nothing ringed (targets.note: already done). guided: the person does the step and nothing is prepared for them (the callout says what to open); the step is checked again after each thing they or you do, and the lesson goes on 0.6 s after a pass. hint raises the hint one rung (a nudge, then the field, then the value); do is \"Do it for me\" for the step in front. Inline lessons: a step is {id, say, why?, targets (as tutor_point's), do: [{tool, args, else: [calls]}], check}; a call's else is done instead when the call is refused (a tool this Agent Link lacks). Write say and why in Simplified Technical English: imperative, one instruction per sentence, 20 words at most, the names of controls in bold; the validator refuses anything else and says which step and why. Checks: exists, absent, new {type, where: {Prop: value}}, prop, valid, volume, bbox, sketch {closed, dof, full}, expr {uses, count}, follows (the part follows a parameter), file, selected, workbench, editing, task_open, used (a command the person used), joined with all, any, not; agentlink_tutor/data/lesson.schema.json is the whole format. The answer (kept under 600 characters; long texts are cut with …): lesson, mode, explain, step \"n/m\", id, say, because (the why line), check pass | fail | pending with why, hint (the rung) and hint_text, do_it (true when \"Do it for me\" is on offer), did, document, targets {resolved: how many are ringed, missing: [why each of the others is not — hidden, covered, scrolled out of view, the Model tab is not in front, not in the Model tree …]}, prepared, callout (bubble | overlay | none) with callout_why. At the end: step \"done\", finished, skipped, final {step, the last check}. While a lesson runs a rider line (tutor: step n/m …) joins the answers of your other calls, so there is no need to poll status. Refused: no lesson running (list, then start), the lesson is done (start another, stop or status), an unknown lesson id (list), an inline lesson the validator does not take (with its reasons). The document is changed only by the lesson's own tool calls.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -99,11 +109,23 @@
    "changes": false,
    "source": "written for the Tutor",
    "date": "2026-11-16",
-   "activity": "Tutor lesson {action}"
+   "activity": "Tutor lesson {action}",
+   "words": [
+    "lesson",
+    "tutorial",
+    "teach",
+    "learn",
+    "course",
+    "walk through",
+    "step by step",
+    "guided",
+    "demo",
+    "show me how"
+   ]
   },
   "tutor_watch": {
    "group": "tutor",
-   "description": "Follow what the person does in the window while watch mode is on (they turn it on; a badge shows). Waits up to wait s (0–25) for events after since; until: milestone ends the wait when they finish something (an object made, a panel closed with OK, a recompute, undo, save, a question). Events: {n, k: cmd|wb|sel|clr|new|del|rc|edit|done|undo|redo|save|ask, …}; give next as since in the next call. Answered off the window's thread. Off: says so.",
+   "description": "Follow what the person does in FreeCAD's window while watch mode is on. Watch mode is theirs to turn on (the Tutor tab's Let Claude watch, or tutor {action: \"watch\", on: true} when they ask for it); a badge in the status bar shows it is on, and when it is off this answers {watching: false, say} and nothing else. since: the next of the last answer (0 the first time). wait: seconds to wait for an event after since, 0 to 25 (0: answer at once); keep it at 25 or under so the call ends well inside a client's time limit, and call again to go on waiting. until: any (the default: the first event ends the wait) or milestone (only a point where they have finished something does: an object made, a panel closed, a recompute, undo, redo, save, or a question). The reply: watching, events (40 at most, 1500 characters at most, the newest kept), next (give it as since in the next call), more (how many older ones were left out of this answer), missed: true when events before since had already left the buffer (it keeps the last 500). An event is {n, k, …} with k: cmd (c: a command used), wb (w: a workbench switched to), sel (o: object, s: sub-element), clr (selection cleared), new (o, ty: an object made and its type), del (o), rc (d: a document recomputed), edit (o: opened for editing), done (o: the editing closed with OK, Close or Cancel), undo, redo, save (d), ask (q: the person's question from Ask Claude); m: 1 marks a milestone. Only the person's own events are kept: what happens while one of your calls runs is left out, and runs of selections or recomputes within 0.3 s keep only the last. It reads only the event buffer, on Agent Link's socket thread, so it never blocks FreeCAD's window and works while FreeCAD is busy; nothing is written to disk. Changes nothing.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -126,15 +148,24 @@
        "any",
        "milestone"
       ],
-      "default": "any"
+      "default": "any",
+      "description": "any: the first event ends the wait. milestone: only something finished does (new, done, rc, undo, redo, save, ask)."
      }
     },
     "additionalProperties": false
    },
    "changes": false,
    "source": "written for the Tutor",
-   "date": "2026-11-15",
-   "activity": "Followed the person's work"
+   "date": "2026-11-16",
+   "activity": "Followed the person's work",
+   "words": [
+    "observe",
+    "follow along",
+    "what did the user do",
+    "events",
+    "wait for the person",
+    "long poll"
+   ]
   }
  }
 }

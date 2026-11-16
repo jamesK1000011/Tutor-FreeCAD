@@ -40,6 +40,7 @@ agentlink_tutor/window.py
 agentlink_tutor/words.py
 docs/core-hooks-needed.md
 docs/examples/workshop/lessons/hole-for-hardware.lesson.json
+docs/hardening/tutor-findings.md
 package.xml
 tests/_fc.py
 tests/data/agentlink_tools.txt

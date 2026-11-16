@@ -293,6 +293,17 @@ class UI:
         unfolded). Says so only when its row then shows; else why not."""
         import FreeCADGui
 
+        # The Model tab in front first (the Tutor's own Agent Link tab or
+        # the Tasks tab is, during a lesson: FreeCAD raises Tasks whenever
+        # a task dialog opens), Qt let run, so the tree is laid out before
+        # any row is unfolded, scrolled to or looked for. Before anything
+        # else: a row that is unfolded already still cannot be ringed while
+        # its dock is tabbed behind another (bike-stem-1 steps 13-14).
+        front = win.model_tree(obj)
+        brought = bool(front is not None and self.bring(front))
+        if brought:
+            self._update()
+            win.pump()
         got, note = win.tree_row(obj)
         if got is not None and note is None:
             # Its row is unfolded already; it may still be scrolled away.
@@ -300,15 +311,7 @@ class UI:
                 self._update()
                 win.pump()
                 return f"{obj.Label} scrolled into view in the tree"
-            return None
-        # The Model tab in front first (the Tutor's own Agent Link tab or
-        # the Tasks tab is, during a lesson), Qt let run, so the tree is
-        # laid out before any row is unfolded or looked for.
-        front = win.model_tree(obj)
-        brought = bool(front is not None and self.bring(front))
-        if brought:
-            self._update()
-            win.pump()
+            return f"{obj.Label} shown in the tree" if brought else None
         doc = getattr(obj, "Document", None)
         try:
             gd = FreeCADGui.getDocument(doc.Name) if doc is not None else None
