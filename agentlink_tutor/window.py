@@ -137,6 +137,16 @@ class Window:
             out.append((w, ov.visible(w) if ov is not None else "not drawable"))
         return out
 
+    def command_groups(self, cmd):
+        """[(button, why hidden or None, menu, action)]: toolbar buttons
+        whose dropdown holds cmd (Agent Link's targets.group_buttons)."""
+        from agentlink import targets
+
+        if not hasattr(targets, "group_buttons"):
+            return []  # an older Agent Link
+        ov = self.overlay()
+        return [(b, ov.visible(b) if ov is not None else "not drawable", m, a) for b, m, a in targets.group_buttons(cmd, self.mw())]
+
     # ---- menus -------------------------------------------------------------------
     def menu_titles(self):
         try:

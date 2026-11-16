@@ -38,6 +38,7 @@ class Win:
         self.benches = kw.get("benches", ["PartWorkbench", "PartDesignWorkbench", "SketcherWorkbench"])
         self.commands = kw.get("commands", {"PartDesign_Pad": [], "Std_Undo": [("undo-btn", None)]})
         self.menus = kw.get("menus", {})
+        self.groups = kw.get("groups", {})
         self.native = kw.get("native", False)
         self.task = kw.get("task", None)
         self.objs = {o.Name: o for o in kw.get("objs", [Obj("Sketch"), Obj("Pad")])}
@@ -78,6 +79,9 @@ class Win:
 
     def command_buttons(self, cmd):
         return list(self.commands.get(cmd, []))
+
+    def command_groups(self, cmd):
+        return list(self.groups.get(cmd, []))
 
     def menu_titles(self):
         return ["File", "Edit", "Part"]
@@ -128,7 +132,7 @@ class Win:
 
 class Overlay:
     def __init__(self, hidden=None, native=False, missing=None):
-        self.shows, self.menus, self.clears = [], [], []
+        self.shows, self.menus, self.clears, self.watched = [], [], [], []
         self.hide = hidden or {}
         self.native, self.missing = native, missing
 
@@ -136,6 +140,9 @@ class Overlay:
         self.shows.append({"specs": specs, "say": say, "ms": ms, "owner": owner})
         hid = [(i, self.hide[s["widget"]]) for i, s in enumerate(specs) if s["widget"] in self.hide]
         return {"handle": 7, "shown": [i for i in range(len(specs)) if i not in dict(hid)], "hidden": hid}
+
+    def watch_menu(self, menu, action, owner="", handle=None, badge=None):
+        self.watched.append((menu, action, owner, handle, badge))
 
     def menu(self, titles, badge=None, owner="", handle=None, say=None, ms=None):
         self.menus.append((tuple(titles), badge, handle))
@@ -289,6 +296,32 @@ class Menus(unittest.TestCase):
         out, _, _ = run({"targets": [{"menu": self.PATH}]})
         self.assertIn("no menu item 'Pad'", out["missing"][0]["why"])
         self.assertIn("call workbench activate first", out["missing"][0]["why"])
+
+
+class Dropdowns(unittest.TestCase):
+    """A command inside a toolbar dropdown (FreeCAD 1.1.3's group commands):
+    the dropdown's button ringed, the item inside it when it is opened."""
+
+    def test_group_buttons_for_any_grouped_command(self):
+        for cmd, btn in (("Sketcher_CreateRectangle", "rects-btn"), ("Sketcher_CreateArc", "arcs-btn"),
+                         ("Sketcher_CreateCircle", "circles-btn"), ("PartDesign_AdditiveBox", "prims-btn")):
+            with self.subTest(cmd=cmd):
+                w = Win(commands={cmd: [("hidden-sketcher-btn", "hidden")]}, groups={cmd: [(btn, None, f"{btn}-menu", f"{cmd}-act")]})
+                out, ov, _ = run({"targets": [{"cmd": cmd}], "say": "Draw it."}, w)
+                got = out["shown"][0]
+                self.assertEqual((got["kind"], got["note"]), ("cmd", "in the ▾ menu of this button"))
+                self.assertEqual(ov.shows[0]["specs"], [{"widget": btn, "badge": 1}])
+                self.assertEqual(ov.watched, [(f"{btn}-menu", f"{cmd}-act", "tutor", 7, 1)])
+                self.assertIn("open the ▾ menu of the ringed button", ov.shows[0]["say"])
+
+    def test_own_button_first_and_hidden_dropdown_not_used(self):
+        w = Win(commands={"Sketcher_CreateLine": [("line-btn", None)]}, groups={"Sketcher_CreateLine": [("x", None, "m", "a")]})
+        out, ov, _ = run({"targets": [{"cmd": "Sketcher_CreateLine"}]}, w)
+        self.assertEqual(ov.shows[0]["specs"], [{"widget": "line-btn", "badge": 1}])
+        self.assertEqual(ov.watched, [])
+        w = Win(active="PartDesignWorkbench", commands={"Sketcher_CreateRectangle": []}, groups={"Sketcher_CreateRectangle": [("b", "hidden", "m", "a")]})
+        out, _, _ = run({"targets": [{"cmd": "Sketcher_CreateRectangle"}]}, w)
+        self.assertEqual(out["missing"][0]["why"], "no toolbar button for it here")
 
 
 class Benches(unittest.TestCase):
