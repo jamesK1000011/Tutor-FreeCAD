@@ -285,34 +285,41 @@ class UI:
         return None
 
     def _tree_open(self, win, obj, ancestors):
+        """Unfold the tree down to obj's row: in every Model tree (the Combo
+        View's, a Tree view dock), from its document's row along the rows
+        that hold it (body, then the feature that claims it), Qt let run
+        between unfoldings (FreeCAD fills a row's children in when it is
+        unfolded). Says so only when its row then shows; else why not."""
         import FreeCADGui
 
         got, note = win.tree_row(obj)
         if got is not None and note is None:
             return None  # its row shows already
-        moved = False
         doc = getattr(obj, "Document", None)
-        gd = None
         try:
             gd = FreeCADGui.getDocument(doc.Name) if doc is not None else None
         except Exception:  # noqa: BLE001
             gd = None
+        moved = unfold_to(win, obj, ancestors)
+        if gd is not None and hasattr(gd, "toggleTreeItem"):
+            for a in reversed(ancestors(obj)):
+                try:
+                    gd.toggleTreeItem(a, 2)  # 2: unfold (fills in its rows)
+                    moved = True
+                except Exception:  # noqa: BLE001
+                    continue
+            if moved:
+                win.pump()
+                moved = unfold_to(win, obj, ancestors) or moved
         trees = win.trees()
-        for t in trees:
-            from .window import _doc_item
-
-            it = _doc_item(t, getattr(doc, "Label", None))
-            if it is not None and not it.isExpanded():
-                it.setExpanded(True)
-                moved = True
-        for a in reversed(ancestors(obj)):
-            if gd is not None and hasattr(gd, "toggleTreeItem"):
-                gd.toggleTreeItem(a, 2)  # 2: unfold (fills in its rows)
-                moved = True
         if trees:
             moved = self.bring(trees[0]) or moved
         if moved:
             self._update()
+            win.pump()
+        got, note = win.tree_row(obj)
+        if got is None:
+            return f"{obj.Label} not shown in the tree: {note}"[:160]
         return f"{obj.Label} shown in the tree" if moved else None
 
     def close_task(self):
@@ -373,3 +380,47 @@ def badge(on):
 
 
 _BADGE = {}
+
+
+def unfold_to(win, obj, ancestors):
+    """Unfold every Model tree from obj's document row down along the rows
+    that hold it, letting Qt fill each branch in before the next; a row
+    unfolded before its children were filled in is folded and unfolded
+    again. True when a row was unfolded."""
+    from .window import _child_row, _doc_item
+
+    doc = getattr(getattr(obj, "Document", None), "Label", None)
+    path = list(reversed(ancestors(obj)))
+    moved = False
+    for t in win.trees():
+        try:
+            row = _doc_item(t, doc)
+            if row is None:
+                continue
+            for nxt in path + [obj]:  # obj's own row is left as it is
+                if not row.isExpanded():
+                    _expand(t, row)
+                    moved = True
+                    win.pump()
+                got = _child_row(row, nxt)
+                if got is None:
+                    _expand(t, row, False)
+                    _expand(t, row)
+                    win.pump()
+                    moved = True
+                    got = _child_row(row, nxt)
+                if got is None:
+                    break
+                row = got
+        except RuntimeError:  # deleted while read
+            continue
+    return moved
+
+
+def _expand(tree, item, on=True):
+    if on and hasattr(tree, "expandItem"):
+        tree.expandItem(item)
+    elif not on and hasattr(tree, "collapseItem"):
+        tree.collapseItem(item)
+    else:
+        item.setExpanded(on)
