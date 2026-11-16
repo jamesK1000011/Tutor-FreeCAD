@@ -17,6 +17,7 @@ agentlink_tutor/lessons/export-stl.lesson.json
 agentlink_tutor/lessons/pad-sketch.lesson.json
 agentlink_tutor/lessons/pocket-hole.lesson.json
 agentlink_tutor/live.py
+agentlink_tutor/observe.py
 agentlink_tutor/point.py
 agentlink_tutor/prefs.py
 agentlink_tutor/run.py
@@ -35,6 +36,7 @@ tests/test_engine.py
 tests/test_files.py
 tests/test_general.py
 tests/test_lessons.py
+tests/test_observe.py
 tests/test_point.py
 tests/test_replay_fc.py
 tests/test_replay_t3_fc.py

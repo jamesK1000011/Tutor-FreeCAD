@@ -23,12 +23,24 @@ a hole, export an STL) run in two modes, switchable at any step:
   for Next before the following one.
 
 A known wrong turn (Pocket for Pad) takes a short detour to put it right.
-Watch mode, where the agent follows what you do without a lesson, comes
-next.
+Watch mode follows what you do without a lesson: turn on "Let Claude
+watch" in the Tutor tab (or ask Claude to), and a sign shows in the status
+bar while it is on. Claude then sees short events (a command used, an
+object made, a panel closed, your questions from Ask Claude) and can help
+as you work. In a lesson, a step can be checked on the command you used.
 
 ## For the agent
 
-`tool_groups enable: ["tutor"]` lists `tutor` and `tutor_point`.
+`tool_groups enable: ["tutor"]` lists `tutor`, `tutor_point` and
+`tutor_watch`.
+
+`tutor_watch`: `{since?, wait?: 0-25 s, until?: any|milestone}` while watch
+mode is on: the person's events after `since` (`{n, k: cmd|wb|sel|clr|new|
+del|rc|edit|done|undo|redo|save|ask, …}`, milestones `m: 1`), waiting up to
+`wait` seconds for one (or for a milestone), and `next` for the following
+call. It is answered on Agent Link's socket thread, so a long wait never
+holds the window. `tutor {action: "watch", on}` turns watch mode on or off
+when the person asks.
 
 `tutor`: `{action: list|start|next|back|hint|skip|do|stop|status|explain,
 lesson?, mode?: demo|guided, query?, detail?, on?}`. `start` takes a lesson's id (or its

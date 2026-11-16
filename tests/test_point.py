@@ -704,12 +704,12 @@ class WithAgentLink(unittest.TestCase):
 
         doc = json.load(open(os.path.join(ROOT, "agentlink_tutor", "data", "tools.json"), encoding="utf-8"))
         self.assertEqual(tooldata.check(doc), [])
-        self.assertEqual(set(doc["entries"]), {"tutor_point", "tutor"})
-        # The design's budget: about 1,800 characters for the three tutor tools (tutor_watch to come).
-        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 1300)
+        self.assertEqual(set(doc["entries"]), {"tutor_point", "tutor", "tutor_watch"})
+        # The design's budget: about 1,800 characters for the three tutor tools.
+        self.assertLessEqual(sum(len(e["description"]) for e in doc["entries"].values()), 1800)
         t = doc["entries"]["tutor"]
         self.assertEqual((t["group"], t["changes"]), ("tutor", False))
-        self.assertLessEqual(len(t["description"]), 660)
+        self.assertLessEqual(len(t["description"]), 700)
         d = doc["entries"]["tutor_point"]
         self.assertEqual(d["group"], "tutor")
         self.assertLessEqual(len(d["description"]), 600)
@@ -736,7 +736,7 @@ class WithAgentLink(unittest.TestCase):
         from agentlink_tutor import fam_tutor
 
         tools = fam_tutor.tools(types.SimpleNamespace(doc=None))
-        self.assertEqual([t.name for t in tools], ["tutor_point", "tutor"])
+        self.assertEqual([t.name for t in tools], ["tutor_point", "tutor", "tutor_watch"])
         self.assertEqual(tools[0].group, "tutor")
 
 

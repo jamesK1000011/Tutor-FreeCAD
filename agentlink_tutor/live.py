@@ -92,6 +92,7 @@ def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, pr
         show = gui_run.shower(session)
         ui = gui_run.UI(session)
     c = run.Controller(e, timer=timer, show=show, ui=UI or ui)
+    e._events = c.step_events  # `used` checks: the person's commands since the step began
     set_controller(c)
     if win:
         from . import gui_run
@@ -139,3 +140,41 @@ def call_done(session, tool, ok, changed=False, *rest):
 def rider(tool=None):
     c = NOW["ctl"]
     return c.rider(tool) if c is not None else None
+
+
+# ---- watch mode: no lesson; the agent follows the person's events -----------------------
+
+WATCH = {"on": False}
+
+
+def watching():
+    return WATCH["on"]
+
+
+def watch_mode(on):
+    """Watch mode on or off: the window's observers and the visible badge
+    with it. Off by default; the buffer is cleared when it goes off."""
+    from . import observe
+
+    on = bool(on)
+    if on == WATCH["on"]:
+        return on
+    WATCH["on"] = on
+    if on:
+        observe.need("watch")
+    else:
+        observe.release("watch")
+        observe.BUF.clear()
+    if _window():
+        try:
+            from . import gui_run
+
+            gui_run.badge(on)
+        except Exception:  # noqa: BLE001
+            pass
+    for w in list(WATCHERS):
+        try:
+            w(NOW["ctl"])
+        except Exception:  # noqa: BLE001
+            pass
+    return on

@@ -200,6 +200,11 @@ def _make():
             self.explain.setChecked(prefs.explainers())
             self.explain.toggled.connect(self._explain)
             lay.addWidget(self.explain)
+            self.watch = QtW.QCheckBox("Let Claude watch")
+            self.watch.setToolTip("Claude follows what you do here (no lesson). A sign shows in the status bar. Off by default.")
+            self.watch.setChecked(live.watching())
+            self.watch.toggled.connect(lambda on: live.watch_mode(bool(on)))
+            lay.addWidget(self.watch)
             grid = QtW.QGridLayout()
             self.b = {}
             for i, (key, text, tip) in enumerate((
@@ -290,6 +295,10 @@ def _make():
             why = why_line(status)
             self.why.setText(why)
             self.why.setVisible(bool(why))
+            if self.watch.isChecked() != live.watching():
+                self.watch.blockSignals(True)
+                self.watch.setChecked(live.watching())
+                self.watch.blockSignals(False)
             c2 = live.controller()
             if c2 is not None and self.explain.isChecked() != bool(c2.e.explain):
                 self.explain.blockSignals(True)
@@ -397,6 +406,10 @@ def _make():
                     self.line.setText(NO_DOC)
                     return
                 nf.add_note(doc, [0.0, 0.0, 0.0], text, "person")
+                if live.watching():
+                    from . import observe
+
+                    observe.record("ask", q=text[:300])  # a waiting tutor_watch answers at once
                 self.question.clear()
                 self.line.setText("Left for Claude as a note (Notes tab).")
                 refresh = getattr(self.panel, "refresh", None)

@@ -90,6 +90,10 @@ def tutor(a, session, lib, progress=None):
             if c is not None and c.stepping:
                 out["running"] = f"{c.e.lesson['id']} step {c.e.position()}"
             return out
+        if action == "watch":
+            if not isinstance(a.get("on"), bool):
+                raise Refusal("invalid_input", "watch: on, true or false (only when the person asks for it)")
+            return {"watching": live.watch_mode(a["on"])}
         if action == "explain":
             if not isinstance(a.get("on"), bool):
                 raise Refusal("invalid_input", "explain: on, true or false")
@@ -125,3 +129,43 @@ def tutor(a, session, lib, progress=None):
         raise Refusal("invalid_state" if isinstance(e, engine_mod.TutorError) else "invalid_input", str(e)[:300])
     except ValueError as e:  # an inline lesson's JSON
         raise Refusal("invalid_input", f"lesson: {e}"[:300])
+
+
+# ---- tutor_watch: the person's events, answered off the GUI thread ---------------------
+
+WATCH_CHARS = 1500
+OFF = ("Watch mode is off. The person turns it on in the Tutor tab (Let Claude watch), "
+       "or ask them and use tutor {action: \"watch\", on: true}.")
+
+
+def watch(a):
+    """{since?, wait?, until?} -> {watching, events, next, more?}. Runs on
+    Agent Link's socket thread (a long poll): it reads only the event
+    buffer and live's watch flag, never FreeCAD or Qt."""
+    from . import observe
+
+    since = a.get("since") or 0
+    if isinstance(since, bool) or not isinstance(since, int) or since < 0:
+        raise Refusal("invalid_input", "since: the next number of the last answer, or 0")
+    wait = a.get("wait") or 0
+    if isinstance(wait, bool) or not isinstance(wait, (int, float)) or not 0 <= wait <= observe.WAIT_MAX:
+        raise Refusal("invalid_input", f"wait: 0 to {observe.WAIT_MAX:g} seconds")
+    until = a.get("until") or "any"
+    if until not in ("any", "milestone"):
+        raise Refusal("invalid_input", "until: any or milestone")
+    if not live.watching():
+        return {"watching": False, "say": OFF}
+    evs = observe.BUF.wait(since, wait, until)
+    out = {"watching": True}
+    if since and observe.BUF.first() > since + 1:
+        out["missed"] = True  # older events left the ring before this call
+    more = max(0, len(evs) - observe.ANSWER_MAX)
+    evs = evs[-observe.ANSWER_MAX:]
+    while evs and len(json.dumps(evs, ensure_ascii=False)) > WATCH_CHARS:
+        evs.pop(0)
+        more += 1
+    out["events"] = evs
+    out["next"] = evs[-1]["n"] if evs else max(since, observe.BUF.seq)
+    if more:
+        out["more"] = more
+    return out

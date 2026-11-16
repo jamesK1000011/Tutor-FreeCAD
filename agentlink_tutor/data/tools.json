@@ -43,7 +43,7 @@
   },
   "tutor": {
    "group": "tutor",
-   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤8}, mode}; next, back, hint, skip, do, stop, status {detail}, explain {on}. demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English: the validator refuses others with reasons. Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; a rider line (tutor: step n/m …) joins your other answers.",
+   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤8}, mode}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English: the validator refuses others with reasons. Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; a rider line (tutor: step n/m …) joins your other answers.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -59,7 +59,8 @@
        "do",
        "stop",
        "status",
-       "explain"
+       "explain",
+       "watch"
       ],
       "default": "status"
      },
@@ -99,6 +100,41 @@
    "source": "written for the Tutor",
    "date": "2026-11-15",
    "activity": "Tutor lesson {action}"
+  },
+  "tutor_watch": {
+   "group": "tutor",
+   "description": "Follow what the person does in the window while watch mode is on (they turn it on; a badge shows). Waits up to wait s (0–25) for events after since; until: milestone ends the wait when they finish something (an object made, a panel closed with OK, a recompute, undo, save, a question). Events: {n, k: cmd|wb|sel|clr|new|del|rc|edit|done|undo|redo|save|ask, …}; give next as since in the next call. Answered off the window's thread. Off: says so.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "since": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "The next of the last answer."
+     },
+     "wait": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 25,
+      "default": 0,
+      "description": "Seconds to wait for an event."
+     },
+     "until": {
+      "type": "string",
+      "enum": [
+       "any",
+       "milestone"
+      ],
+      "default": "any"
+     }
+    },
+    "additionalProperties": false
+   },
+   "changes": false,
+   "source": "written for the Tutor",
+   "date": "2026-11-15",
+   "activity": "Followed the person's work"
   }
  }
 }
