@@ -190,6 +190,50 @@ def verify(w, host, mw):
     return None
 
 
+SAMPLE = (48, 12)  # the bubble's picture and the window's, compared at this size
+MATCH = 40.0  # mean difference per colour channel (0-255) under which they agree
+
+
+def mean_diff(a, b):
+    """Mean absolute difference per channel of two equal lists of (r, g, b)."""
+    if not a or len(a) != len(b):
+        return 255.0
+    return sum(abs(x - y) for p, q in zip(a, b) for x, y in zip(p, q)) / (3.0 * len(a))
+
+
+def _samples(img):
+    QtCore, QtGui, _QtW = _qt()
+    ignore = _flag(QtCore, "IgnoreAspectRatio")
+    smooth = _flag(QtCore, "SmoothTransformation")
+    small = img.scaled(SAMPLE[0], SAMPLE[1], ignore, smooth)
+    out = []
+    for y in range(small.height()):
+        for x in range(small.width()):
+            c = QtGui.QColor(small.pixel(x, y))
+            out.append((c.red(), c.green(), c.blue()))
+    return out
+
+
+def painted(lab, mw):
+    """True when the window's picture (Agent Link's grab_window, the one
+    window_snapshot and gui_input's shots use: the widgets, with the 3D view
+    rendered into its place and what is stacked over it put back) shows the
+    bubble where it stands; False when it shows something else there; None
+    when it cannot be told (an Agent Link without grab_window)."""
+    try:
+        from agentlink.grab import grab_window
+    except ImportError:
+        return None
+    QtCore, _QtGui, _QtW = _qt()
+    pix = grab_window(mw)
+    ratio = pix.devicePixelRatio() if hasattr(pix, "devicePixelRatio") else 1.0
+    p = lab.mapTo(mw, _point(0, 0))
+    r = QtCore.QRect(int(p.x() * ratio), int(p.y() * ratio), int(lab.width() * ratio), int(lab.height() * ratio))
+    there = _samples(pix.copy(r).toImage())
+    own = _samples(lab.grab().toImage())
+    return mean_diff(there, own) < MATCH
+
+
 def show(c, found=(), doc=None, report=None):
     """Show callout c (callout.Callout) over doc's 3D view (else the front
     one), its arrow toward the first ringed target. False, with why(), when
@@ -254,15 +298,27 @@ def _recheck_later(c, report):
     QtCore, _QtGui, _QtW = _qt()
     gen = _STATE["gen"]
 
+    checked = {"pixels": False}
+
     def again():
         if _STATE["gen"] != gen:
             return
         try:
             import FreeCADGui
 
-            bad = verify(_STATE["w"], _STATE["host"], FreeCADGui.getMainWindow())
+            mw = FreeCADGui.getMainWindow()
+            bad = verify(_STATE["w"], _STATE["host"], mw)
+            if not bad and not checked["pixels"]:
+                checked["pixels"] = True  # once a showing: the grab renders the 3D view
+                seen = painted(_STATE["w"], mw)
+                if seen is False:
+                    bad = "not in the window's picture where it stands"
+                elif seen and report is not None:
+                    report["callout_seen"] = "pixels"
         except Exception as e:  # noqa: BLE001
             bad = f"not checked ({e})"
+        if _STATE["gen"] != gen:
+            return  # shown again or hidden meanwhile (the grab ran the event loop)
         if not bad:
             return
         hide()
