@@ -7,22 +7,29 @@ the guides folder). Phase T1 (the lesson engine, checks and starter lessons)
 needs nothing new. Later phases need these generic hooks in core; none of
 them names the Tutor.
 
-## T2: pointing at things and the Tutor tab
+## T2: pointing at things and the Tutor tab (done)
 
-- **An overlay painter service.** One transparent, mouse-transparent overlay
-  widget over the main window that any add-on can ask to ring a widget rect
-  or a menubar title, with a badge and a callout (`hooks.service("overlay")`
-  or similar), and echo painted through it too, so a theme's stylesheet is
-  never overwritten per widget. Echo's button lighting moves onto it.
-- **Target resolution helpers exposed for reuse.** Echo's `command_for()` and
-  the QAction lookup by `objectName` that `flash_command()` uses, callable by
-  an add-on (today they are private to `echo.py`).
-- **`hooks.register_tab`** at order 15 (between Notes and Steps) for the
-  Tutor tab. Already there; listed so its order slot is kept free.
-- **The coin annotation layer** that `Pins`/`Stage` use for the 3D
-  sub-element highlight, offered as a service, so the Tutor need not copy it.
-- **Echo's skip list open to add-ons**, so `tutor*` calls are not echoed
-  (next to `session_state` and `tool_groups`).
+In Agent Link core since 15 Nov 2026 (API 1, additions only; core names
+no add-on):
+
+- **The overlay painter**, `hooks.service("overlay")`
+  (`agentlink/overlay.py`): `show(specs, say, ms, owner)`, `menu(titles,
+  badge, owner, handle)`, `flash(widget, ms)`, `clear(owner)`,
+  `visible(widget)`, `colours()`. One transparent, mouse-transparent child
+  of the main window; rings in the theme's accent with a black or white
+  halo by the theme's lightness, numbered badges, one callout inside the
+  window; hidden targets reported. Echo's lit buttons are drawn on it.
+- **Target resolution helpers**, `agentlink.targets`: `command_for`,
+  `actions` (QActions by `objectName`), `buttons`, `menus_of`,
+  `associated`, `menu_path`, `native_menubar`, `workbench_of`.
+- **`hooks.register_tab`** at order 15: the slot is kept free in core
+  (`panel_tabs.CORE_TABS`); the Tutor tab takes it.
+- **The coin annotation layer**, `hooks.service("annotations")`
+  (`agentlink/annotate.py`): `light(obj, subs, owner, colour)`,
+  `clear(owner)`; the panel's pins and Steps stage share its scene helpers.
+- **Echo's skip list open to add-ons**: a family's `NO_ECHO` (names or
+  prefixes), next to `batch`, `session_state`, `tool_groups` and
+  `guide_read`; `echo.skipped(name)`. The tutor family declares `tutor`.
 
 ## T3: guided and demo modes
 

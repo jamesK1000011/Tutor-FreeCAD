@@ -1,0 +1,45 @@
+{
+ "dataVersion": "1.0.0",
+ "licence": "LGPL-2.1-or-later",
+ "about": "The Tutor's tools for agents (Agent Link's tool-data format).",
+ "entries": {
+  "tutor_point": {
+   "group": "tutor",
+   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: [\"Part Design\", \"Pad\"]}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of}, {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. Says why any target is not shown.",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "targets": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+       "type": "object"
+      },
+      "description": "What to ring, in order (badge 1, 2, …)."
+     },
+     "say": {
+      "type": "string",
+      "maxLength": 300,
+      "description": "The callout's words."
+     },
+     "ms": {
+      "type": "integer",
+      "minimum": 500,
+      "maximum": 120000,
+      "description": "Gone after this long; left out: until the next call."
+     },
+     "clear": {
+      "type": "boolean",
+      "default": true,
+      "description": "false keeps the earlier highlights."
+     }
+    },
+    "additionalProperties": false
+   },
+   "changes": false,
+   "source": "written for the Tutor",
+   "date": "2026-11-15",
+   "activity": "Pointed out controls"
+  }
+ }
+}

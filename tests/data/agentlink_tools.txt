@@ -148,6 +148,7 @@ feature_suppress
 fem_add
 fem_linearize
 fem_mesh
+gui_input
 guide_read
 history_diff
 history_redo
@@ -212,6 +213,7 @@ object_group
 object_list
 object_rename
 object_set
+outputs_clean
 param_bind
 param_list
 param_remove
