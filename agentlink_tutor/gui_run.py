@@ -3,7 +3,11 @@
 callout through tutor_point's machinery, and the signals a guided step is
 checked on (a recompute, an undo or redo, a selection, a workbench switch).
 Loaded only where FreeCAD has a window. Nothing here moves the cursor,
-opens a menu, switches a workbench or takes focus.
+opens a menu or takes focus. In demo mode only, the lesson's own hands
+(UI.prepare) put the window the way a step's targets need it: the
+command's workbench active (through Agent Link's workbench tool, so the
+echo shows it), the Tasks or Model tab in front, a dock shown, a tree
+branch unfolded. Guided mode never does: the callout tells the person.
 """
 import sys
 
@@ -165,6 +169,151 @@ class UI:
             return  # something is open already (the person's, or ours)
         gd.setEdit(obj.Name, 0)
         self.opened = (doc.Name, obj.Name)
+
+    def prepare(self, engine):
+        """Demo: the window made ready for the step's targets, as a person
+        following the lesson would have it. Answers what it did (short
+        lines), [] when nothing was needed. Each target kind:
+
+            cmd    no button of it shows and its workbench is not the
+                   active one: that workbench activated
+            task   the Tasks panel brought to the front (its Combo View
+                   tab, its dock), the field scrolled into view
+            dock   the panel brought to the front (FreeCAD 1.1's Property
+                   view: the Combo View's Model tab)
+            tree   the object's parents unfolded in the tree, its
+                   document's row too, the Model tab in front
+        """
+        from . import targets as targets_mod
+        from .window import Window, ancestors
+
+        win = Window(self.s, doc=engine._doc)
+        did = []
+        tg = [t for t in (engine.hint_targets() or []) if isinstance(t, dict)]
+        for t in tg:
+            try:
+                if "cmd" in t:
+                    got = self._bench_for(engine, win, t["cmd"])
+                elif "task" in t:
+                    got = self._tasks_front(win, t["task"])
+                elif "dock" in t:
+                    got = self._panel_front(win, t["dock"])
+                elif "tree" in t:
+                    ref = targets_mod.bind(t["tree"], engine.bindings)
+                    obj = win.obj(ref) if isinstance(ref, str) else None
+                    got = self._tree_open(win, obj, ancestors) if obj is not None else None
+                else:
+                    got = None
+            except Exception as e:  # noqa: BLE001  (pointing still says why)
+                got = f"not prepared: {e}"[:80]
+            if got and got not in did:
+                did.append(got)
+        return did
+
+    def _bench_for(self, engine, win, cmd):
+        if any(h is None for _w, h in win.command_buttons(cmd)):
+            return None
+        if any(g[1] is None for g in win.command_groups(cmd)):
+            return None
+        bench = win.workbench_of(cmd)
+        if not bench or bench == win.active_workbench() or bench not in (win.loaded_benches() or []):
+            return None
+        refused = True
+        if engine.call is not None:
+            try:
+                refused, _out = engine.call("workbench", {"activate": bench})
+            except Exception:  # noqa: BLE001
+                refused = True
+        if refused:
+            import FreeCADGui
+
+            FreeCADGui.activateWorkbench(bench)
+        return f"workbench {win.bench_title(bench)} activated"
+
+    def bring(self, w):
+        """w brought to the front: its dock shown, the tabs above it made
+        current, its scroll area scrolled to it. True when something moved."""
+        from .window import _qt, front_steps
+
+        _QtCore, _QtGui, QtW = _qt()
+        moved = False
+        for kind, x, arg in front_steps(w, QtW, self._mw()):
+            if kind == "dock":
+                x.show()
+                x.raise_()
+            elif kind == "tab":
+                x.setCurrentIndex(arg)
+            elif kind == "scroll":
+                x.ensureWidgetVisible(arg)
+            moved = True
+        if moved:
+            self._update()
+        return moved
+
+    def _mw(self):
+        import FreeCADGui
+
+        return FreeCADGui.getMainWindow()
+
+    def _update(self):
+        try:
+            import FreeCADGui
+
+            FreeCADGui.updateGui()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _tasks_front(self, win, spec):
+        if not win.task_open():
+            return None
+        tv = win._taskview()
+        if tv is None:
+            return None
+        moved = self.bring(tv)
+        q = {"label": spec} if isinstance(spec, str) else dict(spec)
+        got, _note = win.task_widget(name=q.get("name"), label=q.get("label"), button=q.get("button"))
+        w = got.get("widget") if isinstance(got, dict) else None
+        if w is not None and w is not tv:
+            moved = self.bring(w) or moved
+        return "Tasks panel in front" if moved else None
+
+    def _panel_front(self, win, title):
+        for p in win.panels(title):
+            if self.bring(p):
+                return f"{title} in front"
+            return None
+        return None
+
+    def _tree_open(self, win, obj, ancestors):
+        import FreeCADGui
+
+        got, note = win.tree_row(obj)
+        if got is not None and note is None:
+            return None  # its row shows already
+        moved = False
+        doc = getattr(obj, "Document", None)
+        gd = None
+        try:
+            gd = FreeCADGui.getDocument(doc.Name) if doc is not None else None
+        except Exception:  # noqa: BLE001
+            gd = None
+        trees = win.trees()
+        for t in trees:
+            from .window import _doc_item
+
+            it = _doc_item(t, getattr(doc, "Label", None))
+            if it is not None and not it.isExpanded():
+                it.setExpanded(True)
+                moved = True
+        for a in reversed(ancestors(obj)):
+            if gd is not None and hasattr(gd, "toggleTreeItem"):
+                gd.toggleTreeItem(a, 2)  # 2: unfold (fills in its rows)
+                moved = True
+        if trees:
+            moved = self.bring(trees[0]) or moved
+        if moved:
+            self._update()
+        return f"{obj.Label} shown in the tree" if moved else None
 
     def close_task(self):
         """Before the do sets the value: the panel this opened is closed."""

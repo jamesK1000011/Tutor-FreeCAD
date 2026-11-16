@@ -5,7 +5,7 @@
  "entries": {
   "tutor_point": {
    "group": "tutor",
-   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: \"PartDesign_Pad\"}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of} (of beside the query), {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. Says why any target is not shown.",
+   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: \"PartDesign_Pad\"}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of} (of beside the query), {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. A dropdown item: its ▾ arrow ringed. Another workbench's command: the selector ringed, \"Switch to …\" said first. dock finds a panel inside another dock's tab (Property view). Says why any target is not shown.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -38,12 +38,12 @@
    },
    "changes": false,
    "source": "written for the Tutor",
-   "date": "2026-11-15",
+   "date": "2026-11-16",
    "activity": "Pointed out controls"
   },
   "tutor": {
    "group": "tutor",
-   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤30}, mode}; longer: batches, each with setup {after: id before}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English (imperative, one instruction per sentence, ≤20 words, UI names in bold, optional why): the validator refuses others with reasons. Checks include new {type, where: {Prop: v}}, sketch {dof}, expr {uses, count}, follows (part follows a parameter). Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; a rider line (tutor: step n/m …) joins your other answers.",
+   "description": "Run a FreeCAD lesson in the person's window. list (query); start {lesson: id or inline {id: \"inline.x\", title, steps ≤30}, mode}; longer: batches, each with setup {after: id before}; next, back, hint, skip, do, stop, status {detail}, explain {on}, watch {on} (only when the person asks). demo: next does the step with the tools, then waits. guided: the person does it; checked as they and you act, on 0.6 s after a pass. hint: nudge, field, value; do: \"Do it for me\". mode switches any time. Write inline lessons in Simplified Technical English (imperative, one instruction per sentence, ≤20 words, UI names in bold, optional why): the validator refuses others with reasons. Checks include new {type, where: {Prop: v}}, sketch {dof}, expr {uses, count}, follows (part follows a parameter). start works in the open document when it is empty, else in a new one with a name not in use (document says which). demo makes the window ready for each step (workbench, Tasks or Model tab, tree unfolded: prepared) and passes a step already done. Answers {lesson, step: \"n/m\", say, because?, check, why, hint, targets}; at the end {step: done, finished, final: the last check}; a rider line (tutor: step n/m …) joins your other answers.",
    "inputSchema": {
     "type": "object",
     "properties": {
@@ -98,7 +98,7 @@
    },
    "changes": false,
    "source": "written for the Tutor",
-   "date": "2026-11-15",
+   "date": "2026-11-16",
    "activity": "Tutor lesson {action}"
   },
   "tutor_watch": {

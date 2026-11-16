@@ -85,8 +85,8 @@ class Stored(unittest.TestCase):
             with self.subTest(lesson=lid):
                 w, c = controller(have[lid])
                 made = [name for name, _a in w.calls]
-                self.assertEqual(made[:2], ["doc_new", "pd_body_new"])  # chapter 1's setup
-                self.assertEqual(made[2:], [x["tool"] for x in before])  # then each step done for the person
+                self.assertEqual(made[:1], ["pd_body_new"])  # chapter 1's setup, in the open empty document
+                self.assertEqual(made[1:], [x["tool"] for x in before])  # then each step done for the person
                 self.assertEqual(c.e.state, "step")
 
     def test_course_chapters_in_order(self):

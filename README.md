@@ -87,15 +87,47 @@ is "show me this one". Each answer is the lesson's compact state, under 600
 characters: `{lesson, mode, step: "3/5", id, say, check: pass|fail|pending,
 why?, hint: 0-3, hint_text?, do_it?, did?, targets: {resolved, missing}}`.
 While a lesson runs, a rider line (`tutor: step 3/5 passed; now step 4/5
-pending`) joins the agent's other answers when the step's state changes.
+pending`) joins the agent's other answers when the step's state changes; a
+step once passed stays passed when a later re-check cannot be told
+(`pending`), so the rider and `status` agree. At the end the answer is
+`{step: "done", finished: "lesson complete", final: {step, check, why?}}`
+(the last step's check, such as "the part follows size") and the rider says
+`tutor: lesson complete, final check passed`.
+
+`start` works in the open document when it is empty; when it holds other
+work, the lesson's `doc_new` makes a new document whose name no open
+document and no recently saved file has (`BikeStem_2`), and the first step's
+answer says which (`document`). A chapter after another goes on in the open
+document when it passes that chapter's result.
+
+In demo mode, as each step comes up, the Tutor makes the window ready for
+its targets the way a person following the lesson would have it, and the
+answer lists what it did (`prepared`): the command's workbench activated
+(through `workbench`, so the echo shows it) when its button shows nowhere,
+the Tasks panel or a panel inside the Combo View brought to the front and
+scrolled to the field, the object's parents unfolded in the tree. A step
+whose check already holds as it comes up (a "Close" step with no sketch
+open) is passed with nothing ringed (`targets.note: already done`). A last
+check that cannot be told with a panel open gets a quiet window and one more
+try. Guided mode changes nothing in the window: the callout tells the
+person (`Switch to the Part Design workbench ①.` before the step, the
+workbench selector ringed).
 
 `tutor_point`: `{targets: [spec],
 say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: "PartDesign_Pad"}` (its path read from the window; titles in a list also work), `{wb}`,
 `{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
 `{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
 answer lists what is shown and, for the rest, why not. It never switches
-workbench: when a toolbar is hidden it says so, and the agent may call
-`workbench activate` first.
+workbench: when a toolbar is hidden it says so, rings the workbench selector
+and puts "Switch to the … workbench." before the instruction, and the agent
+may call `workbench activate` first. A command inside a toolbar dropdown
+(found by its command name, else by its menu text) rings the dropdown's ▾
+arrow, then the item once the menu opens; a button in a short toolbar's
+overflow rings its » button. `{dock: "Property view"}` finds the panel
+inside another dock (FreeCAD 1.1's Combo View, Model tab) and rings that
+tab when it is not in front. A tree row is matched by its label under its
+document's row; when FreeCAD has not filled in a folded branch yet, the
+nearest folded parent's row is ringed with "Unfold the ringed row".
 
 ## Lessons
 

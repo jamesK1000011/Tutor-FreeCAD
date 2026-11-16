@@ -7,6 +7,19 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+From the live demo of bike-stem chapter 1 on FreeCAD 1.1.3:
+
+- A lesson uses the open document when it is empty (setup's `doc_new` is left out); when it holds other work, the new document gets a name no open document and no recently saved file has (`BikeStem_2`). The first step's answer says which (`document`).
+- Demo mode makes the window ready for each step's targets as it comes up (`prepared` in the answer): the command's workbench activated through `workbench` when its button shows nowhere, the Tasks panel (its Combo View tab or dock) brought to the front and scrolled to the field, a panel inside another dock brought to the front, the object's parents unfolded in the tree. Guided mode changes nothing: the person is told to switch workbench first ("Switch to the Part Design workbench ①.", the selector ringed).
+- Demo mode passes a step whose check already holds as it comes up (a "Close" step with no sketch open) with nothing ringed (`targets.note: already done`).
+- A command inside a toolbar dropdown whose items carry no command name is found by its menu text; a dropdown button's ▾ arrow is ringed (a menu-button popup), the item once the menu opens; a button in a short toolbar's overflow rings the toolbar's » button.
+- `{dock: "Property view"}` finds the panel inside the Combo View's Model tab (by its class or objectName) and rings that tab when it is not in front ("Open the Model tab."). The Tasks panel in a dock tabbed behind another rings that dock's tab.
+- Tree rows: matched by label with the ends trimmed and a changed document's * left out; a row FreeCAD has not filled in yet under a folded parent rings that parent's row (or the document's) with "Unfold the ringed row in the tree."
+- A step once passed stays passed when a later re-check cannot be told (`pending`): the rider and `status` agree. A demo's last check that is pending gets a quiet window and one more try.
+- The end of a lesson: `{step: "done", finished: "lesson complete", final: {step, check, why?}}`, the last step's check (the bike stem's "the part follows size"); the rider says `tutor: lesson complete, final check passed`.
+
 ## [0.2.0] - 2026-11-16
 
 Not tagged yet. Add-on lessons, courses and batches, accessibility, five starter lessons and the bike-stem course.

@@ -96,6 +96,29 @@ def front_doc():
         return None
 
 
+def taken_names():
+    """Document names in use: the open documents' names and labels, and the
+    names of recently saved files (FreeCAD's recent-files list)."""
+    out = set()
+    try:
+        import os
+
+        import FreeCAD
+
+        for name, d in FreeCAD.listDocuments().items():
+            out.update({name, getattr(d, "Label", name)})
+            if getattr(d, "FileName", ""):
+                out.add(os.path.splitext(os.path.basename(d.FileName))[0])
+        p = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/RecentFiles")
+        for i in range(int(p.GetInt("RecentFiles", 4) or 4) + 8):
+            f = p.GetString(f"MRU{i}", "")
+            if f:
+                out.add(os.path.splitext(os.path.basename(f))[0])
+    except Exception:  # noqa: BLE001  (no FreeCAD: nothing known in use)
+        pass
+    return out
+
+
 def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, progress=None):
     """A Controller for lesson, made the one in hand. gui: the window's state
     for checks (checks.gui_state with a window). window: True/False forces
@@ -107,7 +130,7 @@ def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, pr
         gui = GUI or (checks.gui_state if win else (lambda: None))
     e = engine_mod.Engine(lesson, call=call, doc=doc, gui=gui, out_dir=out_dir,
                           progress=progress if progress is not None else lessons.Progress(),
-                          find_doc=find_doc if win else None, front=front_doc if win else None)
+                          find_doc=find_doc if win else None, front=front_doc if win else None, taken=taken_names)
     timer = show = ui = None
     if win:
         from . import gui_run

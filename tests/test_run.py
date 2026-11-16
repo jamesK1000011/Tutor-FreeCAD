@@ -335,7 +335,7 @@ class Rider(unittest.TestCase):
         c.start("guided")
         while c.e.state == "step":
             c.act("skip")
-        self.assertEqual(c.rider("x"), "tutor: lesson done, skipped bench, length, pad, pick, see")
+        self.assertEqual(c.rider("x"), "tutor: lesson complete, final check not run, skipped bench, length, pad, pick, see")
         self.assertIsNone(c.rider("x"))
 
 

@@ -72,7 +72,7 @@ class TutorError(ValueError):
 
 class Engine:
     def __init__(self, lesson=None, call=None, doc=None, gui=None, events=None, out_dir=None, progress=None,
-                 find_doc=None, front=None):
+                 find_doc=None, front=None, taken=None):
         self.lesson = lesson
         self.call = call
         self._session_doc = doc or (lambda: None)
@@ -84,6 +84,11 @@ class Engine:
         self.doc_name = None
         self.find_doc = find_doc  # name -> the open document, or None
         self.front = front  # () -> the name of the document in the window's front, or None (no window)
+        # () -> the document names in use (open documents' names and labels,
+        # saved files' names): a lesson's new document never takes one.
+        self.taken = taken
+        self.doc_note = None  # which document the lesson works in, and why (said at its first step)
+        self.final = None  # the last step's check when the lesson ended: {check, why?}
         self._gui = gui or (lambda: None)
         self._events = events or (lambda: None)
         self.out_dir = out_dir
@@ -153,10 +158,12 @@ class Engine:
             raise TutorError("start: a lesson (its id, or an inline lesson)")
         self.bindings = dict(self.lesson.get("vars") or {})
         self.doc_name = None
+        self.doc_note = None
+        self.final = None
         self._doc = self._session_doc
         setup = self.lesson.get("setup") or {}
         if setup.get("doc") == "new":
-            self._run([{"tool": "doc_new", "args": {"name": self.lesson["id"].rpartition(".")[2].replace("-", "_")}}], "setup")
+            self._run(self._place([{"tool": "doc_new", "args": {"name": self._doc_word()}}]), "setup")
         elif setup.get("fixture"):
             folder = fixtures or self.lesson.get("_folder") or ""
             src = os.path.join(folder, setup["fixture"])
@@ -164,7 +171,7 @@ class Engine:
             shutil.copyfile(src, dst)  # opened as a copy: the lesson's file stays as shipped
             self._run([{"tool": "doc_open", "args": {"path": dst}}], "setup")
         elif setup.get("calls"):
-            self._run(setup["calls"], "setup")
+            self._run(self._place(setup["calls"]), "setup")
         elif setup.get("after"):
             self._after(setup["after"])
         if self.doc_name is None:
@@ -208,9 +215,9 @@ class Engine:
                 if n == 0:
                     ps = p.get("setup") or {}
                     if ps.get("doc") == "new":
-                        self._run([{"tool": "doc_new", "args": {"name": self.lesson["id"].rpartition(".")[2].replace("-", "_")}}], "setup")
+                        self._run(self._place([{"tool": "doc_new", "args": {"name": self._doc_word()}}]), "setup")
                     elif ps.get("calls"):
-                        self._run(ps["calls"], f"setup ({p['id']})")
+                        self._run(self._place(ps["calls"]), f"setup ({p['id']})")
                     elif ps.get("fixture"):
                         raise TutorError(f"setup.after: {p['id']} starts from a file; start it first")
                     self._bind(ps.get("bind"), only_new=False)
@@ -225,6 +232,47 @@ class Engine:
                     self._bind(st.get("bind"), only_new=True)
         finally:
             self.bindings = keep
+
+    # ---- the lesson's document ---------------------------------------------
+
+    def _doc_word(self):
+        return self.lesson["id"].rpartition(".")[2].replace("-", "_")
+
+    def _place(self, calls):
+        """Setup's calls with each doc_new decided: the open document is
+        used when it is empty (the doc_new left out); else a new one is made,
+        named so that it takes no name already in use. doc_note says which."""
+        out = []
+        for c in calls:
+            if c.get("tool") == "doc_new":
+                args = dict(c.get("args") or {})
+                name = self._new_doc_name(str(args.get("name") or self._doc_word()))
+                if name is None:
+                    continue
+                c = {**c, "args": {**args, "name": name}}
+            out.append(c)
+        return out
+
+    def _new_doc_name(self, want):
+        """None when the open document is empty (the lesson works in it);
+        else want, or want_2, want_3 … when want is in use."""
+        cur = self._session_doc()
+        label = getattr(cur, "Label", None) or getattr(cur, "Name", None)
+        if cur is not None and not list(getattr(cur, "Objects", None) or ()):
+            self._own_doc(getattr(cur, "Name", None))
+            self.doc_note = f"the lesson works in {label}: it was open and empty" if label else "the lesson works in the open document: it was empty"
+            return None
+        try:
+            used = {str(n).casefold() for n in (self.taken() if self.taken is not None else ())}
+        except Exception:  # noqa: BLE001  (names unknown: FreeCAD still keeps its own names apart)
+            used = set()
+        if label:
+            used.add(str(label).casefold())
+        name, n = want, 2
+        while name.casefold() in used:
+            name, n = f"{want}_{n}", n + 1
+        self.doc_note = f"a new document {name}" + (f": {label} holds other work" if label else "")
+        return name
 
     def _run(self, calls, where):
         if self.call is None:
@@ -305,6 +353,10 @@ class Engine:
         s = self.step
         ctx = self.context()
         r = checks.evaluate(resolve(s["check"], self.bindings), ctx) if "check" in s else checks.PASS
+        if r.status == "pending" and self.passed:
+            # Cannot be told just now (a panel open, a recompute waiting):
+            # the step stays passed, as it was said to be.
+            return self.status()
         self.result = r
         if r.status == "pass":
             if not self.passed:
@@ -331,6 +383,11 @@ class Engine:
             self.return_to = None
         self.said = None
         if nxt is None:
+            r = self.result
+            if "check" in self.step:
+                self.final = {"check": r.status if r is not None else "not run"}
+                if r is not None and r.why and r.status != "pass":
+                    self.final["why"] = r.why
             self.state = "done"
             if self.progress is not None:
                 self.progress.mark(self.lesson["id"], self.lesson["version"])
@@ -430,13 +487,19 @@ class Engine:
             return {"state": self.state, **({"mode": self.mode} if self.mode else {})}
         out = {"lesson": self.lesson["id"], "mode": self.mode, "explain": "on" if self.explain else "off"}
         if self.state == "done":
-            out.update(step="done", skipped=sorted(self.skipped))
+            out.update(step="done", finished="lesson complete", skipped=sorted(self.skipped))
+            if self.final is not None:
+                # The last step's check (a lesson's final check: "the part
+                # follows size"), as it stood when the lesson ended.
+                out["final"] = {"step": self.lesson["steps"][self.index]["id"], **self.final}
             if self.done_for:
                 out["done_for"] = sorted(self.done_for)
             return _fit(out)
         s = self.step
         r = self.result
         out.update(step=self.position(), id=s["id"], say=self.say())
+        if self.doc_note and not self.history and self.index == self._main[0]:
+            out["document"] = self.doc_note
         if s.get("why") and (self.explain or detail):
             out["because"] = words.ui_text(s["why"])
         out["check"] = r.status if r is not None else "pending"
