@@ -11,8 +11,20 @@ and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
 Status: early. The lesson engine, its checks and three starter lessons are
-here (pad a sketch, cut a pocket and drill a hole, export an STL); the tab,
-the highlighting and the agent's tools come next.
+here (pad a sketch, cut a pocket and drill a hole, export an STL), with the
+Tutor tab and `tutor_point`, which rings the controls a step needs. Guided
+and demo modes (each step checked as you go, "Do it for me") and watch mode
+come next.
+
+## For the agent
+
+`tool_groups enable: ["tutor"]` lists `tutor_point`: `{targets: [spec],
+say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: [titles]}`, `{wb}`,
+`{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
+`{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
+answer lists what is shown and, for the rest, why not. It never switches
+workbench: when a toolbar is hidden it says so, and the agent may call
+`workbench activate` first.
 
 ## Lessons
 

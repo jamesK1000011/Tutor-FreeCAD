@@ -9,6 +9,8 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ### Added
 
+- `tutor_point` (group `tutor`, not in the lean list): rings the window's controls for the person with numbered badges and one callout, and lights faces, edges and vertices in the 3D view, through Agent Link's overlay and annotation services. Every target kind: a command's toolbar buttons, a menu path (the menubar title, then inside each menu as the person opens it; on the macOS menubar the path in words and the toolbar button), the workbench selector, a task dialog's field (its name, then the label it stands for) or button with the Tasks tab's header when that tab is behind, a Model tree row (a folded parent's row; never unfolded), a face, edge or sub-element, a dock, the 3D view, and an add-on's own kind (`tutor_target` readers). A target that cannot be shown says why ("toolbar hidden: Part Design is not the active workbench; call workbench activate first") and its words join the callout; nothing is switched, opened, unfolded, selected or focused. Each call replaces the highlights before it unless `clear: false`; no targets clears them.
+- The Tutor tab in Agent Link's panel (between Notes and Steps): the lessons this FreeCAD can run, the step in front with its words and hint, the step's targets ringed, Back, Next, Hint, Skip and Stop, and Ask Claude, which leaves the question as a note for the agent. It follows the theme (no colours of its own). "Do it for me" is shown, off, until demo mode.
 - The lesson format (`data/lesson.schema.json`) and its loader: lessons found
   per add-on folder, ids namespaced by package, a listing that hides lessons
   this FreeCAD cannot run, inline lessons of 8 steps or fewer, and progress
