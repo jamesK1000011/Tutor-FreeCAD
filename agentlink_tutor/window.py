@@ -280,7 +280,7 @@ class Window:
         if w is None:
             what = name or label or button
             return None, f"no {what!r} in the open task dialog"
-        if not tv.isVisible() or not w.isVisible():
+        if not self.front(tv) or not w.isVisible():
             head = self._tab_header(tv)
             if head is not None:
                 return head, "the Tasks tab is not in front: its tab is ringed"
@@ -334,6 +334,17 @@ class Window:
                 return spec, "other"
         return spec
 
+    def front(self, w):
+        """Whether w shows and is in front: visible, and its dock not
+        tabbed behind another dock of the main window (behind)."""
+        if not _shown(w):
+            return False
+        try:
+            QtW = _qt()[2]
+        except Exception:  # noqa: BLE001  (no Qt: a stand-in window)
+            return True
+        return not behind(w, QtW, self.mw())
+
     # ---- the model tree ------------------------------------------------------------
     def trees(self):
         """The window's Model trees, found afresh each time (FreeCAD deletes
@@ -379,7 +390,7 @@ class Window:
         key = _doc_key(getattr(obj, "Document", None)) if obj is not None else None
         mine = [t for t in trees if key and _safe(lambda t=t: _doc_item(t, key))] or trees
         tabbed = [t for t in mine if _safe(lambda t=t: tab_of_any(t, self.mw()))]
-        shown = [t for t in mine if _shown(t)]
+        shown = [t for t in mine if self.front(t)]
         return (shown or tabbed or mine)[0]
 
     def tree_row(self, obj):
@@ -395,7 +406,7 @@ class Window:
         # tree is still searched (a row found by label under no document).
         mine = [t for t in trees if rows[id(t)] is not None]
         order = mine + [t for t in trees if t not in mine]
-        if not any(_shown(t) for t in (mine or trees)):
+        if not any(self.front(t) for t in (mine or trees)):
             # The Combo View shows its Tasks or Agent Link tab (the Tutor
             # lives in Agent Link's; FreeCAD flips to Tasks on a workbench
             # switch): the Model tab's header is ringed first, before any
@@ -456,7 +467,7 @@ class Window:
         if top is not item or not any(_same(item.text(0), n) for n in _names(obj)):
             note = f"inside {top.text(0)}, which is folded: its row is ringed"
         row_label = top.text(0)
-        if not tree.isVisible():
+        if not self.front(tree):
             head = self._tab_header(tree)
             if head is not None:
                 return head, MODEL_TAB
@@ -481,7 +492,7 @@ class Window:
         its tab), whether it shows, whether it holds the document's row
         (and else the rows it does hold)."""
         where = _safe(lambda: _tree_place(t)) or "a Model tree"
-        bits = [where, "shown" if _shown(t) else "hidden"]
+        bits = [where, "shown" if self.front(t) else "behind another tab" if _shown(t) else "hidden"]
         if doc:
             if doc_row is not None:
                 bits.append(f"{doc} row {doc_row.text(0)!r}")
@@ -501,12 +512,18 @@ class Window:
         _QtCore, _QtGui, QtW = _qt()
         want = norm(title)
         docks = [d for d in self.mw().findChildren(QtW.QDockWidget) if norm(d.windowTitle()) == want or norm(d.objectName()) == want]
-        shown = [d for d in docks if _shown(d)]
+        shown = [d for d in docks if self.front(d)]
         if shown:
             return {"widget": shown[0]}
+        for d in docks:   # tabbed behind another dock: its tab is ringed
+            if _shown(d):
+                head = self._tab_header(d, title=True)
+                if head is not None:
+                    spec, tab = head
+                    return spec, f"the {tab} tab is not in front: its tab is ringed"
         panels = self.panels(title)
         for p in panels:
-            if _shown(p):
+            if self.front(p):
                 return {"widget": p}
         for p in panels:
             head = self._tab_header(p, title=True)
@@ -644,6 +661,72 @@ def _shown(w):
     try:
         return bool(w.isVisible())
     except RuntimeError:
+        return False
+
+
+def _plain(text):
+    return str(text).replace("&", "")
+
+
+def dock_of(w, QtW):
+    """The dock w is in (w itself when it is one), or None."""
+    p = w
+    while p is not None:
+        if isinstance(p, QtW.QDockWidget):
+            return p
+        p = p.parentWidget()
+    return None
+
+
+def dock_tab(dock, QtW, mw, shown_only=False):
+    """(tab bar, index) of the main window's own tab for a dock it tabs
+    with others (FreeCAD 1.1: Model, Tasks and an add-on's panel are docks
+    of their own, tabbed together by the main window), found by the dock's
+    title among the main window's tab bars as FreeCAD's own
+    ControlSingleton::findTabBar does; a shown bar before a hidden one
+    (Qt keeps tab bars it no longer uses). None when it has no such tab."""
+    if dock is None or mw is None:
+        return None
+    try:
+        want = _plain(dock.windowTitle())
+    except (RuntimeError, AttributeError):
+        return None
+    hidden = None
+    for bar in mw.findChildren(QtW.QTabBar):
+        try:
+            if bar.parentWidget() is not mw:
+                continue
+            for i in range(bar.count()):
+                if _plain(bar.tabText(i)) == want:
+                    if _shown(bar):
+                        return bar, i
+                    if hidden is None:
+                        hidden = (bar, i)
+                    break
+        except RuntimeError:
+            continue
+    return None if shown_only else hidden
+
+
+def behind(w, QtW, mw):
+    """True when the dock holding w is tabbed behind another dock of the
+    main window: its tab is in a shown main-window tab bar and is not the
+    current one. isVisible() cannot tell: Qt keeps a dock that is tabbed
+    behind another visible and parks it outside the window, so its tree
+    reads as shown, with rows, while nothing of it is on screen (live,
+    FreeCAD 1.1.3: bike-stem-1 steps 13-14, the Model dock behind Tasks)."""
+    try:
+        dock = dock_of(w, QtW)
+        if dock is None or mw is None:
+            return False
+        if hasattr(dock, "isFloating") and dock.isFloating():
+            return False
+        got = dock_tab(dock, QtW, mw, shown_only=True)
+        if got is None:
+            return False
+        bar, i = got
+        return int(bar.currentIndex()) != i
+    except (RuntimeError, AttributeError, TypeError, ValueError):
         return False
 
 
@@ -903,16 +986,7 @@ def tab_of(w, QtW, mw=None):
             dock = p
         page, p = p, p.parentWidget()
     if dock is not None and mw is not None:
-        want = str(dock.windowTitle())
-        for bar in mw.findChildren(QtW.QTabBar):
-            try:
-                if bar.parentWidget() is not mw:
-                    continue
-                for i in range(bar.count()):
-                    if str(bar.tabText(i)) == want:
-                        return bar, i
-            except RuntimeError:
-                continue
+        return dock_tab(dock, QtW, mw)
     return None
 
 
@@ -930,7 +1004,10 @@ def front_steps(w, QtW, mw=None):
                 out.append(("tab", tabs, i))
         elif isinstance(p, QtW.QScrollArea) and p.widget() is not None and p.widget() is page:
             out.append(("scroll", p, w))
-        elif isinstance(p, QtW.QDockWidget) and not _shown(p):
+        elif isinstance(p, QtW.QDockWidget) and (not _shown(p) or behind(p, QtW, mw)):
+            # Hidden, or tabbed behind another dock (which Qt still calls
+            # visible): shown and raised, as FreeCAD's own
+            # ControlSingleton::showDockWidget does. No focus is taken.
             out.append(("dock", p, None))
         page, p = p, p.parentWidget()
     return list(reversed(out))

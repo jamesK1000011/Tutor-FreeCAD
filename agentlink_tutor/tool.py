@@ -108,7 +108,7 @@ def tutor(a, session, lib, progress=None):
             return {"watching": live.watch_mode(a["on"])}
         if action == "explain":
             if not isinstance(a.get("on"), bool):
-                raise Refusal("invalid_input", "explain: on, true or false")
+                raise Refusal("invalid_input", "explain: on, true (show the short why lines) or false")
             if c is not None and c.e.state in ("step", "done"):
                 return c.act("explain", on=a["on"])
             from . import prefs
@@ -135,7 +135,7 @@ def tutor(a, session, lib, progress=None):
         if c is None or c.e.state not in ("step", "done"):
             raise Refusal("invalid_state", "no lesson running: tutor {action: \"list\"}, then {action: \"start\", lesson}")
         if c.e.state == "done" and action not in ("status", "stop"):
-            raise Refusal("invalid_state", "the lesson is done: start another, or status")
+            raise Refusal("invalid_state", f"the lesson is done, so there is no step to {action}: tutor {{action: \"start\", lesson}} for another, or status or stop")
         out = c.act(action, mode=mode, detail=bool(a.get("detail")), on=a.get("on"))
         if action == "stop":
             live.set_controller(None)
@@ -167,7 +167,7 @@ def watch(a):
         raise Refusal("invalid_input", f"wait: 0 to {observe.WAIT_MAX:g} seconds")
     until = a.get("until") or "any"
     if until not in ("any", "milestone"):
-        raise Refusal("invalid_input", "until: any or milestone")
+        raise Refusal("invalid_input", "until: any (the first event ends the wait) or milestone (only something finished does)")
     if not live.watching():
         return {"watching": False, "say": OFF}
     evs = observe.BUF.wait(since, wait, until)

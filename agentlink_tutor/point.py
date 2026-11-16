@@ -65,7 +65,7 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None, report=
     if not isinstance(tg, list):
         raise Refusal("invalid_input", "targets: a list of target specs, such as [{cmd: \"PartDesign_Pad\"}]")
     if len(tg) > MAX_TARGETS:
-        raise Refusal("invalid_input", f"targets: at most {MAX_TARGETS} at once")
+        raise Refusal("invalid_input", f"targets: at most {MAX_TARGETS} at once (this has {len(tg)}); ring the rest in a second call with clear: false")
     if ms is not None and (not isinstance(ms, int) or isinstance(ms, bool) or not 500 <= ms <= MS_MAX):
         raise Refusal("invalid_input", f"ms: 500 to {MS_MAX}, or leave it out to keep them until the next call")
     tg = [lessons.normal_target(spec) for spec in tg]
