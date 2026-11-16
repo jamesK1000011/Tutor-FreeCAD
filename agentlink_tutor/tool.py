@@ -16,6 +16,9 @@ from . import lessons, live
 from .point import Refusal
 
 LIST_MAX = 12
+# The session's inline lessons by id, so a later batch can come after one
+# (setup.after); never written anywhere.
+INLINE = {}
 
 
 def _tools_of(session):
@@ -107,11 +110,14 @@ def tutor(a, session, lib, progress=None):
             if isinstance(ref, str) and ref.strip().startswith("{"):
                 ref = json.loads(ref)
             if isinstance(ref, dict):
-                lesson = lessons.inline(ref, tools=_tools_of(session))
+                have = lib.lessons()
+                lesson = lessons.inline(ref, tools=_tools_of(session),
+                                        lookup=lambda i: INLINE.get(i) or have.get(i))
+                INLINE[lesson["id"]] = lesson  # a later batch may come after it
             elif isinstance(ref, str) and ref:
                 lesson = find(lib, ref)
             else:
-                raise Refusal("invalid_input", "start: lesson, an id from tutor {action: \"list\"} or an inline lesson {id: \"inline.x\", title, steps: [≤8]}")
+                raise Refusal("invalid_input", "start: lesson, an id from tutor {action: \"list\"} or an inline lesson {id: \"inline.x\", title, steps: [≤30]}; longer: batches, each with setup {after: the batch before}")
             if c is not None and c.stepping:
                 c.act("stop")
             c = live.new(lesson, call=call_for(session), doc=lambda: getattr(session, "doc", None),

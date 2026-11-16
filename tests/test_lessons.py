@@ -102,7 +102,7 @@ class Rules(unittest.TestCase):
         self.assertTrue(any("longer than 240" in p for p in lessons.check(bad)))
 
     def test_one_setup_kind(self):
-        self.assertIn("setup: one of doc, fixture or calls", lessons.check(tiny(setup={"doc": "new", "calls": [{"tool": "doc_new"}]})))
+        self.assertIn("setup: one of doc, fixture, calls or after", lessons.check(tiny(setup={"doc": "new", "calls": [{"tool": "doc_new"}]})))
         self.assertTrue(lessons.check(tiny(setup={"fixture": "../x.FCStd"})))
 
     def test_vars_must_be_defined(self):
@@ -196,17 +196,20 @@ class Namespacing(unittest.TestCase):
         self.assertEqual(ids(freecad="1.1.3", workbenches=["SketcherWorkbench"]), [])
         self.assertEqual(ids(api=1), ["addon_a.pd"])
         row = lib.listing(freecad="1.1.3")[0]
-        self.assertEqual(set(row), {"id", "title", "minutes", "done"})
+        self.assertEqual(set(row), {"id", "title", "minutes", "done", "from"})  # an add-on's: which one
+        self.assertEqual(row["from"], "addon_a")
 
 
 class Inline(unittest.TestCase):
     def test_inline_capped_named_and_session_only(self):
-        steps = [{"id": f"s{i}", "say": "Do it.", "check": {"exists": "PartDesign::Body"}} for i in range(8)]
+        steps = [{"id": f"s{i}", "say": "Do it.", "check": {"exists": "PartDesign::Body"}} for i in range(lessons.INLINE_MAX_STEPS)]
+        self.assertEqual(lessons.INLINE_MAX_STEPS, 30)  # a chapter of a video course (10 to 30 steps)
         got = lessons.inline({"id": "inline.quick", "title": "Quick one", "steps": steps})
         self.assertEqual(got["schema"], 1)
         with self.assertRaises(lessons.LessonError) as e:
-            lessons.inline({"id": "inline.long", "title": "Long one", "steps": steps + [dict(steps[0], id="s9")]})
-        self.assertIn("8 steps or fewer", str(e.exception))
+            lessons.inline({"id": "inline.long", "title": "Long one", "steps": steps + [dict(steps[0], id="s99")]})
+        self.assertIn("30 steps or fewer", str(e.exception))
+        self.assertIn("batches", str(e.exception))
         with self.assertRaises(lessons.LessonError) as e:
             lessons.inline({"id": "agentlink_tutor.pd.pad-sketch", "title": "Shadow", "steps": steps[:1]})
         self.assertIn("inline.", str(e.exception))

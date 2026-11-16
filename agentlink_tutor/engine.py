@@ -165,6 +165,8 @@ class Engine:
             self._run([{"tool": "doc_open", "args": {"path": dst}}], "setup")
         elif setup.get("calls"):
             self._run(setup["calls"], "setup")
+        elif setup.get("after"):
+            self._after(setup["after"])
         if self.doc_name is None:
             self._own_doc(getattr(self._session_doc(), "Name", None))
         self.hold_doc()  # its view in front for the person
@@ -173,6 +175,56 @@ class Engine:
         self.history = []
         self._enter(self._main[0])
         return self.status()
+
+    # ---- chapters -----------------------------------------------------------
+
+    def continues(self, prev):
+        """True when the document in front already holds the end of prev
+        (it passes prev's result): the next chapter goes on in it."""
+        res = prev.get("result")
+        if not res:
+            return False
+        ctx = checks.Context(doc=self._session_doc(), gui=None)
+        if ctx.doc is None:
+            return False
+        return checks.evaluate(resolve(res, dict(prev.get("vars") or {})), ctx).status == "pass"
+
+    def _after(self, after):
+        """setup.after: start where the chapter before ended. The document
+        in front when it passes that chapter's result; else the first
+        chapter's setup, then every chapter's main-path steps done through
+        the tools (each step's do, its bindings as that chapter makes
+        them), up to this one."""
+        prev = self.lesson.get("_after") or []
+        if not prev or prev[-1].get("id") != after:
+            raise TutorError(f"setup.after: the chapter before ({after}) is not installed")
+        if self.continues(prev[-1]):
+            self._own_doc(getattr(self._session_doc(), "Name", None))
+            return
+        keep = self.bindings
+        try:
+            for n, p in enumerate(prev):
+                self.bindings = dict(p.get("vars") or {})
+                if n == 0:
+                    ps = p.get("setup") or {}
+                    if ps.get("doc") == "new":
+                        self._run([{"tool": "doc_new", "args": {"name": self.lesson["id"].rpartition(".")[2].replace("-", "_")}}], "setup")
+                    elif ps.get("calls"):
+                        self._run(ps["calls"], f"setup ({p['id']})")
+                    elif ps.get("fixture"):
+                        raise TutorError(f"setup.after: {p['id']} starts from a file; start it first")
+                    self._bind(ps.get("bind"), only_new=False)
+                elif (p.get("setup") or {}).get("bind"):
+                    self._bind(p["setup"]["bind"], only_new=False)
+                detours = lessons.detours(p)
+                for st in p["steps"]:
+                    if st["id"] in detours or not st.get("do"):
+                        continue
+                    self.before = self._names()
+                    self._run(st["do"], f"{p['id']} step {st['id']}")
+                    self._bind(st.get("bind"), only_new=True)
+        finally:
+            self.bindings = keep
 
     def _run(self, calls, where):
         if self.call is None:

@@ -98,6 +98,11 @@
     },
     "bind": {
      "type": "object"
+    },
+    "after": {
+     "type": "string",
+     "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9][a-z0-9-]*)+$",
+     "description": "The lesson this one comes after (the chapter before): its end state is the start of this one. When the document in front already passes that lesson's result, the lesson goes on in it; else a new document is made and the chapters before are done through the tools."
     }
    }
   },
@@ -125,6 +130,35 @@
     "keep"
    ],
    "description": "How the lesson's 3D view is set after setup (fitted to the part), and for its steps that light faces or edges; keep leaves the person's camera. Default isometric."
+  },
+  "result": {
+   "type": "object",
+   "description": "The lesson's end state as a check (queries, not bindings): a later chapter's setup.after goes on in a document that passes it."
+  },
+  "course": {
+   "type": "object",
+   "required": [
+    "id",
+    "chapter"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string",
+     "pattern": "^[a-z0-9][a-z0-9-]*$",
+     "maxLength": 40
+    },
+    "title": {
+     "type": "string",
+     "maxLength": 80
+    },
+    "chapter": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 99
+    }
+   },
+   "description": "A chapter of a course: the course's id and title, and this chapter's number."
   }
  },
  "definitions": {
