@@ -36,6 +36,7 @@ tests/_fc.py
 tests/data/agentlink_tools.txt
 tests/fakes.py
 tests/requirements.txt
+tests/test_as_person.py
 tests/test_callout.py
 tests/test_checks.py
 tests/test_engine.py
