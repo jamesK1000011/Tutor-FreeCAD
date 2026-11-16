@@ -80,12 +80,24 @@ no add-on):
   `hooks.emit` (`agentlink/gui_events.py`), so the Tutor imports no GUI
   internals; `hooks.off(event, fn)` takes a listener off.
 
-## T5: add-on lessons
+## T5: add-on lessons (done, nothing new in core)
 
-- **`_register_lessons(mod)`** in `agentlink/families/__init__.py`, a twin of
-  `_register_guides`: a `lessons/` folder beside an add-on's
-  `agentlink_families` module offered to whoever provides the `lessons`
-  service (the Tutor), with the add-on's package name as the owner. Without
-  the Tutor installed nothing reads them.
+The Tutor finds add-ons' lessons itself: for every `agentlink_families`
+module Agent Link loaded (and did not leave out for its API), a `lessons/`
+folder beside it, or the folders its `LESSONS` names; the owner is the
+add-on's package name. It also offers `hooks.service("lessons")`
+(`register_folder(folder, owner)`, `ids()`), so an add-on, or a later
+`_register_lessons(mod)` in `agentlink/families/__init__.py` (a twin of
+`_register_guides`), can hand a folder over by name. Neither is required.
+
 - **`tutor_target` and `tutor_check` readers** need nothing new:
   `hooks.register_reader`/`hooks.read` already serve them.
+
+## Wanted later (not needed now)
+
+- A tool that makes a variable set (`App::VarSet`) and adds a property to
+  it. Demo mode makes the parameter with `param_set` (a spreadsheet alias),
+  which the checks take as well as a variable set; with such a tool demo
+  would do what FreeCAD 1.0 and 1.1 beginners' videos do.
+- The echo's lit buttons flash: a person who turned on the Tutor's Reduce
+  motion would want them still too (a preference the echo reads).

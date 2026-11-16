@@ -7,9 +7,26 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-16
+
+Not tagged yet. Add-on lessons, courses and batches, accessibility, five starter lessons and the bike-stem course.
+
 ### Added
 
+- Add-on lessons (T5): installed add-ons (Workshop, ScanRuler-FreeCAD, Texturizer …) ship lessons in a `lessons/` folder beside their `agentlink_families` module (or the folders its `LESSONS` names), ids starting with the add-on's package name; the Tutor lists (`from`) and plays them, held to the same rules. `hooks.service("lessons").register_folder(folder, owner)` hands a folder over by name. No Agent Link change needed. `docs/examples/workshop/lessons/hole-for-hardware.lesson.json` is the lesson Workshop carries: an M4 countersunk hole through a plate, checked by the hole's type, size and cut.
+- Courses and batches: a lesson's `setup: {after: id}` starts it where the chapter before ended, in the document in front when it passes that chapter's `result`, else in a new document where the chapters before are done through the tools; `course: {id, title, chapter}` names the course. The agent's inline lessons may have 30 steps (was 8), and a longer job goes in batches, each inline lesson after the one before (or after a stored chapter).
+- The bike-stem course, chapters 1 to 3 (after a FreeCAD 1.0 beginner video, played on 1.1): the base sketch on XZ with a 21 mm circle on the X axis and a symmetric outline 47 mm high, rear 27 mm, the variable `size` (55 mm) driving the circle's place and the front length (`size + 20 mm`), pad 22 mm; a chamfer of two distances, 8 and 5 mm, on the two front edges; the inset from outside edges, an arc of radius 14.5 mm on the hole's centre, an equal circle, pad 2.5 mm. Each step checked by what it made: degrees of freedom (step by step with `dof_max`, 0 at the end), dimensions, the two bindings to `size`, feature values, and that the part follows `size`.
+- Five starter lessons (T6): constrain a sketch to no degrees of freedom; a fillet and a chamfer; a variable set (or spreadsheet) parameter driving the pad's length; a TechDraw page with a view of a body; an assembly with one grounded part and a fixed joint. With the pad and pocket lessons they cover the six T6 topics. All in Simplified Technical English.
+- Checks: a query's `where` picks objects by their values (`{ThreadSize: "M4"}`, `{Diameter: {ge: 4.3}}`, `{ObjectToGround: {set: true}}`); `expr` counts an object's values bound to an expression naming a parameter; `follows` raises a parameter for a moment inside an undo transaction it aborts and passes when the object recomputes with no error and changes size (the window's signals during the trial are not taken for the person's); a sketch check takes `dof_max`, `count`, `dims`, `radii` and `external`.
+- Accessibility (T6): the Tutor tab works from the keyboard alone (Tab through every control in reading order; Alt+Right Next, Alt+Left Back, Alt+H Hint, Alt+K Skip, Alt+D Do it for me, Alt+Q Stop, Alt+Return Start, Alt+A to the question box, in the tab only, each said in its tooltip); every control has a screen-reader name and description, and the step is announced when it changes; Text size (100 to 200 %) scales the tab and the callout; Reduce motion frames the part once without the view's animation and keeps the camera still between steps (`ReduceMotion`, `TextScale` under BaseApp/Preferences/Mod/Tutor). The callout keeps 4.5:1 contrast for its words and why line and 3:1 for its edge in any theme.
 - Tests for two agents on one link (`tests/test_as_person.py`, with Agent Link 1ec7069 or later): a student agent's `gui_input` with `as: "person"` makes the person's events (a selection, a command, a workbench switch, a task panel opened and closed, an object made, Ask Claude) that `tutor_watch` gives in order with a rising `next`; a milestone ends a teacher's waiting `tutor_watch` early; a guided `used` check passes as the person's own (no `done_for`); the teacher's calls before, between and inside the student's stay left out. The live script is Agent Link's `scripts/live/tutor-watch.json` (`ROLES.md` beside it).
+
+### Changed
+
+- Demo mode no longer does a step whose check already holds (done by an earlier step, or by the person before switching mode); it goes on.
+- `tutor {action: "list"}` keeps its answer short: `done` only when done, rows past 420 characters counted in `more` with a word on narrowing by a query.
+- `hold` is an approved verb in the writing rules. The `tutor` tool's description says the inline limit, batches and the new checks.
+- Vendored Agent Link tool list refreshed.
 
 ### Fixed
 

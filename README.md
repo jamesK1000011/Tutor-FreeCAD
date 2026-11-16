@@ -35,8 +35,12 @@ Needs FreeCAD 1.1 or newer and
 
 ## What it does
 
-Status: early. Three starter lessons (pad a sketch, cut a pocket and drill
-a hole, export an STL) run in two modes, switchable at any step:
+Status: early. Eight starter lessons (pad a sketch; cut a pocket and drill
+a hole; export an STL; constrain a sketch fully; a fillet and a chamfer; a
+parameter driving a dimension; a TechDraw page of a body; an assembly with
+one grounded part and a fixed joint) and the first three chapters of a
+course (a bike stem, after a FreeCAD 1.0 beginner video) run in two modes,
+switchable at any step:
 
 - **Guided**: you do each step. Its controls are ringed, and the step is
   checked as you work (after a recompute, an undo, a selection, a workbench
@@ -48,6 +52,9 @@ a hole, export an STL) run in two modes, switchable at any step:
   for Next before the following one.
 
 A known wrong turn (Pocket for Pad) takes a short detour to put it right.
+A course goes chapter by chapter: a chapter starts where the one before
+ended, in the document in front when it holds that chapter's result, else
+in a new one where the chapters before are done for you first.
 Watch mode follows what you do without a lesson: turn on "Let Claude
 watch" in the Tutor tab (or ask Claude to), and a sign shows in the status
 bar while it is on. Claude then sees short events (a command used, an
@@ -69,9 +76,13 @@ when the person asks.
 
 `tutor`: `{action: list|start|next|back|hint|skip|do|stop|status|explain,
 lesson?, mode?: demo|guided, query?, detail?, on?}`. `start` takes a lesson's id (or its
-last part, `pad-sketch`) or an inline lesson of 8 steps or fewer
+last part, `pad-sketch`) or an inline lesson of 30 steps or fewer
 (`{id: "inline.x", title, steps}`, schema-checked, its calls checked against
-the tools there are); `mode` with another action switches mid-lesson; `do`
+the tools there are, its words held to the same writing rules as stored
+lessons); a longer job goes in batches, each inline lesson with
+`setup: {after: "<the id before>"}` (a stored chapter may come before one
+too); `list` names an add-on's lessons with `from`, a course chapter with
+`course`, and keeps its answer short (`more`, and a query narrows it); `mode` with another action switches mid-lesson; `do`
 is "show me this one". Each answer is the lesson's compact state, under 600
 characters: `{lesson, mode, step: "3/5", id, say, check: pass|fail|pending,
 why?, hint: 0-3, hint_text?, do_it?, did?, targets: {resolved, missing}}`.
@@ -106,7 +117,52 @@ the value; a lesson whose first or second hint gives the value away is not
 loaded. A lesson may set its 3D view (`view`: isometric by default, or
 front, top, …, or keep), and a step its own. A menu is named by its command (`{menu:
 "PartDesign_Pad"}`), never by titles, which change between FreeCAD releases
-and languages. Other add-ons can ship their own lessons.
+and languages.
+
+A step's check reads what was made, never how: an object of a type with
+given values (`{exists: {type: "PartDesign::Hole", where: {ThreadSize:
+"M4"}}}`), a property, a volume or size, a sketch's degrees of freedom
+(`dof`, or `dof_max` for progress in any order), its dimensions, circles
+and outside edges, values bound to a parameter (`{expr: "$sketch", uses:
+"size", count: 2}`), and whether the part follows a parameter (`{follows:
+"size", object: "$body", by: 5, axis: "x", change: 5}`: the parameter is
+raised for a moment inside an undo transaction that is aborted, so the
+document is left as it was). The full list is at the top of
+`agentlink_tutor/checks.py`.
+
+A lesson may be a chapter of a course (`course: {id, title, chapter}`,
+`setup: {after: "<the chapter before>"}`, and its `result`, the check a
+later chapter goes on from).
+
+### Lessons from other add-ons
+
+An add-on ships lessons in a `lessons/` folder beside its
+`agentlink_families` module (or the folders its `LESSONS` names), each
+lesson's id starting with the add-on's package name
+(`workshop.make.hole-for-hardware`). The Tutor lists and plays them with
+its own, checked by the same rules; nothing in Agent Link is needed. An
+add-on may also hand a folder over by name:
+`hooks.service("lessons").register_folder(folder, "mypackage")`.
+`docs/examples/workshop/lessons/hole-for-hardware.lesson.json` is the
+lesson Workshop carries (an M4 countersunk hole through a plate, checked by
+the hole's type and size).
+
+## Accessibility
+
+- The Tutor tab works from the keyboard alone: Tab goes through every
+  control in reading order, and the lesson's buttons have keys that work
+  anywhere in the tab (Alt is Option on macOS): Alt+Right Next, Alt+Left
+  Back, Alt+H Hint, Alt+K Skip, Alt+D Do it for me, Alt+Q Stop,
+  Alt+Return Start, Alt+A to the question box. Each tooltip says its key.
+- A screen reader has a name and a description for every control, and
+  hears the step when it changes.
+- The tab sets no colours: its contrast is your theme's. The callout over
+  the 3D view keeps at least 4.5:1 for its words (3:1 for its edge) in a
+  light or a dark theme.
+- **Text size** (100 to 200 %) scales the words in the tab and the
+  callout.
+- **Reduce motion** frames the part once, at the start, without the
+  view's animation, and keeps the camera still between steps.
 
 ## Privacy
 
@@ -114,7 +170,8 @@ and languages. Other add-ons can ship their own lessons.
   it on, and a visible badge shows while it runs.
 - What it sees stays in FreeCAD's memory. It is never written to disk or
   sent anywhere, except in answers to the agent's own calls.
-- Your lesson progress is kept in FreeCAD's settings on this computer only.
+- Your lesson progress and your Tutor settings (explanations, text size,
+  reduce motion) are kept in FreeCAD's settings on this computer only.
 
 ## Callout
 

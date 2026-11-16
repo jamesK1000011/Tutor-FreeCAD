@@ -2,7 +2,7 @@
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Tutor</name>
   <description>An agent teaches FreeCAD in your own window: it explains a control, points at it, does a job step by step while saying why, or guides you through it and checks each step. It never moves the cursor or takes over the screen. Lessons are data files. Needs Agent Link for FreeCAD. Not affiliated with or endorsed by the FreeCAD project or the FPA.</description>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <date>2026-11-16</date>
   <maintainer email="jamesK1000011@users.noreply.github.com">jamesK1000011</maintainer>
   <license file="LICENSE">LGPL-2.1-or-later</license>
