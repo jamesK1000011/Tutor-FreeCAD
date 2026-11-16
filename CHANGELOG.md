@@ -31,3 +31,4 @@ All notable changes to Tutor for FreeCAD. The format follows
 ### Changed
 
 - A step that passed and was undone counts as not done again.
+- From the first live run of T3 on the Mac (FreeCAD 1.1.3): a lesson's setup leaves the window quiet (the sketch it drew closed, no task dialog, nothing selected), so the person can press Pad; in demo mode a step whose controls are in a task panel opens that feature's panel first, so its field and OK are ringed and the person sees them before Next sets the value; the callout shows `**Pad**` as Pad; a workbench is named as its selector names it ("Sketcher is the active workbench, not Part Design"); a Model tree row is found again when FreeCAD rebuilds the tree (a deleted tree or row was kept and failed); a menu target may be the command's name (`{menu: "PartDesign_Pad"}`), its path read from the window, and the starter lessons use that (1.1.3's Part Design menu has "Additive Features", not "Create an additive feature").

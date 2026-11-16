@@ -106,7 +106,7 @@ class Vocabulary(unittest.TestCase):
     def test_window_checks_with_a_window(self):
         gui = GuiState("SketcherWorkbench", [("Sketch", ["Edge1"])], editing="Sketch", task="Sketcher_SketchObject")
         ctx = Context(doc=self.doc, gui=gui)
-        self.assertIn("SketcherWorkbench workbench is active", evaluate({"workbench": "PartDesignWorkbench"}, ctx).why)
+        self.assertEqual(evaluate({"workbench": "PartDesignWorkbench"}, ctx).why, "Sketcher is the active workbench, not Part Design")
         self.assertEqual(evaluate({"workbench": "SketcherWorkbench"}, ctx).status, "pass")
         self.assertEqual(evaluate({"selected": "Sketch"}, ctx).status, "pass")
         self.assertEqual(evaluate({"selected": "Sketch", "sub": "Edge"}, ctx).status, "pass")

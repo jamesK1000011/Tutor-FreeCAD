@@ -10,6 +10,8 @@ a call with no targets clears them. A target that cannot be shown comes back
 with why, and its words (a menu path, a command's name) join the callout.
 """
 
+import re
+
 from . import lessons, targets
 
 OWNER = "tutor"
@@ -31,9 +33,19 @@ def _services(hooks):
     return hooks.service("overlay"), hooks.service("annotations")
 
 
+_MARK = re.compile(r"(\*\*|__)(.+?)\1|`([^`]+)`")
+
+
+def plain(text):
+    """Markdown emphasis taken off (the callout is painted text): **Pad**,
+    __Pad__ and `Pad` read as Pad."""
+    return _MARK.sub(lambda m: m.group(2) if m.group(2) is not None else m.group(3), str(text))
+
+
 def callout(say, found):
     """The callout's words: say, then each missed or native target's words
-    with its badge number."""
+    with its badge number. Markdown emphasis is taken off."""
+    say = plain(say) if say else say
     lines = [str(say).strip()] if say and str(say).strip() else []
     for f in found:
         if f.text:

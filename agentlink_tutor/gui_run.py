@@ -39,13 +39,89 @@ def shower(session):
             point.point({}, None, hooks=hooks)
             ov = hooks.service("overlay")
             if ov is not None and say:
-                ov.show([], say=say, owner=point.OWNER)
+                ov.show([], say=point.plain(say), owner=point.OWNER)
             return {"resolved": 0, "missing": []}
         got = point.point({"targets": tg, "say": say}, Window(session), hooks=hooks, bindings=c.e.bindings)
         return {"resolved": len(got.get("shown") or []),
                 "missing": [str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []]}
 
     return show
+
+
+class UI:
+    """The lesson's own hands in the window (run.Controller's ui): only
+    what the lesson itself left or needs open, never the person's cursor,
+    focus or menus."""
+
+    def __init__(self, session=None):
+        self.s = session
+        self.opened = None  # (document name, object name) this opened for edit
+
+    def _gd(self, doc=None):
+        import FreeCADGui
+
+        if doc is not None:
+            try:
+                return FreeCADGui.getDocument(doc.Name)
+            except Exception:  # noqa: BLE001
+                pass
+        return FreeCADGui.ActiveDocument
+
+    def settle(self):
+        """After setup: no sketch or feature left in edit, no task dialog,
+        nothing selected (the person starts from a quiet window)."""
+        import FreeCADGui
+
+        gd = self._gd()
+        try:
+            if gd is not None and gd.getInEdit() is not None:
+                gd.resetEdit()
+        except Exception as e:  # noqa: BLE001
+            sys.stderr.write(f"Tutor: edit not closed after setup ({e})\n")
+        try:
+            if FreeCADGui.Control.activeDialog():
+                FreeCADGui.Control.closeDialog()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            FreeCADGui.Selection.clearSelection()
+            FreeCADGui.updateGui()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def open_task(self, engine):
+        """Demo: open the feature the step's do works on, so its task panel
+        (the field and OK the step rings) shows before Next does it."""
+        from . import run
+
+        name = run.edit_target(engine)
+        doc = engine._doc()
+        obj = doc.getObject(name) if (doc is not None and name) else None
+        if obj is None:
+            return
+        gd = self._gd(doc)
+        if gd is None:
+            return
+        cur = gd.getInEdit()
+        if cur is not None:
+            return  # something is open already (the person's, or ours)
+        gd.setEdit(obj.Name, 0)
+        self.opened = (doc.Name, obj.Name)
+
+    def close_task(self):
+        """Before the do sets the value: the panel this opened is closed."""
+        if self.opened is None:
+            return
+        import FreeCAD
+
+        doc = FreeCAD.getDocument(self.opened[0]) if self.opened[0] in FreeCAD.listDocuments() else None
+        self.opened = None
+        gd = self._gd(doc) if doc is not None else None
+        try:
+            if gd is not None and gd.getInEdit() is not None:
+                gd.resetEdit()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 class _DocObserver:

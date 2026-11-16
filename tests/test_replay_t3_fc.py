@@ -9,7 +9,9 @@ import unittest
 
 from _fc import HAVE, WHY, caller, server
 
-from agentlink_tutor import live
+from agentlink_tutor import checks, live
+
+QUIET = {"all": [{"task_open": None}, {"editing": None}]}
 
 
 @unittest.skipUnless(HAVE, WHY)
@@ -37,6 +39,7 @@ class PadByFlag(unittest.TestCase):
         os.environ[self.hooks.AS_USER_ENV] = "1"
         st = self.tutor(action="start", lesson="pad-sketch", mode="guided")
         self.assertEqual((st["step"], st["check"]), ("1/5", "pending"))
+        self.assertEqual(checks.evaluate(QUIET, live.engine().context()).status, "pass")  # nothing left open
         self.tutor(action="skip")  # the workbench: the window's
         self.tutor(action="skip")  # the selection: the window's
         refused, out = self.call("pd_pad", {"sketch": live.bindings()["sketch"], "length": 10})

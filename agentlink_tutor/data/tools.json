@@ -5,7 +5,7 @@
  "entries": {
   "tutor_point": {
    "group": "tutor",
-   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: [\"Part Design\", \"Pad\"]}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of} (of beside the query), {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. Says why any target is not shown.",
+   "description": "Point at FreeCAD's controls for the person: numbered rings and a callout over the window; faces and edges lit in 3D. Never moves the cursor, opens a menu or switches workbench. targets (≤6): {cmd: \"PartDesign_Pad\"}, {menu: \"PartDesign_Pad\"}, {wb: \"PartDesignWorkbench\"}, {task: \"Length\" | {name, label, button}}, {tree: \"Sketch\"}, {face: {normal: [0,0,1], largest: true}, of}, {edge: {near: [x,y,z]}, of} (of beside the query), {sub: \"Face6\", of}, {dock: \"Report view\"}, {view: \"3d\"}. Replaces earlier highlights unless clear: false; no targets clears. Says why any target is not shown.",
    "inputSchema": {
     "type": "object",
     "properties": {

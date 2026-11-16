@@ -135,6 +135,14 @@ class Window:
         except Exception:
             return []
 
+    def menu_path_of(self, cmd):
+        """The titles from the menubar down to cmd's item, as this window
+        shows them (translated, this release's own submenus), or None."""
+        try:
+            return path_to(self.mw().menuBar().actions(), cmd)
+        except Exception:  # noqa: BLE001
+            return None
+
     def menu_info(self, titles):
         from agentlink import targets
 
@@ -247,16 +255,37 @@ class Window:
         return None
 
     # ---- the model tree ------------------------------------------------------------
-    def tree_row(self, obj):
+    def trees(self):
+        """The window's Model trees, found afresh each time (FreeCAD deletes
+        and rebuilds them: a wrapper kept from before is dead), the shown
+        one first; dead ones left out."""
         _QtCore, _QtGui, QtW = _qt()
-        trees = [t for t in self.mw().findChildren(QtW.QTreeWidget) if _cls(t) == TREE]
+        out = []
+        for t in self.mw().findChildren(QtW.QTreeWidget):
+            try:
+                if alive(t) and _cls(t) == TREE:
+                    out.append((0 if t.isVisible() else 1, len(out), t))
+            except RuntimeError:
+                continue
+        return [t for _v, _i, t in sorted(out, key=lambda x: x[:2])]
+
+    def tree_row(self, obj):
+        label = obj.Label
+        doc = getattr(getattr(obj, "Document", None), "Label", None)
+        trees = self.trees()
         if not trees:
             return None, "no Model tree in this window"
-        tree = next((t for t in trees if t.isVisible()), trees[0])
-        doc = getattr(obj, "Document", None)
-        item = _find_item(tree, obj.Label, getattr(doc, "Label", None))
+        tree = item = None
+        for t in trees:
+            try:
+                item = _find_item(t, label, doc)
+            except RuntimeError:  # deleted while read
+                item = None
+            if item is not None:
+                tree = t
+                break
         if item is None:
-            return None, f"{obj.Label} is not in the Model tree"
+            return None, f"{label} is not in the Model tree"
         note = None
         # A folded branch is never unfolded: its nearest shown parent's row is ringed.
         top, p = item, item.parent()
@@ -266,12 +295,26 @@ class Window:
             p = p.parent()
         if top is not item:
             note = f"inside {top.text(0)}, which is folded: its row is ringed"
-            item = top
+        row_label = top.text(0)
         if not tree.isVisible():
             head = self._tab_header(tree)
             if head is not None:
                 return head, "the Model tab is not in front: its tab is ringed"
-        return {"widget": tree, "viewport": tree.viewport(), "rect": (lambda t=tree, it=item: _r(t.visualItemRect(it)))}, note
+        box = {"tree": tree, "item": top}
+
+        def rect():
+            # The row again whenever its tree or item has been rebuilt.
+            t, it = box["tree"], box["item"]
+            if not (alive(t) and alive(it)):
+                fresh = self.trees()
+                t = fresh[0] if fresh else None
+                it = _find_item(t, row_label, doc) if t is not None else None
+                if it is None:
+                    return None
+                box["tree"], box["item"] = t, it
+            return _r(t.visualItemRect(it))
+
+        return {"widget": tree, "viewport": tree.viewport(), "rect": rect}, note
 
     # ---- docks and views ---------------------------------------------------------
     def dock(self, title):
@@ -315,6 +358,45 @@ class Window:
     # ---- add-ons' own kinds -------------------------------------------------------
     def ext(self, spec):
         return self.hooks().read("tutor_target", spec, self)
+
+
+def path_to(acts, cmd, depth=5):
+    """[titles] from these actions down to the one whose objectName is cmd
+    (FreeCAD names a command's QAction after it), depth first; None when no
+    menu holds it. Plain: anything with text(), objectName(), menu()."""
+    for a in acts or []:
+        try:
+            if a.isSeparator():
+                continue
+            if a.objectName() == cmd:
+                return [a.text().replace("&", "")]
+            m = a.menu() if depth > 0 else None
+            if m is not None:
+                below = path_to(m.actions(), cmd, depth - 1)
+                if below:
+                    return [a.text().replace("&", "")] + below
+        except RuntimeError:  # a menu deleted while read
+            continue
+    return None
+
+
+def alive(obj):
+    """False for a Qt wrapper whose C++ object is gone."""
+    if obj is None:
+        return False
+    for mod in ("shiboken6", "shiboken2", "PySide6.shiboken6", "PySide2.shiboken2"):
+        try:
+            sb = __import__(mod, fromlist=["isValid"])
+            return bool(sb.isValid(obj))
+        except ImportError:
+            continue
+        except Exception:  # noqa: BLE001  (not a Qt object: a stand-in)
+            break
+    try:
+        obj.objectName() if hasattr(obj, "objectName") else None
+        return True
+    except RuntimeError:
+        return False
 
 
 def _r(q):
