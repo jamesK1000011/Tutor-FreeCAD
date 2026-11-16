@@ -13,6 +13,7 @@ import json
 import os
 import unittest
 
+from fakes import Doc
 from test_engine import World
 from test_run import AGENT, PERSON, Clock
 
@@ -319,23 +320,180 @@ class Placement(unittest.TestCase):
             def __init__(self):
                 self.shown, self.hidden = [], 0
 
-            def show(self, c, found):
+            def show(self, c, found, doc=None, report=None):
                 self.shown.append(c.text())
                 return True
 
             def hide(self):
                 self.hidden += 1
 
+            def why(self):
+                return None
+
         from test_point import Ann, Hooks, Overlay, Win
 
         ov, b = Overlay(), Bubble()
         win = Win()
         hooks = Hooks(ov, Ann())
-        point.point({"targets": [{"view": "3d"}], "say": "Look here."}, win, hooks=hooks, bubble=b)
+        out = point.point({"targets": [{"view": "3d"}], "say": "Look here."}, win, hooks=hooks, bubble=b)
         self.assertEqual(b.shown, ["Look here."])
         self.assertIsNone(ov.shows[-1]["say"])  # the overlay draws only the rings
+        self.assertEqual(out["callout"], "bubble")
         point.point({}, win, hooks=hooks, bubble=b)
         self.assertEqual(b.hidden, 2)
+
+    def test_a_bubble_that_cannot_show_says_why_and_the_overlay_has_the_words(self):
+        class NoView:
+            def show(self, c, found, doc=None, report=None):
+                return False
+
+            def hide(self):
+                pass
+
+            def why(self):
+                return "PocketLesson's 3D view is not the front tab"
+
+        from test_point import Ann, Hooks, Overlay, Win
+
+        ov = Overlay()
+        report = {}
+        out = point.point({"targets": [{"view": "3d"}], "say": "Look here."}, Win(), hooks=Hooks(ov, Ann()), bubble=NoView(), report=report)
+        self.assertEqual(ov.shows[-1]["say"], "Look here.")
+        self.assertEqual((out["callout"], out["callout_why"]), ("overlay", "PocketLesson's 3D view is not the front tab"))
+        self.assertEqual(report["callout"], "overlay")  # the dict the later self-check updates
+        out = point.point({"targets": [{"view": "3d"}]}, Win(), hooks=Hooks(None, Ann()), bubble=NoView())
+        self.assertEqual(out["callout"], "none")
+
+    def test_the_controller_tells_the_agent_where_the_words_are(self):
+        report = {"resolved": 2, "missing": [], "callout": "overlay", "callout_why": "bubble not visible"}
+        w, c = pocket(show=lambda ctl: report)
+        st = c.state()
+        self.assertEqual((st["callout"], st["callout_why"]), ("overlay", "bubble not visible"))
+        report.update(callout="bubble")
+        report.pop("callout_why")
+        self.assertNotIn("callout_why", c.state())
+
+    def test_bubble_pieces_without_qt(self):
+        from agentlink_tutor import bubble
+
+        self.assertTrue(bubble.subwindow_title_matches("PocketLesson : 1[*]", "PocketLesson"))
+        self.assertFalse(bubble.subwindow_title_matches("PocketLesson2 : 1", "PocketLesson"))
+        self.assertFalse(bubble.subwindow_title_matches("WindowTest (recovered 00:17) : 1", "PocketLesson"))
+        self.assertTrue(bubble.inside((10, 19, 340, 90), (0, 0, 1000, 700)))
+        self.assertFalse(bubble.inside((10, 19, 0, 90), (0, 0, 1000, 700)))  # no size
+        self.assertFalse(bubble.inside((900, 19, 340, 90), (0, 0, 1000, 700)))  # off the view's edge
+        col = bubble.colours({"bubble": "#ffffff", "bubble_text": "#000000", "accent": "#0072b2"})
+        # No font family named anywhere (Qt warned of a missing "Sans" on the Mac).
+        for text in (bubble.stylesheet(col), bubble.arrow_sheet(col), callout.build("Push **Pad**. Set it.", why="Why.").html()):
+            self.assertNotIn("font-family", text)
+            self.assertNotIn("Sans", text)
+
+
+class Docs(World):
+    """Several open documents, as the window had them: the session's
+    document (where the tools act) and the window's front tab, each by name.
+    follow_front: the panel's own server, whose session follows the front."""
+
+    def __init__(self, front="WindowTest", follow_front=False):
+        self.docs = {}
+        self.session = self.front = None
+        self.follow_front = follow_front
+        super().__init__()
+        self.docs.clear()
+        for name in ("WindowTest", "Other"):
+            d = Doc()
+            d.Name = d.Label = name
+            self.docs[name] = d
+        self.session = self.front = front
+
+    @property
+    def doc(self):
+        return self.docs.get(self.front if self.follow_front else self.session)
+
+    @doc.setter
+    def doc(self, d):
+        pass  # World's own doc_new: handled below
+
+    def __call__(self, name, args):
+        if name == "doc_new":
+            self.calls.append((name, args))
+            d = Doc()
+            d.Name = d.Label = args.get("name") or "Unnamed"
+            self.docs[d.Name] = d
+            self.session = d.Name  # the session switches; the front tab stays (a recovered document)
+            return False, {"document": d.Name}
+        if name == "doc_switch":
+            self.calls.append((name, args))
+            self.session = args["document"]
+            if args.get("front"):
+                self.front = args["document"]
+            return False, {"document": args["document"]}
+        return super().__call__(name, args)
+
+
+class LessonDocument(unittest.TestCase):
+    """The lesson's setup, checks, targets and view on its own document,
+    with another document in front at start."""
+
+    def run_pocket(self, w):
+        w.gui = GuiState("PartDesignWorkbench")
+        e = Engine(load("pocket-hole.lesson.json"), call=w, doc=lambda: w.doc, gui=lambda: w.gui,
+                   find_doc=lambda n: w.docs.get(n), front=lambda: w.front)
+        c = run.Controller(e)
+        c.start("guided")
+        return e, c
+
+    def test_setup_on_the_lessons_document_with_its_view_in_front(self):
+        for follow in (False, True):
+            with self.subTest(follow_front=follow):
+                w = Docs(follow_front=follow)
+                e, c = self.run_pocket(w)
+                self.assertEqual(e.doc_name, "PocketLesson")
+                self.assertEqual(w.front, "PocketLesson")
+                names = [n for n, _a in w.calls]
+                self.assertEqual(names[:2], ["doc_new", "doc_switch"])
+                self.assertEqual(w.calls[1][1], {"document": "PocketLesson", "front": True})
+                self.assertEqual(w.docs["WindowTest"].Objects, [])  # nothing made in the document that was in front
+                self.assertEqual({o.TypeId for o in w.docs["PocketLesson"].Objects},
+                                 {"PartDesign::Body", "Sketcher::SketchObject", "PartDesign::Pad"})
+                self.assertIs(e._doc(), w.docs["PocketLesson"])
+                self.assertEqual(e.bindings["body"], "Body")
+
+    def test_checks_read_the_lessons_document_when_another_comes_to_the_front(self):
+        w = Docs()
+        e, c = self.run_pocket(w)
+        w.front = w.session = "WindowTest"  # the person brings their own document to the front
+        w.docs["WindowTest"].add("Sketch", "Sketcher::SketchObject")
+        e.check()
+        self.assertEqual(e.result.status, "fail")  # a sketch in WindowTest is not the lesson's
+        self.assertIs(e._doc(), w.docs["PocketLesson"])
+
+    def test_do_brings_the_lesson_back_first(self):
+        w = Docs()
+        e, c = self.run_pocket(w)
+        while e.step["id"] != "pocket":
+            c.act("skip")
+        w.front = w.session = "WindowTest"
+        n = len(w.calls)
+        e.step["do"] = [{"tool": "selection", "args": {"objects": ["Body"]}}]
+        try:
+            e.do()
+        except engine.TutorError:
+            pass
+        self.assertEqual(w.calls[n], ("doc_switch", {"document": "PocketLesson", "front": True}))
+        self.assertEqual(w.front, "PocketLesson")
+
+    def test_one_document_no_switch(self):
+        w = Docs(front="PocketLesson")
+        w.docs["PocketLesson"] = w.docs.pop("Other")
+        w.docs["PocketLesson"].Name = w.docs["PocketLesson"].Label = "PocketLesson"
+        lesson = load("pocket-hole.lesson.json")
+        lesson["setup"] = {"calls": [c for c in lesson["setup"]["calls"] if c["tool"] != "doc_new"], "bind": lesson["setup"]["bind"]}
+        w.gui = GuiState("PartDesignWorkbench")
+        e = Engine(lesson, call=w, doc=lambda: w.doc, gui=lambda: w.gui, find_doc=lambda n: w.docs.get(n), front=lambda: w.front)
+        e.start("guided")
+        self.assertEqual(e.doc_name, "PocketLesson")
+        self.assertNotIn("doc_switch", [n for n, _a in w.calls])
 
 
 if __name__ == "__main__":

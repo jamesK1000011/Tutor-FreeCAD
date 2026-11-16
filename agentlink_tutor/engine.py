@@ -36,6 +36,7 @@ import shutil
 from . import checks, lessons, words
 
 MODES = ("demo", "guided", "watch")
+DOC_TOOLS = ("doc_new", "doc_open", "doc_switch")
 HINT_MAX = 3
 STATE_MAX = 600
 
@@ -70,10 +71,19 @@ class TutorError(ValueError):
 
 
 class Engine:
-    def __init__(self, lesson=None, call=None, doc=None, gui=None, events=None, out_dir=None, progress=None):
+    def __init__(self, lesson=None, call=None, doc=None, gui=None, events=None, out_dir=None, progress=None,
+                 find_doc=None, front=None):
         self.lesson = lesson
         self.call = call
-        self._doc = doc or (lambda: None)
+        self._session_doc = doc or (lambda: None)
+        self._doc = self._session_doc
+        # The lesson's own document, by name: setup's doc_new or doc_open
+        # makes it, else the session's at start. Every call of the lesson's
+        # works on it, with its view in front (hold_doc), and the checks and
+        # targets read it, whatever else is open or in front.
+        self.doc_name = None
+        self.find_doc = find_doc  # name -> the open document, or None
+        self.front = front  # () -> the name of the document in the window's front, or None (no window)
         self._gui = gui or (lambda: None)
         self._events = events or (lambda: None)
         self.out_dir = out_dir
@@ -142,6 +152,8 @@ class Engine:
         if self.lesson is None:
             raise TutorError("start: a lesson (its id, or an inline lesson)")
         self.bindings = dict(self.lesson.get("vars") or {})
+        self.doc_name = None
+        self._doc = self._session_doc
         setup = self.lesson.get("setup") or {}
         if setup.get("doc") == "new":
             self._run([{"tool": "doc_new", "args": {"name": self.lesson["id"].rpartition(".")[2].replace("-", "_")}}], "setup")
@@ -153,6 +165,9 @@ class Engine:
             self._run([{"tool": "doc_open", "args": {"path": dst}}], "setup")
         elif setup.get("calls"):
             self._run(setup["calls"], "setup")
+        if self.doc_name is None:
+            self._own_doc(getattr(self._session_doc(), "Name", None))
+        self.hold_doc()  # its view in front for the person
         self._bind(setup.get("bind"), only_new=False)
         self.state = "step"
         self.history = []
@@ -164,11 +179,39 @@ class Engine:
             raise TutorError("no tools to call: the engine was given no call")
         answers = []
         for c in calls:
+            if c["tool"] not in DOC_TOOLS:
+                self.hold_doc()
             refused, out = self.call(c["tool"], resolve(c.get("args") or {}, self.bindings))
             answers.append({"tool": c["tool"], "refused": bool(refused), "answer": out})
             if refused:
                 raise TutorError(f"{where}: {c['tool']} was refused — {_reason(out)}")
+            if c["tool"] in ("doc_new", "doc_open") and isinstance(out, dict) and out.get("document"):
+                self._own_doc(out["document"])  # the lesson's document from here on
         return answers
+
+    def _own_doc(self, name):
+        """The lesson's document is name: the checks and targets read it."""
+        self.doc_name = name
+        if name and self.find_doc is not None:
+            find, session = self.find_doc, self._session_doc
+            self._doc = lambda: find(name) or session()
+
+    def hold_doc(self):
+        """Before the lesson's calls: the session and the window's front on
+        the lesson's document (doc_switch {front: true}) when either is on
+        another (a recovered document opened in front, the person's own).
+        Nothing when they agree or nothing can be told."""
+        name = self.doc_name
+        if not name or self.call is None:
+            return False
+        have = getattr(self._session_doc(), "Name", None)
+        front = self.front() if self.front is not None else None
+        if (have is None or have == name) and (front is None or front == name):
+            return False
+        refused, out = self.call("doc_switch", {"document": name, "front": True})
+        if refused:
+            raise TutorError(f"the lesson's document {name} could not be brought to the front — {_reason(out)}")
+        return True
 
     def _bind(self, bind, only_new):
         ctx = self.context()

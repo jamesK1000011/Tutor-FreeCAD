@@ -7,7 +7,13 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+From the live check of the pocket lesson on FreeCAD 1.1.3, with two recovered documents open and another one in front:
+
+- A lesson works on its own document. The document setup's `doc_new` or `doc_open` makes (else the session's at start) is the lesson's, by name; before the lesson's calls (setup, Do, demo steps), when the session or the window's front tab is on another document, `doc_switch {document, front: true}` brings the lesson's back first (FreeCAD's own setActiveDocument leaves a recovered document's tab in front, and the panel's server follows the front tab, so setup had built the part in the other document). Checks, targets, the view and the quiet window after setup read the lesson's document whatever is in front.
+- The callout bubble is shown on the lesson document's 3D view, and only when that view is the front tab (the MDI area's current tab: its active one is none while the window is in the background). It is now a label with its own stylesheet, as Agent Link's caption is, and checks itself after showing and again 0.4 s and 1.5 s later: visible, a size, inside its view, and the view is what the window shows there. When it fails it is hidden and the words go to Agent Link's overlay callout. `tutor` and `tutor_point` answers say where the words are: `callout: bubble|overlay|none`, with `callout_why` when not the bubble.
+- No font family is named: the bubble uses the application's font (Qt had warned of a missing "Sans" on the Mac).
 
 ## [0.1.0] - 2026-11-16
 

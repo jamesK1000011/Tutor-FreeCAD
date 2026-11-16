@@ -73,6 +73,29 @@ def _window():
         return False
 
 
+def find_doc(name):
+    """The open document called name (FreeCAD's Name), or None."""
+    try:
+        import FreeCAD
+
+        return FreeCAD.getDocument(name) if name in FreeCAD.listDocuments() else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def front_doc():
+    """The name of the document whose view is the window's front tab (the
+    GUI's active document follows the MDI area, which FreeCAD's own
+    setActiveDocument may leave on another), or None."""
+    try:
+        import FreeCADGui
+
+        gd = FreeCADGui.ActiveDocument
+        return gd.Document.Name if gd is not None else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, progress=None):
     """A Controller for lesson, made the one in hand. gui: the window's state
     for checks (checks.gui_state with a window). window: True/False forces
@@ -83,7 +106,8 @@ def new(lesson, call, doc, out_dir=None, session=None, gui=None, window=None, pr
     if gui is None:
         gui = GUI or (checks.gui_state if win else (lambda: None))
     e = engine_mod.Engine(lesson, call=call, doc=doc, gui=gui, out_dir=out_dir,
-                          progress=progress if progress is not None else lessons.Progress())
+                          progress=progress if progress is not None else lessons.Progress(),
+                          find_doc=find_doc if win else None, front=front_doc if win else None)
     timer = show = ui = None
     if win:
         from . import gui_run
