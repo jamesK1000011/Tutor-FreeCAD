@@ -98,22 +98,64 @@ class Callout:
         the why line smaller and dimmer in its own paragraph."""
         esc = _html.escape
         out = []
-        if self.steps:
-            if self.numbered:
-                rows = "".join(
-                    f'<tr><td style="padding-right:6px" align="right">{i}.</td><td>{esc(s)}</td></tr>'
-                    for i, s in enumerate(self.steps, 1))
-                out.append(f'<table cellspacing="0" cellpadding="1">{rows}</table>')
-            else:
-                out.append(f"<p style=\"margin:0\">{esc(self.steps[0])}</p>")
+        # Paragraphs only (no table, no wrapping block, whose own margins
+        # left an empty band): the first has no space above it, each later
+        # one 6 px; a numbered line hangs its number.
+        paras = []
+        if self.numbered:
+            paras += [(f"{i}. {esc(s)}", "margin-left:18px; text-indent:-18px", None) for i, s in enumerate(self.steps, 1)]
+        else:
+            paras += [(esc(s), "", None) for s in self.steps]
         if self.why:
-            out.append(f'<p style="margin-top:6px; margin-bottom:0; font-size:small; color:{dim_colour}">{esc(self.why)}</p>')
-        for n in self.notes:
-            out.append(f'<p style="margin-top:6px; margin-bottom:0">{esc(n)}</p>')
-        return f'<div style="color:{text_colour}">' + "".join(out) + "</div>"
+            paras.append((esc(self.why), "font-size:small", dim_colour))
+        paras += [(esc(n), "", None) for n in self.notes]
+        for k, (body, style, colour) in enumerate(paras):
+            top = 0 if k == 0 else (2 if k < len(self.steps) else 6)
+            css = f"margin-top:{top}px; margin-bottom:0px; color:{colour or text_colour}" + (f"; {style}" if style else "")
+            out.append(f'<p style="{css}">{body}</p>')
+        return "".join(out)
 
     def __str__(self):
         return self.text() or ""
+
+
+_VERBS_FOR_A_COMMAND = ("push", "click", "press", "select", "use", "pick")
+
+
+def names_step(steps, name):
+    """The index of the step that only says to use the command called name
+    ("Push New Sketch.", "Click New Sketch (Ctrl+N)."), or None."""
+    pat = re.compile(r"^(?:%s)\s+(?:the\s+)?%s(?:\s+button)?(?:\s*\([^)]*\))?\s*[.!]?$"
+                     % ("|".join(_VERBS_FOR_A_COMMAND), re.escape(str(name))), re.IGNORECASE)
+    for i, st in enumerate(steps):
+        if pat.match(plain(st).strip()):
+            return i
+    return None
+
+
+def merge(c, targets):
+    """c (a Callout) with each target's words: a target reached through a
+    dropdown (its replaces: the command's name) puts its steps ("Open the ▾
+    menu of the ringed button ②.", "Select New Sketch.") in place of the
+    instruction's step for that command; any other target's words, and a
+    dropdown whose command the instruction does not name, go after."""
+    steps, extra = list(c.steps), []
+    for t in targets:
+        text = getattr(t, "text", None)
+        if not text:
+            continue
+        name = getattr(t, "replaces", None)
+        if name:
+            lines = sentences(text)
+            i = names_step(steps, name)
+            if i is not None:
+                steps[i:i + 1] = lines
+                continue
+            extra += lines
+        else:
+            extra.append(text)
+    changed = steps != c.steps or extra
+    return Callout(steps + extra, c.why, c.notes, True if changed else c._numbered)
 
 
 def build(say=None, why=None, notes=(), extra=()):
@@ -136,6 +178,7 @@ MARGIN = 10  # px from the 3D view's edges
 ARROW = 9  # px: the arrow's length
 CUBE = (150, 150)  # the navigation cube's corner (top right) kept clear where there is room
 WIDTH = 340
+CORNER = 12  # px: an arrow on an edge stays this far from the corners; past them it points from the corner
 
 
 def _clamp(v, lo, hi):
@@ -153,7 +196,11 @@ def place(view, size, target=None, keep_clear=()):
     navigation cube's corner and the rects in keep_clear where it can.
     side: where the arrow points ("up", "left", "right", "down", or None for
     no target or one inside the view); tip: the arrow's point (x, y), on
-    the bubble's edge, as near the target as the bubble allows."""
+    the bubble's edge under (or beside) the target's middle. When the
+    target lies past the bubble's span even after sliding it (a ring above
+    the left dock, outside the view), the arrow points diagonally from the
+    nearest corner: side "up-left", "up-right", "down-left", "down-right",
+    tip that corner."""
     vx, vy, vw, vh = view
     bw, bh = size
     bw, bh = min(bw, vw - 2 * MARGIN), min(bh, vh - 2 * MARGIN)
@@ -192,14 +239,22 @@ def place(view, size, target=None, keep_clear=()):
             # Slide away from the cube (or what else must stay clear).
             left = _clamp(min(int(cx - bw / 2.0), cube[0] - bw - MARGIN), lo_x, hi_x)
             x = left if overlaps(left, y) < overlaps(x, y) else x
-        tip = (_clamp(int(cx), x + 12, x + bw - 12), y - ARROW if side == "up" else y + bh + ARROW)
-        return (x, y, side, tip)
+        edge_y = y - ARROW if side == "up" else y + bh + ARROW
+        if cx < x + CORNER:  # the target is left of the bubble (over a dock): point there from the corner
+            return (x, y, side + "-left", (x, y if side == "up" else y + bh))
+        if cx > x + bw - CORNER:
+            return (x, y, side + "-right", (x + bw, y if side == "up" else y + bh))
+        return (x, y, side, (int(cx), edge_y))
     x = vx + MARGIN + ARROW if side == "left" else vx + vw - MARGIN - ARROW - bw
     y = _clamp(int(cy - bh / 2.0), lo_y, hi_y)
     if overlaps(x, y):
         y = _clamp(cube[1] + cube[3] + MARGIN, lo_y, hi_y)
-    tip = (x - ARROW if side == "left" else x + bw + ARROW, _clamp(int(cy), y + 10, y + bh - 10))
-    return (x, y, side, tip)
+    edge_x = x if side == "left" else x + bw
+    if cy < y + CORNER:
+        return (x, y, "up-" + side, (edge_x, y))
+    if cy > y + bh - CORNER:
+        return (x, y, "down-" + side, (edge_x, y + bh))
+    return (x, y, side, (x - ARROW if side == "left" else x + bw + ARROW, int(cy)))
 
 
 def _overlap(a, b):

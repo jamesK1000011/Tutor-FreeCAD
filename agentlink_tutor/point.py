@@ -39,7 +39,7 @@ def parts(say, found):
     built for a lesson's step), then each missed or native target's words
     as the next numbered lines (callout.py lays them out)."""
     c = say if isinstance(say, callout_mod.Callout) else callout_mod.build(say)
-    return c.add_steps([f.text for f in found if f.text])
+    return callout_mod.merge(c, found)
 
 
 def callout(say, found):
