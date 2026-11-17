@@ -471,34 +471,36 @@ class Window:
             head = self._tab_header(tree)
             if head is not None:
                 return head, MODEL_TAB
-        box = {"tree": tree, "item": top}
+        box = {"tree": tree}
+        top = item = p = None  # no row is held past here
 
         def rect():
             # The row again whenever its tree or item has been rebuilt.
             # FreeCAD rebuilds a document's rows after a recompute or when an
-            # edit ends: the row kept from before is then a dead wrapper that
-            # can still pass alive() (a tree row is no QObject), and using it
-            # raised RuntimeError, which the ring read as "scrolled out of
-            # view" (bike-stem-1 steps 13-14). So the row is used, and looked
-            # up again when it turns out dead.
-            t, it = box["tree"], box["item"]
-            if alive(t) and alive(it):
-                try:
-                    it.text(0)
-                    return _r(t.visualItemRect(it))
-                except RuntimeError:
-                    pass
-            fresh = [x for x in self.trees() if self.front(x)] or self.trees()
-            for t in fresh:
-                try:
-                    it = _find_item(t, row_label, key)
-                    if it is None:
+            # edit ends. A row kept from before is then a dead wrapper, and
+            # while it is held Qt's binding can hand the same dead wrapper
+            # back for the new row at its address: using it raised
+            # RuntimeError, which the ring read as "scrolled out of view"
+            # (bike-stem-1 steps 13-14). So no row is kept: it is looked up
+            # by its label each time, in the tree it was in first.
+            first = box["tree"]
+            order = ([first] if alive(first) else []) + [x for x in self.trees() if x is not first]
+            for _again in (0, 1):
+                for t in order:
+                    try:
+                        it = _find_item(t, row_label, key)
+                        if it is None:
+                            continue
+                        r = _r(t.visualItemRect(it))
+                    except RuntimeError:
                         continue
-                    r = _r(t.visualItemRect(it))
-                except RuntimeError:
-                    continue
-                box["tree"], box["item"] = t, it
-                return r
+                    finally:
+                        it = None
+                    box["tree"] = t
+                    return r
+                import gc
+
+                gc.collect()  # dead wrappers let go, then once more
             return None
 
         return {"widget": tree, "viewport": tree.viewport(), "rect": rect}, note
