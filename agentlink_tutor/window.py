@@ -485,6 +485,16 @@ class Window:
             # by its label each time, in the tree it was in first.
             first = box["tree"]
             order = ([first] if alive(first) else []) + [x for x in self.trees() if x is not first]
+            for t in order:
+                # By the tree's model first: an index is a value, never a
+                # wrapper that can be dead, so a rebuilt tree cannot fail it.
+                try:
+                    r = _index_rect(t, row_label, key)
+                except Exception:  # noqa: BLE001  (a stand-in tree has no model)
+                    r = None
+                if r is not None:
+                    box["tree"] = t
+                    return r
             for _again in (0, 1):
                 for t in order:
                     try:
@@ -778,6 +788,32 @@ def _find_item(tree, label, doc_label=None, strict=False):
     if strict and doc_label is not None and not mine and _has_doc(tree, doc_label):
         return None
     return (mine or hits or [None])[0]
+
+
+def _index_rect(tree, label, doc_label=None):
+    """The rect (x, y, w, h in the viewport) of the row labelled label, read
+    through the tree's model (indexes, no row objects); under the document's
+    own row when several documents hold one of that label. None: no such
+    row, or a tree without a model."""
+    model = tree.model()
+    if model is None:
+        return None
+    hits, stack = [], [(model.index(i, 0), False) for i in range(model.rowCount())]
+    while stack:
+        ix, mine = stack.pop(0)
+        if not ix.isValid():
+            continue
+        text = ix.data()
+        top = not ix.parent().isValid()
+        if top:
+            mine = _doc_is(text, doc_label)
+        elif _same(text, label):
+            hits.append((ix, mine))
+        stack += [(model.index(j, 0, ix), mine) for j in range(model.rowCount(ix))]
+    pick = [h for h, mine in hits if mine] or [h for h, _m in hits]
+    if not pick:
+        return None
+    return _r(tree.visualRect(pick[0]))
 
 
 def _same(text, label):
