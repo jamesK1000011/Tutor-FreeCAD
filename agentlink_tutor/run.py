@@ -4,8 +4,10 @@ and the agent's tutor tool alike.
 
     Controller(engine, timer=None, show=None, ui=None)
 
-timer(ms, fn) runs fn later on the window's thread (a Qt single shot); None
-runs it at once (headless, and the tests). show(controller) rings the step's
+timer(ms, fn) runs fn later on the window's thread (later.after: a QTimer
+owned by a long-lived QObject, checked alive before it fires); None runs it
+at once (headless, and the tests). When it answers a handle with stop(),
+the handle is kept, and cancel_later() stops every one still waiting. show(controller) rings the step's
 targets and puts its words in the callout, answering {resolved, missing:
 [why]}; None draws nothing (no window). ui: the window's hands for the
 lesson itself (gui_run.UI): settle() after setup (no sketch left open, no
@@ -93,6 +95,7 @@ class Controller:
         self.prefs = prefs  # FreeCAD's parameters, or a stand-in (tests)
         self.e.explain = prefs_mod.explainers(prefs)
         self.timer = timer
+        self._waiting = []  # the timer's handles still waiting (cancel_later)
         self.show = show
         self.ui = ui
         self.busy = False  # the engine's own calls in hand (setup, do)
@@ -313,8 +316,24 @@ class Controller:
     def _later(self, ms, fn):
         if self.timer is None:
             fn()
-        else:
-            self.timer(ms, fn)
+            return
+        h = self.timer(ms, fn)
+        if hasattr(h, "stop"):
+            # Kept, so a lesson that is replaced takes its waiting calls with
+            # it (the last lesson's hold must not clear the next one's rings).
+            self._waiting = [x for x in self._waiting if not getattr(x, "done", False)] + [h]
+
+    def cancel_later(self):
+        """Every call this lesson left waiting (auto-advance, debounce,
+        hold), stopped: live.set_controller does this when another lesson,
+        or none, takes its place."""
+        waiting, self._waiting = self._waiting, []
+        self._token = None
+        for h in waiting:
+            try:
+                h.stop()
+            except Exception:  # noqa: BLE001
+                pass
 
     # ---- the person's and the agent's actions --------------------------------------------
 

@@ -8,7 +8,17 @@ controls.
 Each call replaces the highlights before it (clear: false keeps them);
 a call with no targets clears them. A target that cannot be shown comes back
 with why, and its words (a menu path, a command's name) join the callout.
+
+Two things more, both so a target is never missing silently: a tree target
+gets the Model tab brought to the front and its row scrolled into view
+first, when the window allows it (Window.prepare_tree, tutor_point only;
+"prepared" in the answer says what was done); and a face or edge lit in
+the 3D view is asked first whether the view shows it (Window.light_seen):
+off-screen or hidden under something else, it is still lit, but it comes
+back in missing with why, and the callout says how to see it.
 """
+
+import sys
 
 from . import callout as callout_mod, lessons, targets
 
@@ -74,6 +84,7 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None, report=
             lessons.target_kind(spec)
         except lessons.LessonError as e:
             raise Refusal("invalid_input", f"targets[{i}]: {e}")
+    prepared = _prepare(tg, win, bindings)
     ov, ann = _services(hooks)
     keep = args.get("clear") is False and tg
     if not keep:
@@ -95,7 +106,12 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None, report=
         for f in found:
             f.marks, f.menu, f.light = [], None, None
             f.why = f.why or "nothing can be drawn: Agent Link's overlay is not here (no window, or an older Agent Link)"
-        return {**_answer(found, None, ms), **report}
+        return {**_answer(found, None, ms, prepared), **report}
+    # Faces and edges first: one the view does not show gets its words
+    # into the callout (built next) and comes back in missing.
+    for f in found:
+        if f.light:
+            _light(f, win, ov, ann)
     specs, owners = [], []
     for f in found:
         for m in f.marks:
@@ -143,37 +159,97 @@ def point(args, win, hooks=None, bindings=None, timer=None, bubble=None, report=
             elif r.get("why"):
                 f.menu = None
                 f.why = f.why or r["why"]
-        if f.light:
-            if ann is None:
-                f.why, f.light = "no 3D annotation layer in this Agent Link", None
-                continue
-            colour = "#3f93e0"
-            try:
-                colour = ov.colours().get("accent", colour)
-            except Exception:
-                pass
-            obj, subs = f.light
-            try:  # numbered in the view too (an older Agent Link draws no number)
-                r = ann.light(obj, subs, owner=OWNER, colour=colour, badge=f.n) or {}
-            except TypeError:
-                r = ann.light(obj, subs, owner=OWNER, colour=colour) or {}
-            if not r.get("lit"):
-                f.light = None
-                f.why = "; ".join(f"{s}: {w}" for s, w in (r.get("missing") or [])) or "nothing lit"
-            elif r.get("missing"):
-                f.note = "not lit: " + ", ".join(s for s, _w in r["missing"])
     if ms and ann is not None and timer is not None:
         n = _gen["n"]
         timer(ms, lambda: ann.clear(OWNER) if _gen["n"] == n else None)
-    return {**_answer(found, got.get("handle"), ms), **report}
+    return {**_answer(found, got.get("handle"), ms, prepared), **report}
 
 
-def _answer(found, handle, ms):
+def _prepare(tg, win, bindings):
+    """Each tree target's Model tab brought to the front and its row
+    scrolled into view, where win has hands for it (prepare_tree); what was
+    done, short lines."""
+    prep = getattr(win, "prepare_tree", None)
+    if not callable(prep):
+        return []
+    did = []
+    for spec in tg:
+        if "tree" not in spec:
+            continue
+        try:
+            ref = targets.bind(spec["tree"], bindings)
+            obj = win.obj(ref) if isinstance(ref, str) else None
+            got = prep(obj) if obj is not None else None
+        except Exception as e:  # noqa: BLE001  (the target still says why)
+            got = f"not prepared: {e}"[:80]
+        if got and got not in did:
+            did.append(got)
+    return did
+
+
+def _light(f, win, ov, ann):
+    """f's faces or edges lit through the annotation layer; asked first
+    whether the view shows them (win.light_seen). Not shown: still lit (the
+    person may turn the view), but f.unseen says why, f goes to missing and
+    the callout says how to see it."""
+    if ann is None:
+        f.why, f.light = "no 3D annotation layer in this Agent Link", None
+        return
+    obj, subs = f.light
+    seen = getattr(win, "light_seen", None)
+    unseen = None
+    if callable(seen):
+        try:
+            unseen = seen(obj, subs)
+        except Exception as e:  # noqa: BLE001  (cannot be told: drawn as before)
+            sys.stderr.write(f"Tutor: whether {', '.join(subs)} shows could not be told ({e})\n")
+            unseen = None
+    colour = "#3f93e0"
+    try:
+        colour = ov.colours().get("accent", colour)
+    except Exception:
+        pass
+    try:  # numbered in the view too (an older Agent Link draws no number)
+        r = ann.light(obj, subs, owner=OWNER, colour=colour, badge=f.n) or {}
+    except TypeError:
+        r = ann.light(obj, subs, owner=OWNER, colour=colour) or {}
+    if not r.get("lit"):
+        f.light = None
+        f.why = "; ".join(f"{s}: {w}" for s, w in (r.get("missing") or [])) or "nothing lit"
+        return
+    if r.get("missing"):
+        f.note = "not lit: " + ", ".join(s for s, _w in r["missing"])
+    if unseen:
+        f.unseen = unseen
+        f.why = f"lit, but not seen: {unseen}"
+        f.text = see_words(unseen, f.n, win, "edge" if f.kind == "edge" else "face")
+
+
+def see_words(why, n, win=None, what="face"):
+    """The callout's step for a lit face or edge the view does not show."""
+    from . import words as words_mod
+
+    b = words_mod.badge(n)
+    if why.startswith("off-screen"):
+        keys = None
+        try:
+            keys = (win.command_info("Std_ViewFitAll") or {}).get("shortcut") if win is not None else None
+        except Exception:  # noqa: BLE001
+            keys = None
+        return f"Push Fit all{f' ({keys})' if keys else ''} to see the lit {what} {b}."
+    if why.startswith("hidden"):
+        return f"Turn the 3D view to see the lit {what} {b}."
+    return f"Open the 3D view of the part to see the lit {what} {b}."
+
+
+def _answer(found, handle, ms, prepared=()):
     shown = [f.answer() for f in found if f.shown()]
     missing = [f.answer() for f in found if not f.shown()]
     for a in shown:
         a.pop("why", None)
     out = {"shown": shown, "missing": missing}
+    if prepared:
+        out["prepared"] = list(prepared)
     out["until"] = f"{ms} ms" if ms else "the next tutor_point"
     if not shown and missing:
         out["note"] = "nothing ringed; any words for them are in the callout"

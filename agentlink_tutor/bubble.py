@@ -20,12 +20,25 @@ report the caller passed ({"callout": "overlay", "callout_why": …}).
 
     bubble.show(callout, found, doc=None, report=None) -> True when shown
     bubble.hide()
+
+Its height comes from the words themselves: a QTextDocument of the label's
+font and rich text, wrapped at the label's width less its stylesheet
+padding and border, plus that padding and border (fit_height). Qt does not
+count a stylesheet's padding in a word-wrapped rich-text label's
+heightForWidth, so that alone cut the last lines off (round 4, pictures
+0002 and 0009). Its self-checks a moment later are later.py's timers,
+children of the label: when the 3D view (and so the label) is closed they
+die with it, and each one checks the label and the view are alive before
+it touches them.
 """
+import math
 import sys
 
 from . import callout as callout_mod
+from . import later
 
 PAD = 9
+BORDER = 2  # px: the stylesheet's border
 RECHECK_MS = (400, 1500)
 ARROWS = {"up": "▲", "down": "▼", "left": "◀", "right": "▶",
           "up-left": "◤", "up-right": "◥", "down-left": "◣", "down-right": "◢"}
@@ -186,7 +199,7 @@ def contrast(a, b):
 def stylesheet(col):
     """The label's own stylesheet: colours, edge and padding only. No font
     family is named (the application's font is set on the label)."""
-    return (f"QLabel#TutorCallout {{ background: {col['fill']}; color: {col['text']}; border: 2px solid {col['edge']}; "
+    return (f"QLabel#TutorCallout {{ background: {col['fill']}; color: {col['text']}; border: {BORDER}px solid {col['edge']}; "
             f"border-radius: 6px; padding: {PAD}px; }}")
 
 
@@ -200,11 +213,44 @@ def inside(r, area):
     return w > 0 and h > 0 and x >= ax and y >= ay and x + w <= ax + aw and y + h <= ay + ah
 
 
+def frame():
+    """The px the label's stylesheet adds around its words, each side
+    (padding and border)."""
+    return PAD + BORDER
+
+
+def text_height(html, font, text_width, QtGui=None):
+    """The height of html in font wrapped at text_width px, as Qt lays it
+    out (a QTextDocument with its own default margin, so never less than
+    the label needs). 0 when it cannot be told."""
+    if QtGui is None:
+        _QtCore, QtGui, _QtW = _qt()
+    try:
+        doc = QtGui.QTextDocument()
+        if font is not None:
+            doc.setDefaultFont(font)
+        doc.setHtml(html)
+        doc.setTextWidth(max(1, int(text_width)))
+        return int(math.ceil(doc.size().height()))
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def fit_height(text_h, hfw=0, hint_h=0):
+    """The bubble's height: the words' height plus the padding and border
+    above and below; never less than Qt's own heightForWidth; Qt's size
+    hint only when neither is known."""
+    best = max(text_h + 2 * frame() if text_h > 0 else 0, hfw if hfw > 0 else 0)
+    return max(best or hint_h, 1)
+
+
 def verify(w, host, mw):
     """None when w shows over host as meant, else why not."""
     try:
-        if w is None or host is None:
+        if w is None or host is None or not later.valid(w):
             return "gone"
+        if not later.valid(host):
+            return "its 3D view was closed"
         if not host.isVisible():
             return "its 3D view was hidden"
         if not w.isVisible():
@@ -308,7 +354,8 @@ def show(c, found=(), doc=None, report=None):
         font.setPointSizeF(prefs.scaled(font.pointSizeF()))  # the person's text size
     lab.setFont(font)
     arrow.setFont(QtGui.QFont(font))
-    lab.setText(c.html(col["text"], col["dim"]))
+    html = c.html(col["text"], col["dim"])
+    lab.setText(html)
     lab.setAccessibleDescription(c.text() or "")
     width = min(int(callout_mod.WIDTH * prefs.text_scale() / 100), max(160, host.width() - 2 * callout_mod.MARGIN))
     # The size from these words alone: the last showing's fixed size let go
@@ -316,8 +363,10 @@ def show(c, found=(), doc=None, report=None):
     lab.setMinimumSize(0, 0)
     lab.setMaximumSize(16777215, 16777215)
     lab.setFixedWidth(width)
+    # From the words, wrapped inside the stylesheet's padding and border,
+    # plus them: heightForWidth leaves that padding out (the text was cut).
     hfw = lab.heightForWidth(width)
-    bh = max(hfw if hfw > 0 else lab.sizeHint().height(), 1)
+    bh = fit_height(text_height(html, font, width - 2 * frame(), QtGui), hfw, lab.sizeHint().height())
     lab.setFixedHeight(bh)
     hp = host.mapTo(mw, _point(0, 0))
     view = (hp.x(), hp.y(), host.width(), host.height())
@@ -349,13 +398,15 @@ def show(c, found=(), doc=None, report=None):
 def _recheck_later(c, report):
     """A moment later (the window settled, a tab may have come up in front):
     still seen, else hidden and the words given to the overlay's callout."""
-    QtCore, _QtGui, _QtW = _qt()
     gen = _STATE["gen"]
 
     checked = {"pixels": False}
 
     def again():
         if _STATE["gen"] != gen:
+            return
+        if not (later.valid(_STATE["w"]) and later.valid(_STATE["host"])):
+            _STATE["w"] = _STATE["a"] = _STATE["host"] = None  # closed with its 3D view
             return
         try:
             import FreeCADGui
@@ -394,8 +445,10 @@ def _recheck_later(c, report):
         except Exception:  # noqa: BLE001
             pass
 
+    lab = _STATE["w"]
     for ms in RECHECK_MS:
-        QtCore.QTimer.singleShot(int(ms), again)
+        # A child of the label: closed with its 3D view, it never fires.
+        later.after(int(ms), again, target=lab)
 
 
 def hide():
@@ -404,17 +457,21 @@ def hide():
         w = _STATE[key]
         if w is None:
             continue
+        if not later.valid(w):  # its 3D view was closed: the label went with it
+            _STATE[key] = None
+            continue
         try:
             w.hide()
-        except RuntimeError:  # its 3D view was closed
+        except RuntimeError:
             _STATE[key] = None
 
 
 def hide_after(ms):
-    """Hide in ms unless shown again meanwhile (tutor_point's ms)."""
-    QtCore, _QtGui, _QtW = _qt()
+    """Hide in ms unless shown again meanwhile (tutor_point's ms). The
+    timer is a child of the label: closed with its 3D view, it never fires."""
     gen = _STATE["gen"]
-    QtCore.QTimer.singleShot(int(ms), lambda: hide() if _STATE["gen"] == gen else None)
+    lab = _STATE["w"]
+    later.after(int(ms), lambda: hide() if _STATE["gen"] == gen else None, target=lab if later.valid(lab) else None)
 
 
 def _widgets(host):
@@ -423,13 +480,13 @@ def _widgets(host):
     QtCore, _QtGui, QtW = _qt()
     lab, arrow = _STATE["w"], _STATE["a"]
     try:
-        if lab is not None and arrow is not None and lab.parent() is host and arrow.parent() is host:
+        if later.valid(lab) and later.valid(arrow) and lab.parent() is host and arrow.parent() is host:
             return lab, arrow
     except RuntimeError:
         pass
     for w in (lab, arrow):
         try:
-            if w is not None:
+            if w is not None and later.valid(w):
                 w.hide()
                 w.deleteLater()
         except RuntimeError:

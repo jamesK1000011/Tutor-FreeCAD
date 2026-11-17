@@ -4,7 +4,11 @@
 Loaded only through agentlink_families, inside the FreeCAD window.
 
 Read only: nothing here switches a workbench, opens a menu, unfolds a tree
-branch, scrolls, selects, clicks or takes focus.
+branch, scrolls, selects, clicks or takes focus. One exception, only on a
+Window made with hands=True (tutor_point's): prepare_tree() brings the
+Model tab to the front and scrolls the row into view (gui_run.model_front),
+before the tree target is looked for. A lesson's Window has no hands: demo
+prepares through gui_run.UI, guided tells the person.
 """
 
 import re
@@ -49,11 +53,21 @@ PANELS = {
 
 
 class Window:
-    def __init__(self, session=None, gui=None, hooks=None, doc=None):
+    def __init__(self, session=None, gui=None, hooks=None, doc=None, hands=False):
         self.s = session
         self._gui = gui
         self._hooks = hooks
         self._doc = doc  # the lesson's document, when a lesson asks
+        self.hands = hands  # tutor_point: prepare_tree may bring the Model tab forward
+
+    def prepare_tree(self, obj):
+        """With hands: obj's Model tree brought to the front and its row
+        scrolled into view (gui_run.model_front). What was done, or None."""
+        if not self.hands or obj is None:
+            return None
+        from . import gui_run
+
+        return gui_run.model_front(self, obj, ancestors)
 
     # ---- FreeCAD -------------------------------------------------------------
     def gui(self):
@@ -610,9 +624,108 @@ class Window:
         except ValueError as e:
             return [], str(e)
 
+    def light_seen(self, obj, subs):
+        """None when the 3D view the annotation layer draws in is obj's
+        document's, is in front, and shows at least one point of one of
+        subs (Face6, Edge3) as that element; else why not, in words: off
+        screen, or hidden under something else, or no view of it in front.
+        Asked before the light is drawn (a pick could hit the tint itself).
+        None too when it cannot be told (an Agent Link without annotate's
+        candidates, a view without picks): the light is drawn as before."""
+        try:
+            import FreeCADGui
+            from agentlink import annotate
+        except ImportError:
+            return None
+        d = getattr(obj, "Document", None)
+        label = getattr(d, "Label", None) or getattr(d, "Name", "the document")
+        act = getattr(FreeCADGui, "ActiveDocument", None)
+        if act is not None and d is not None and getattr(getattr(act, "Document", None), "Name", None) != d.Name:
+            other = getattr(getattr(act, "Document", None), "Label", "another document")
+            return f"the 3D view in front shows {other}, not {label}: the light is drawn there, not on {obj.Label}"
+        try:
+            from . import bubble
+
+            w, why = bubble.view_widget(d)
+        except Exception:  # noqa: BLE001
+            w, why = True, None
+        if w is None:
+            return why
+        try:
+            gd = FreeCADGui.getDocument(d.Name)
+            view = gd.activeView() if gd is not None else None
+        except Exception:  # noqa: BLE001
+            view = None
+        if view is None or not hasattr(view, "getPointOnScreen") or not hasattr(view, "getObjectInfo"):
+            return None
+        try:
+            import FreeCAD
+
+            vec = FreeCAD.Vector
+        except ImportError:
+            vec = None
+        shape = annotate.global_shape(obj)
+        names = annotate._names(obj) if hasattr(annotate, "_names") else {obj.Name}
+        tried = []
+        for sub in subs:
+            kind = annotate.kind_of(sub)
+            try:
+                el = shape.getElement(sub)
+                pts = annotate.candidates(el, kind)
+            except Exception:  # noqa: BLE001  (light() says what is wrong with it)
+                continue
+            on, shows = seen_on(view, names, sub, pts, vec)
+            if shows:
+                return None
+            tried.append((sub, on, len(pts)))
+        return unseen_why(tried, obj.Label) if tried else None
+
     # ---- add-ons' own kinds -------------------------------------------------------
     def ext(self, spec):
         return self.hooks().read("tutor_target", spec, self)
+
+
+SEEN_PICKS = 60  # pixels asked of the view at most, per element
+
+
+def seen_on(view, names, sub, pts, vec=None, picks=SEEN_PICKS):
+    """(how many of pts fall inside the view, whether one of them shows sub
+    of an object in names there). view: FreeCAD's 3D view
+    (getPointOnScreen, getObjectInfo, getSize; viewport pixels, as
+    agentlink.annotate.visible_point reads them)."""
+    try:
+        w, h = view.getSize()
+    except Exception:  # noqa: BLE001
+        w = h = None
+    on = asked = 0
+    for p in pts or ():
+        try:
+            x, y = view.getPointOnScreen(vec(*p) if vec else p)
+        except Exception:  # noqa: BLE001
+            continue
+        if w is not None and not (0 <= x < w and 0 <= y < h):
+            continue
+        on += 1
+        if asked >= picks:
+            continue
+        asked += 1
+        try:
+            info = view.getObjectInfo((int(x), int(y)))
+        except Exception:  # noqa: BLE001
+            info = None
+        if info and info.get("Component") == sub and info.get("Object") in names:
+            return on, True
+    return on, False
+
+
+def unseen_why(tried, label):
+    """Why no lit element of label shows, from [(sub, points on screen,
+    points tried)]."""
+    subs = ", ".join(t[0] for t in tried)
+    if all(on == 0 for _s, on, _n in tried):
+        return f"off-screen: no point of {subs} is inside the 3D view (the view does not frame {label})"
+    on = sum(t[1] for t in tried)
+    return f"hidden: something else is drawn over {subs} at all {on} of its points inside the 3D view"
 
 
 def path_to(acts, cmd, depth=5):

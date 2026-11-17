@@ -16,9 +16,12 @@ from . import point
 
 
 def timer(ms, fn):
-    from PySide import QtCore
+    """fn later on the window's thread, as a handle with stop() (later.py:
+    a QTimer owned by the Tutor's long-lived QObject, never fired once that
+    is gone; the lesson's Controller stops it when the lesson is replaced)."""
+    from . import later
 
-    QtCore.QTimer.singleShot(int(ms), fn)
+    return later.after(int(ms), fn)
 
 
 def shower(session):
@@ -384,6 +387,11 @@ def badge(on):
 
     sb = FreeCADGui.getMainWindow().statusBar()
     lab = _BADGE.get("label")
+    from . import later
+
+    if lab is not None and not later.valid(lab):  # gone with the status bar
+        _BADGE.pop("label", None)
+        lab = None
     if on:
         if lab is None:
             from PySide import QtGui
@@ -479,6 +487,98 @@ def scroll_to(win, obj, ancestors):
         except (RuntimeError, AttributeError):  # deleted while read; a stand-in tree
             continue
     return moved
+
+
+def scroll_row(win, obj, ancestors):
+    """The row tree_row rings for obj (its own, else its nearest folded
+    parent's) scrolled into view in each Model tree that is in front, where
+    it lies outside the tree's viewport. Nothing is unfolded, folded or
+    selected. True when a tree was scrolled."""
+    from .window import _child_row, _doc_item, _doc_key
+
+    doc = _doc_key(getattr(obj, "Document", None))
+    path = list(reversed(ancestors(obj))) + [obj]
+    moved = False
+    for t in win.trees():
+        try:
+            if not win.front(t):
+                continue
+            row = _doc_item(t, doc)
+            if row is None:
+                continue
+            for nxt in path:
+                if not row.isExpanded():
+                    break  # folded: this row is the one ringed
+                got = _child_row(row, nxt)
+                if got is None:
+                    break
+                row = got
+            r = t.visualItemRect(row)
+            if row_shows(t.viewport().height(), r.top(), r.bottom()):
+                continue
+            t.scrollToItem(row)
+            moved = True
+        except (RuntimeError, AttributeError):  # deleted while read; a stand-in tree
+            continue
+        finally:
+            row = None  # no row is held past here (FreeCAD rebuilds them)
+    return moved
+
+
+def model_front(win, obj, ancestors, ui=None):
+    """tutor_point's tree target: the Model tree that holds obj's document
+    brought to the front, then obj's row scrolled into view, so the row
+    itself is ringed and not the Model tab (round 4, picture 0002: the
+    Tutor's own Agent Link tab was in front, and the tab was ringed).
+    As FreeCAD does it: Control.showModelView() (the Model or Tree view
+    dock shown and raised), Qt let run; a dock still tabbed behind another
+    is raised by its own steps (gui_run.UI.bring), and last its tab in the
+    main window's tab bar made the current one. No focus is taken, no
+    cursor moved, nothing unfolded or selected. Answers a short line of
+    what it did, None when nothing was needed."""
+    from .window import _qt, behind, dock_of, dock_tab
+
+    tree = win.model_tree(obj)
+    if tree is None:
+        return None
+    did = []
+    if not win.front(tree):
+        try:
+            ctl = getattr(win.gui(), "Control", None)
+            show = getattr(ctl, "showModelView", None)
+            if callable(show):
+                show()
+                win.pump()
+        except Exception as e:  # noqa: BLE001  (the next ways still try)
+            sys.stderr.write(f"Tutor: showModelView failed ({e})\n")
+        tree = win.model_tree(obj) or tree
+        if not win.front(tree):
+            if ui is None:
+                ui = UI(getattr(win, "s", None))
+                ui._mw = win.mw  # the window this Window reads
+            try:
+                if ui.bring(tree):
+                    win.pump()
+            except Exception as e:  # noqa: BLE001
+                sys.stderr.write(f"Tutor: the Model dock not raised ({e})\n")
+        if not win.front(tree):
+            try:
+                QtW = _qt()[2]
+                mw = win.mw()
+                if behind(tree, QtW, mw):
+                    got = dock_tab(dock_of(tree, QtW), QtW, mw, shown_only=True)
+                    if got is not None:
+                        got[0].setCurrentIndex(got[1])
+                        win.pump()
+            except Exception as e:  # noqa: BLE001
+                sys.stderr.write(f"Tutor: the Model tab not made current ({e})\n")
+        if not win.front(tree):
+            return None  # tree_row rings the Model tab and says why
+        did.append("the Model tab brought to the front")
+    if scroll_row(win, obj, ancestors):
+        win.pump()
+        did.append(f"{getattr(obj, 'Label', 'its')} row scrolled into view")
+    return "; ".join(did) or None
 
 
 def _expand(tree, item, on=True):
