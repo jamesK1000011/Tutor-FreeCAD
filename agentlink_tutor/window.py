@@ -475,15 +475,31 @@ class Window:
 
         def rect():
             # The row again whenever its tree or item has been rebuilt.
+            # FreeCAD rebuilds a document's rows after a recompute or when an
+            # edit ends: the row kept from before is then a dead wrapper that
+            # can still pass alive() (a tree row is no QObject), and using it
+            # raised RuntimeError, which the ring read as "scrolled out of
+            # view" (bike-stem-1 steps 13-14). So the row is used, and looked
+            # up again when it turns out dead.
             t, it = box["tree"], box["item"]
-            if not (alive(t) and alive(it)):
-                fresh = self.trees()
-                t = fresh[0] if fresh else None
-                it = _find_item(t, row_label, key) if t is not None else None
-                if it is None:
-                    return None
+            if alive(t) and alive(it):
+                try:
+                    it.text(0)
+                    return _r(t.visualItemRect(it))
+                except RuntimeError:
+                    pass
+            fresh = [x for x in self.trees() if self.front(x)] or self.trees()
+            for t in fresh:
+                try:
+                    it = _find_item(t, row_label, key)
+                    if it is None:
+                        continue
+                    r = _r(t.visualItemRect(it))
+                except RuntimeError:
+                    continue
                 box["tree"], box["item"] = t, it
-            return _r(t.visualItemRect(it))
+                return r
+            return None
 
         return {"widget": tree, "viewport": tree.viewport(), "rect": rect}, note
 
@@ -620,7 +636,10 @@ def alive(obj):
         except Exception:  # noqa: BLE001  (not a Qt object: a stand-in)
             break
     try:
-        obj.objectName() if hasattr(obj, "objectName") else None
+        if hasattr(obj, "objectName"):
+            obj.objectName()
+        elif hasattr(obj, "childCount"):
+            obj.childCount()  # a tree row: no QObject, so asked something
         return True
     except RuntimeError:
         return False
