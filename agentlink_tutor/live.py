@@ -31,6 +31,9 @@ def set_controller(c):
     old = NOW["ctl"]
     if old is not None and old is not c:
         _detach(old)
+        cancel = getattr(old, "cancel_later", None)
+        if callable(cancel):
+            cancel()  # its timers die with it: none fires on the next lesson's window
     NOW["ctl"] = c
     if c is not None:
         for w in WATCHERS:

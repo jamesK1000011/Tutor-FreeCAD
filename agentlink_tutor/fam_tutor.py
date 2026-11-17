@@ -21,12 +21,14 @@ AREAS = {"tutor": "Tutor"}
 
 
 def _timer(ms, fn):
+    """tutor_point's ms: the lit faces taken away later (later.py: owned by
+    the Tutor's long-lived QObject, never fired once that is gone)."""
     try:
-        from PySide import QtCore
+        from . import later
 
-        QtCore.QTimer.singleShot(ms, fn)
-    except Exception:
-        pass
+        return later.after(int(ms), fn)
+    except Exception:  # noqa: BLE001  (no Qt: nothing to take away later)
+        return None
 
 
 def library():
@@ -76,7 +78,7 @@ def tools(session):
     def tutor_point(a):
         from . import bubble
 
-        return point.point(a, Window(session), hooks=hooks, bindings=live.bindings(), timer=_timer, bubble=bubble)
+        return point.point(a, Window(session, hands=True), hooks=hooks, bindings=live.bindings(), timer=_timer, bubble=bubble)
 
     def tutor(a):
         return tool.tutor(a, session, library())

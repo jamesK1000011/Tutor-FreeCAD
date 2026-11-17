@@ -73,6 +73,9 @@ class Found:
         self.marks, self.menu, self.light = [], None, None
         self.dropdown = None
         self.text = self.note = self.why = None
+        # A face or edge lit but not seen in the view (off-screen, or hidden
+        # under something else): why, and the target counts as missing.
+        self.unseen = None
         # A step the person does first ("Switch to the Part Design
         # workbench."), put before the instruction's step that names the
         # command (names); callout.merge.
@@ -83,7 +86,7 @@ class Found:
         self.replaces = None
 
     def shown(self):
-        return bool(self.marks or self.menu or self.light)
+        return bool(self.marks or self.menu or (self.light and not self.unseen))
 
     def answer(self):
         out = {"n": self.n, "kind": self.kind}
@@ -338,7 +341,9 @@ def _tree(f, spec, win, bindings):
     if got is None:
         f.why = note or "not in the Model tab"
         return
-    if note == getattr(win, "MODEL_TAB", None) or (note or "").startswith("the Model tab is not in front"):
+    # A row found has no note: None must not match a Window without MODEL_TAB
+    # (it did, and "Open the Model tab." joined the callout of every row).
+    if note and (note == getattr(win, "MODEL_TAB", None) or note.startswith("the Model tab is not in front")):
         f.text = "Open the Model tab."
     elif "which is folded" in (note or ""):
         f.text = "Unfold the ringed row in the tree (its arrow)."

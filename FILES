@@ -15,6 +15,7 @@ agentlink_tutor/engine.py
 agentlink_tutor/fam_tutor.py
 agentlink_tutor/gui_run.py
 agentlink_tutor/icons/Tutor.svg
+agentlink_tutor/later.py
 agentlink_tutor/lessons.py
 agentlink_tutor/lessons/bike-stem-1.lesson.json
 agentlink_tutor/lessons/bike-stem-2.lesson.json
@@ -41,6 +42,7 @@ agentlink_tutor/words.py
 docs/core-hooks-needed.md
 docs/examples/workshop/lessons/hole-for-hardware.lesson.json
 docs/hardening/tutor-findings.md
+docs/hardening/tutor-r4-findings.md
 package.xml
 tests/_fc.py
 tests/data/agentlink_tools.txt
@@ -58,6 +60,7 @@ tests/test_general.py
 tests/test_lessons.py
 tests/test_observe.py
 tests/test_point.py
+tests/test_r4_review.py
 tests/test_replay_fc.py
 tests/test_replay_t3_fc.py
 tests/test_run.py

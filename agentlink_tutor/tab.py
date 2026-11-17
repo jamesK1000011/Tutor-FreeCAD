@@ -467,7 +467,13 @@ def _make():
 
         def _changed(self, _c=None):
             """The lesson moved (the agent's call, a check that passed, a
-            timer): the tab follows."""
+            timer): the tab follows. A tab that is gone (its panel closed)
+            is never touched: it stops following."""
+            from . import later
+
+            if not later.valid(self):
+                live.unwatch(self._changed)
+                return
             try:
                 self._show()
             except RuntimeError:  # the widget is gone
