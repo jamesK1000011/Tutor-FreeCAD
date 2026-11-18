@@ -54,6 +54,19 @@ class CoreLessons(unittest.TestCase):
             with self.subTest(lesson=n):
                 self.assertEqual(lessons.check(load(n), tools), [])
 
+    def test_techdraw_dimensions_from_one_edge(self):
+        """Live finding 51: a vertex dot on a TechDraw page is hard to hit.
+        Steps 5 and 6 ask for one edge; the two points stay as a hint; the
+        check takes any dimension of the right type (one edge or two points)."""
+        steps = {s["id"]: s for s in load("wiki-basic-techdraw.lesson.json")["steps"]}
+        for sid, typ in (("vertical", "DistanceY"), ("horizontal", "DistanceX")):
+            with self.subTest(step=sid):
+                st = steps[sid]
+                self.assertIn("edge of the view", st["say"])
+                self.assertNotIn("point", st["say"])
+                self.assertTrue(any("point" in h for h in st["hints"]))
+                self.assertEqual(st["check"], {"new": {"type": "TechDraw::DrawViewDimension", "where": {"Type": typ}}})
+
     def test_ids_carry_the_package_name(self):
         for n in core_files():
             self.assertTrue(load(n)["id"].startswith(PACKAGE + "."), n)

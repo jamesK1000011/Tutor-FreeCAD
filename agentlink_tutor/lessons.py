@@ -436,8 +436,13 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
         out.append(f"steps: id {d} is used twice")
     known = set(ids)
     out += _bind_problems(setup.get("bind"), "setup.bind")
+    vars_ = set((lesson.get("vars") or {}).keys())
+    for name in sorted(vars_ & set((setup.get("bind") or {}).keys())):
+        out.append(f"setup.bind.{name}: a binding has the name of a variable (the object then takes the variable's place)")
     for s in lesson["steps"]:
         w = f"steps.{s['id']}"
+        for name in sorted(vars_ & set((s.get("bind") or {}).keys())):
+            out.append(f"{w}.bind.{name}: a binding has the name of a variable (the object then takes the variable's place)")
         if "check" in s:
             out += checks.problems(s["check"], f"{w}.check", extra_kinds)
         out += _bind_problems(s.get("bind"), f"{w}.bind")

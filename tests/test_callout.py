@@ -292,6 +292,22 @@ class LiveMenuText(unittest.TestCase):
         with LiveNames(None):
             self.assertEqual(words.ui_text("**{PartDesign_Pocket}**"), "**Pocket**")
 
+    def test_ctrl_named_as_the_systems_key(self):
+        """Live finding 50: on macOS FreeCAD's multi-select key is Cmd."""
+        say = "Select the edge. Hold **Ctrl**. Select **Cube002**. Ctrl+Z undoes it. Ctrlx stays."
+        self.assertEqual(words.platform_keys(say, mac=True), "Select the edge. Hold **Cmd**. Select **Cube002**. Cmd+Z undoes it. Ctrlx stays.")
+        self.assertEqual(words.platform_keys(say, mac=False), say)
+        was = words.MAC
+        try:
+            words.MAC = True
+            with LiveNames(None):
+                self.assertEqual(words.ui_text("Hold **Ctrl**. Push **{Part_Cut|Cut}**."), "Hold **Cmd**. Push **Cut**.")
+            words.MAC = False
+            with LiveNames(None):
+                self.assertEqual(words.ui_text("Hold **Ctrl**."), "Hold **Ctrl**.")
+        finally:
+            words.MAC = was
+
     def test_menu_text_cleaned(self):
         self.assertEqual(words.clean_menu_text("&Export..."), "Export")
         self.assertEqual(words.clean_menu_text("Save &As…"), "Save As")

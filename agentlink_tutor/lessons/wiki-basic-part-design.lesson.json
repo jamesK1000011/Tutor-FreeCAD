@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.basic-part-design",
- "version": "1.0.1",
+ "version": "1.0.2",
  "title": "Basic Part Design tutorial",
  "summary": "Model the part of the FreeCAD wiki's Basic Part Design tutorial: a profile, pads, pockets, mirrors and a hole through a sloped face.",
  "level": "basic",
@@ -52,7 +52,7 @@
   "block_w": 7,
   "block_h": 16.7,
   "block_len": 26,
-  "side": 17
+  "square_side": 17
  },
  "steps": [
   {
@@ -837,7 +837,7 @@
       "closed": true,
       "full": true,
       "dims": [
-       "$side"
+       "$square_side"
       ]
      },
      {

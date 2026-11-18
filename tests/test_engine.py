@@ -4,6 +4,7 @@
 # are tested here; tests/test_replay_fc.py does the same against FreeCAD.
 import json
 import os
+import types
 import unittest
 
 from fakes import Doc, Quantity, Shape, Wire
@@ -328,6 +329,49 @@ class ElseCalls(unittest.TestCase):
         got = lessons.check(l)
         self.assertIn("setup.calls[0].else[0]: an else call holds tool and args only (not else)", got)
         self.assertIn("setup.calls[0].else[1]: a call {tool, args}", got)
+
+
+class PartialDo(unittest.TestCase):
+    """Live finding 53: a step's do refused after its first call ran was
+    run again on each Next, and added that call's geometry every time."""
+
+    def lesson(self):
+        return lessons.inline({"id": "inline.partial", "title": "Partial", "setup": {"doc": "new"}, "vars": {"edge": 17},
+                               "steps": [{"id": "s", "say": "Make a body.", "check": {"exists": "PartDesign::Pad"},
+                                          "do": [{"tool": "pd_body_new"}, {"tool": "nope"}]}]})
+
+    def test_refused_partway_is_not_run_again(self):
+        w = World()
+        e = Engine(self.lesson(), call=w, doc=lambda: w.doc)
+        e.start("demo")
+        n = len(w.calls)
+        with self.assertRaises(TutorError) as x:
+            e.do()
+        self.assertIn("ran and stay", str(x.exception))
+        self.assertEqual([c[0] for c in w.calls[n:]], ["pd_body_new", "nope"])
+        for _ in range(3):
+            with self.assertRaises(TutorError) as x:
+                e.do()
+            self.assertIn("not run again", str(x.exception))
+        self.assertEqual(len(w.calls), n + 2)  # no call ran twice
+
+    def test_a_do_that_ran_is_checked_again_not_run_again(self):
+        l = self.lesson()
+        l["steps"][0]["do"] = [{"tool": "pd_body_new"}]
+        l["steps"][0]["check"] = {"exists": "PartDesign::Body"}
+        w = World()
+        e = Engine(l, call=w, doc=lambda: w.doc)
+        e.start("demo")
+        n = len(w.calls)
+        e.do()
+        e.result = types.SimpleNamespace(status="pending")  # the window could not tell yet
+        e.do()
+        self.assertEqual(len(w.calls), n + 1)
+
+    def test_a_binding_named_like_a_variable_is_refused(self):
+        l = self.lesson()
+        l["steps"][0]["bind"] = {"edge": {"new": "Sketcher::SketchObject"}}
+        self.assertIn("steps.s.bind.edge: a binding has the name of a variable (the object then takes the variable's place)", lessons.check(l))
 
 
 if __name__ == "__main__":
