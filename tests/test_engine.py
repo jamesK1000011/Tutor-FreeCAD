@@ -368,6 +368,47 @@ class PartialDo(unittest.TestCase):
         e.do()
         self.assertEqual(len(w.calls), n + 1)
 
+    def test_a_dimension_the_person_made_is_set_not_added(self):
+        """Live 57: Cancel in Insert Radius keeps the radius in FreeCAD 1.1;
+        Do it for me then sets that constraint's value and name."""
+        why = ("These constraints over-constrain Basic_sketch (conflicting constraints), and any one of them dropped clears it — "
+               "new: #5 radius = 5: arc 0; existing: #4 radius = 0.3707: arc 0. Nothing was added.")
+        args = {"sketch": "Basic_sketch", "constraints": [{"type": "radius", "refs": [0], "value": 5, "name": "neutral_radius"}]}
+        from agentlink_tutor import engine as eng
+
+        self.assertEqual(eng.same_dimension_edit("sketch_constrain", args, why),
+                         {"sketch": "Basic_sketch", "set": [{"constraint": 4, "value": 5}], "rename": {"constraint": 4, "name": "neutral_radius"}})
+        # Not for another kind, two of a kind, two new ones, or another tool.
+        self.assertIsNone(eng.same_dimension_edit("sketch_constrain", args, why.replace("existing: #4 radius", "existing: #4 diameter")))
+        self.assertIsNone(eng.same_dimension_edit("sketch_constrain", args, why.replace("arc 0.", "arc 0; #6 radius = 2: arc 1.")))
+        two = {"constraints": args["constraints"] * 2}
+        self.assertIsNone(eng.same_dimension_edit("sketch_constrain", two, why))
+        self.assertIsNone(eng.same_dimension_edit("sketch_add", args, why))
+        l = self.lesson()
+        l["steps"][0]["do"] = [{"tool": "sketch_constrain", "args": args}]
+        l["steps"][0]["check"] = {"exists": "PartDesign::Body"}
+        calls = []
+
+        def call(name, a):
+            calls.append((name, a))
+            if name == "sketch_constrain":
+                return True, {"error": {"code": "invalid_state", "message": why}}
+            return False, {"done": True}
+        e = Engine(l, call=call, doc=lambda: World().doc)
+        e.start("demo")
+        e.do()
+        self.assertEqual([n for n, _a in calls][-2:], ["sketch_constrain", "sketch_edit"])
+        self.assertEqual(calls[-1][1]["rename"], {"constraint": 4, "name": "neutral_radius"})
+
+    def test_remaining_is_cut_not_emptied(self):
+        """Live 54: status {detail} answered remaining: [] at step 1 of 8."""
+        from agentlink_tutor import engine as eng
+
+        out = {"say": "x", "remaining": ["Step words that are quite long, " * 4] * 8}
+        got = eng._fit(out)
+        self.assertGreaterEqual(len(got["remaining"]), 1)
+        self.assertEqual(len(got["remaining"]) + got.get("remaining_more", 0), 8)
+
     def test_a_binding_named_like_a_variable_is_refused(self):
         l = self.lesson()
         l["steps"][0]["bind"] = {"edge": {"new": "Sketcher::SketchObject"}}

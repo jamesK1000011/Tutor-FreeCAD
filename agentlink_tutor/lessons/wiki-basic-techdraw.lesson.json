@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.basic-techdraw",
- "version": "1.0.1",
+ "version": "1.0.2",
  "title": "Basic TechDraw tutorial",
  "summary": "Put the part of the Basic Part Design tutorial on TechDraw pages: a view, its scale, two dimensions, a note and a projection group.",
  "level": "basic",
@@ -105,7 +105,7 @@
   },
   {
    "id": "view",
-   "say": "Select **Body** in the tree. Push **{TechDraw_View|Insert View}**. Push **OK**.",
+   "say": "Select **Body** in the tree. Push **{TechDraw_View|New View}**.",
    "view": "top",
    "why": "The new view looks at the part as the camera does.",
    "targets": [
@@ -126,7 +126,7 @@
    },
    "hints": [
     "Select the body first. Find the view button in the TechDraw toolbar.",
-    "The ring shows the button."
+    "No dialog opens: the view comes on the page at once."
    ],
    "do": [
     {
@@ -143,7 +143,7 @@
   },
   {
    "id": "scale",
-   "say": "Select the page in the tree. Set **Scale** to **2** in the Property view.",
+   "say": "Select the page in the tree. Open the **Data** tab of the property panel below the tree. Double-click the **Scale** value. Set it to **2**. Push **Enter**.",
    "why": "The view takes the page's scale, so the view gets bigger.",
    "picture": {
     "file": "pictures/TDTut_TopView2Dims.png",
@@ -164,8 +164,8 @@
     "tol": 0.001
    },
    "hints": [
-    "Look in the Data tab of the Property view.",
-    "Find the Scale row of the page.",
+    "The property panel is below the tree. Find the **Scale** row in its **Data** tab.",
+    "Double-click the value. Type the new value over the old one.",
     "Scale = **2**."
    ],
    "do": [
@@ -182,7 +182,7 @@
   },
   {
    "id": "vertical",
-   "say": "Select the left edge of the view. Push **{TechDraw_VerticalDimension|Insert Vertical Dimension}**.",
+   "say": "Select the left edge of the view. Open the **Dimension** drop-down in the TechDraw toolbar. Push **{TechDraw_VerticalDimension|Vertical Length Dimension}**.",
    "targets": [
     {
      "cmd": "TechDraw_VerticalDimension"
@@ -197,9 +197,9 @@
     }
    },
    "hints": [
-    "Click on the line, not on the dots at its ends.",
+    "Click on the line, not on the dots at its ends or on the frame of the view.",
     "Or select the top left point, hold **Ctrl** and select the bottom left point.",
-    "Find the vertical dimension button in the TechDraw toolbar."
+    "The small arrow beside the **Dimension** button opens the drop-down."
    ],
    "do": [
     {
@@ -230,7 +230,7 @@
   },
   {
    "id": "horizontal",
-   "say": "Select the top edge of the view. Push **{TechDraw_HorizontalDimension|Insert Horizontal Dimension}**.",
+   "say": "Select the top edge of the view. Open the **Dimension** drop-down. Push **{TechDraw_HorizontalDimension|Horizontal Length Dimension}**.",
    "targets": [
     {
      "cmd": "TechDraw_HorizontalDimension"
@@ -245,9 +245,9 @@
     }
    },
    "hints": [
-    "Click on the line, not on the dots at its ends.",
+    "Click on the line, not on the dots at its ends or on the frame of the view.",
     "Or select the top left point, hold **Ctrl** and select the top right point.",
-    "Find the horizontal dimension button in the TechDraw toolbar."
+    "The small arrow beside the **Dimension** button opens the drop-down."
    ],
    "do": [
     {

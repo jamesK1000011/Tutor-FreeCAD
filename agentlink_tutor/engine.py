@@ -31,6 +31,7 @@ entered only through that branch; when it passes it goes to its next, or
 back to the step that branched.
 """
 import os
+import re
 import shutil
 
 from . import checks, lessons, words
@@ -288,7 +289,19 @@ class Engine:
         for c in calls:
             if c["tool"] not in DOC_TOOLS:
                 self.hold_doc()
-            refused, out = self.call(c["tool"], resolve(c.get("args") or {}, self.bindings))
+            args = resolve(c.get("args") or {}, self.bindings)
+            refused, out = self.call(c["tool"], args)
+            if refused:
+                edit = same_dimension_edit(c["tool"], args, _reason(out))
+                if edit is not None:
+                    # The person made this dimension already (FreeCAD 1.1
+                    # keeps it when its dialog is cancelled, live 57): it is
+                    # set to the step's value and name, not added twice.
+                    r2, o2 = self.call("sketch_edit", edit)
+                    if not r2:
+                        answers.append({"tool": "sketch_edit", "refused": False, "answer": o2, "instead_of": c["tool"]})
+                        self._ran += 1
+                        continue
             answers.append({"tool": c["tool"], "refused": bool(refused), "answer": out})
             if refused and c.get("else"):
                 # Refused (no such tool in this Agent Link, or the document
@@ -579,11 +592,49 @@ def _fit(out):
             break
         v = out.get(key) if key != "missing" else (out.get("targets") or {}).get("missing") if isinstance(out.get("targets"), dict) else None
         if isinstance(v, list):
-            while v and len(json.dumps(out, ensure_ascii=False)) > STATE_MAX:
+            # The next items stay (live 54: a long lesson's "remaining" was
+            # cut to [] at step 1); how many were left out is said.
+            n = len(v)
+            while len(v) > 1 and len(json.dumps(out, ensure_ascii=False)) > STATE_MAX:
                 v.pop()
+            if key == "remaining" and len(v) < n:
+                out["remaining_more"] = n - len(v)
         elif isinstance(v, str):
             over = len(json.dumps(out, ensure_ascii=False)) - STATE_MAX
             out[key] = v[: max(20, len(v) - over - 1)] + "…"
+    return out
+
+
+DIMENSIONS = ("radius", "diameter", "distance", "distance_x", "distance_y", "angle")
+_EXISTING = re.compile(r"#(\d+) ([a-z_]+)\b")
+
+
+def same_dimension_edit(tool, args, why):
+    """sketch_edit's arguments that set an existing dimension of the same
+    kind to the value and name of a refused sketch_constrain of one
+    dimension, when the refusal names exactly one such constraint among the
+    existing ones; else None."""
+    if tool != "sketch_constrain" or not isinstance(args, dict):
+        return None
+    cons = args.get("constraints")
+    if not isinstance(cons, list) or len(cons) != 1 or not isinstance(cons[0], dict):
+        return None
+    c = cons[0]
+    kind = c.get("type")
+    if kind not in DIMENSIONS or c.get("value") is None:
+        return None
+    text = str(why or "")
+    k = text.find("existing")
+    if k < 0:
+        return None
+    ids = sorted({int(m.group(1)) for m in _EXISTING.finditer(text[k:]) if m.group(2) == kind})
+    if len(ids) != 1:
+        return None
+    out = {"set": [{"constraint": ids[0], "value": c["value"]}]}
+    if args.get("sketch") is not None:
+        out["sketch"] = args["sketch"]
+    if c.get("name"):
+        out["rename"] = {"constraint": ids[0], "name": c["name"]}
     return out
 
 

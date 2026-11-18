@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.film-hinge-sketch",
- "version": "1.0.1",
+ "version": "1.0.2",
  "title": "Sketcher example: the basic sketch of a film hinge",
  "summary": "Draw the master sketch of a film hinge: an arc for the closed lid, a line for the open one, its length an expression of the arc's radius.",
  "level": "intermediate",
@@ -61,7 +61,7 @@
  "steps": [
   {
    "id": "arc",
-   "say": "Double-click **Basic_sketch** in the tree. Push **{Sketcher_CreateArc|Arc}**. Draw a half circle. Keep its open side to the left.",
+   "say": "Double-click **Basic_sketch** in the tree to open it. Push **{Sketcher_CreateArc|Arc}**. Click the centre. Click the top point. Click the bottom point on the right side.",
    "why": "The arc is the strip of the hinge with the lid shut.",
    "targets": [
     {
@@ -76,8 +76,9 @@
     "count": 1
    },
    "hints": [
+    "The Sketcher toolbar and the Tasks panel open when the sketch opens.",
     "Find the arc button in the Sketcher toolbar.",
-    "Click the centre. Click the lower end. Click the upper end."
+    "The arc goes from the top point to the bottom point, on the right of the centre."
    ],
    "do": [
     {
@@ -220,7 +221,7 @@
   },
   {
    "id": "radius",
-   "say": "Set the radius of the arc to 5 mm. Give the constraint the name **neutral_radius**.",
+   "say": "Select the arc (it turns green). Open the **Dimension** drop-down. Push **{Sketcher_ConstrainRadius|Radius Dimension}**. Type 5 mm. Type **neutral_radius** in the **Name** field of the dialog. Push **OK**.",
    "why": "A name lets other values use this radius.",
    "targets": [
     {
@@ -237,8 +238,8 @@
     ]
    },
    "hints": [
-    "Find the radius button in the Sketcher toolbar.",
-    "The constraint dialog has a box for the value and a box for the name.",
+    "The small arrow beside the **Dimension** button opens the drop-down.",
+    "The dialog has a field for the value and a field for the name.",
     "Radius = 5 mm, name neutral_radius."
    ],
    "do": [
