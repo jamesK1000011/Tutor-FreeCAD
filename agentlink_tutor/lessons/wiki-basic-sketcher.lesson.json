@@ -1,0 +1,1041 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.basic-sketcher",
+ "version": "1.0.0",
+ "title": "Basic Sketcher tutorial",
+ "summary": "Draw a five-armed star from construction lines and arcs, constrain it fully, and pad it into a solid.",
+ "level": "basic",
+ "minutes": 30,
+ "tags": [
+  "sketcher",
+  "constraint",
+  "construction",
+  "partdesign",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "SketcherWorkbench",
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Basic Sketcher Tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Basic_Sketcher_Tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The sketch goes in a body from the start, so the step that makes a body after the sketch is left out. The top arm points up. The hub circle starts at 7.5 mm. Each check reads the sketch's geometry, its degrees of freedom or the volume of the pad."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "BasicSketcher"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {
+     "name": "Star"
+    }
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "sketch",
+   "say": "Push **{PartDesign_NewSketch|Create sketch}**. Select the XY plane. Push **OK**.",
+   "why": "The sketch opens for edit on the plane you select.",
+   "targets": [
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "sketch": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "Find the sketch button in the Part Design toolbar.",
+    "The Tasks panel lists the planes of the body.",
+    "Plane: the XY plane."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "body": "$body",
+      "plane": "XY",
+      "name": "StarSketch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "construction",
+   "say": "Push **{Sketcher_ToggleConstruction|Toggle construction geometry}**. Draw five lines from the origin in a star, about 30 mm long. Push the toggle again.",
+   "why": "Construction lines guide the shape; the solid does not use them.",
+   "picture": {
+    "file": "pictures/02_Sk01_Sketcher_construction.png",
+    "alt": "Five blue construction lines go out from the origin like a star."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_ToggleConstruction"
+    },
+    {
+     "cmd": "Sketcher_CreateLine"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "prop": "$sketch",
+      "name": "GeometryCount",
+      "ge": 5
+     },
+     {
+      "sketch": "$sketch",
+      "dof_max": 10
+     }
+    ]
+   },
+   "hints": [
+    "Start each line on the origin point; it lights when the pointer is on it.",
+    "Use the line tool. A right-click stops the tool.",
+    "Five construction lines, each from the origin, each about 30 mm long."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "line",
+        "from": [
+         0,
+         0
+        ],
+        "to": [
+         0.0,
+         30.0
+        ],
+        "construction": true
+       },
+       {
+        "kind": "line",
+        "from": [
+         0,
+         0
+        ],
+        "to": [
+         -28.5,
+         9.3
+        ],
+        "construction": true
+       },
+       {
+        "kind": "line",
+        "from": [
+         0,
+         0
+        ],
+        "to": [
+         -17.6,
+         -24.3
+        ],
+        "construction": true
+       },
+       {
+        "kind": "line",
+        "from": [
+         0,
+         0
+        ],
+        "to": [
+         17.6,
+         -24.3
+        ],
+        "construction": true
+       },
+       {
+        "kind": "line",
+        "from": [
+         0,
+         0
+        ],
+        "to": [
+         28.5,
+         9.3
+        ],
+        "construction": true
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          1,
+          1
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          2,
+          1
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          3,
+          1
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          4,
+          1
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "outer",
+   "say": "Draw a circle on the origin, about 8 mm in radius. Draw an arc on the end of each line, about 8 mm in radius.",
+   "why": "The centre of each outer arc sits on the end of a line.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateCircle"
+    },
+    {
+     "cmd": "Sketcher_CreateArc"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "count": 6
+   },
+   "hints": [
+    "Make sure that construction mode is off.",
+    "Put each arc centre on the end point of a line. Turn each arc away from the origin.",
+    "One circle on the origin and five outer arcs, about 8 mm each."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "circle",
+        "center": [
+         0,
+         0
+        ],
+        "radius": 7.5
+       },
+       {
+        "kind": "arc",
+        "center": [
+         0.0,
+         30.0
+        ],
+        "radius": 8,
+        "start": -14.1,
+        "end": 194.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         -28.5,
+         9.3
+        ],
+        "radius": 8,
+        "start": 57.9,
+        "end": 266.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         -17.6,
+         -24.3
+        ],
+        "radius": 8,
+        "start": 129.9,
+        "end": 338.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         17.6,
+         -24.3
+        ],
+        "radius": 8,
+        "start": -158.1,
+        "end": 50.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         28.5,
+         9.3
+        ],
+        "radius": 8,
+        "start": -86.1,
+        "end": 122.1
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          5,
+          3
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          6,
+          3
+         ],
+         [
+          0,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          7,
+          3
+         ],
+         [
+          1,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          8,
+          3
+         ],
+         [
+          2,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          9,
+          3
+         ],
+         [
+          3,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          10,
+          3
+         ],
+         [
+          4,
+          2
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "inner",
+   "say": "Draw an arc between each pair of outer arcs. Make each arc bulge in toward the origin.",
+   "picture": {
+    "file": "pictures/04_Sk01_Sketcher_inner_arcs.png",
+    "alt": "Five outer arcs on the line ends and five inner arcs between them, not yet joined."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateArc"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "count": 11
+   },
+   "hints": [
+    "Put the centre of each inner arc between two outer arcs, farther from the origin.",
+    "Start and stop each inner arc near the ends of the two outer arcs.",
+    "Five inner arcs, one between each pair of outer arcs."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "arc",
+        "center": [
+         -18.4,
+         25.4
+        ],
+        "radius": 11,
+        "start": -122.1,
+        "end": 14.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         -29.8,
+         -9.7
+        ],
+        "radius": 11,
+        "start": -50.1,
+        "end": 86.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         -0.0,
+         -31.3
+        ],
+        "radius": 11,
+        "start": 21.9,
+        "end": 158.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         29.8,
+         -9.7
+        ],
+        "radius": 11,
+        "start": 93.9,
+        "end": 230.1
+       },
+       {
+        "kind": "arc",
+        "center": [
+         18.4,
+         25.4
+        ],
+        "radius": 11,
+        "start": 165.9,
+        "end": 302.1
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "equal",
+   "say": "Select the five lines. Push **{Sketcher_ConstrainEqual|Constrain equal}**. Do the same for the outer arcs and for the inner arcs. Make the top line vertical.",
+   "why": "Equal constraints let one dimension size five items.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainEqual"
+    },
+    {
+     "cmd": "Sketcher_ConstrainVertical"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "dof_max": 38
+   },
+   "hints": [
+    "Select items in the view, or in the list of elements in the Tasks panel.",
+    "Use Constrain equal three times and Constrain vertical one time.",
+    "Lines equal, outer arcs equal, inner arcs equal, the top line vertical."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "equal",
+        "refs": [
+         0,
+         1
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         1,
+         2
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         2,
+         3
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         3,
+         4
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         6,
+         7
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         7,
+         8
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         8,
+         9
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         9,
+         10
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         11,
+         12
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         12,
+         13
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         13,
+         14
+        ]
+       },
+       {
+        "type": "equal",
+        "refs": [
+         14,
+         15
+        ]
+       },
+       {
+        "type": "vertical",
+        "refs": [
+         0
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "tangent",
+   "say": "Select an end of an outer arc and the near end of an inner arc. Push **{Sketcher_ConstrainTangent|Constrain tangent}**. Do this for all ten pairs.",
+   "why": "Tangent ends join the arcs smoothly and close the outline.",
+   "picture": {
+    "file": "pictures/06_Sk01_Sketcher_tangency_constraints.png",
+    "alt": "The arcs join smoothly into one closed star outline round the circle."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainTangent"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "closed": true
+     },
+     {
+      "sketch": "$sketch",
+      "dof_max": 8
+     }
+    ]
+   },
+   "hints": [
+    "Select two end points, not two arcs.",
+    "Use Constrain tangent on each pair of ends that touch.",
+    "Ten tangent constraints: each outer arc end with the inner arc end next to it."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          6,
+          2
+         ],
+         [
+          11,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          7,
+          1
+         ],
+         [
+          11,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          7,
+          2
+         ],
+         [
+          12,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          8,
+          1
+         ],
+         [
+          12,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          8,
+          2
+         ],
+         [
+          13,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          9,
+          1
+         ],
+         [
+          13,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          9,
+          2
+         ],
+         [
+          14,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          10,
+          1
+         ],
+         [
+          14,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          10,
+          2
+         ],
+         [
+          15,
+          2
+         ]
+        ]
+       },
+       {
+        "type": "tangent",
+        "refs": [
+         [
+          6,
+          1
+         ],
+         [
+          15,
+          1
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "length",
+   "say": "Select the vertical line. Push **{Sketcher_ConstrainDistanceY|Constrain vertical distance}**. Set it to 30 mm.",
+   "why": "The lines are equal, so all five lines change together.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainDistanceY"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "dims": [
+       30
+      ]
+     },
+     {
+      "sketch": "$sketch",
+      "dof_max": 7
+     }
+    ]
+   },
+   "hints": [
+    "Select the construction line on the vertical axis.",
+    "Type the length in the dialog that opens.",
+    "Vertical distance = 30 mm."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "distance_y",
+        "refs": [
+         0
+        ],
+        "value": 30,
+        "name": "arm"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "angles",
+   "say": "Select two lines that are next to each other. Push **{Sketcher_ConstrainAngle|Constrain angle}**. Set it to 72 deg. Do this for four pairs.",
+   "why": "A fifth angle adds nothing: the four angles set it.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainAngle"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "dof_max": 3
+   },
+   "hints": [
+    "Go round the star, one pair of lines at a time.",
+    "Stop after four angles: a fifth one is redundant.",
+    "Four angles of 72 deg."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "angle",
+        "refs": [
+         0,
+         1
+        ],
+        "value": 72
+       },
+       {
+        "type": "angle",
+        "refs": [
+         1,
+         2
+        ],
+        "value": 72
+       },
+       {
+        "type": "angle",
+        "refs": [
+         2,
+         3
+        ],
+        "value": 72
+       },
+       {
+        "type": "angle",
+        "refs": [
+         3,
+         4
+        ],
+        "value": 72
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "radii",
+   "say": "Select an outer arc. Push **{Sketcher_ConstrainRadius|Constrain radius}**. Set it to 8 mm. Set an inner arc to 11 mm and the circle to 8 mm.",
+   "why": "With the radii set, the sketch has no degrees of freedom left.",
+   "picture": {
+    "file": "pictures/09_Sk01_Sketcher_fully_constrained.png",
+    "alt": "The star sketch turns green: it is fully constrained, with its length, angles and radii."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainRadius"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "full": true
+     },
+     {
+      "sketch": "$sketch",
+      "radii": [
+       8,
+       11
+      ]
+     }
+    ]
+   },
+   "hints": [
+    "One radius for each set of equal arcs is sufficient.",
+    "Use Constrain radius three times: an outer arc, an inner arc, the circle.",
+    "Outer arc 8 mm, inner arc 11 mm, circle 8 mm."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "radius",
+        "refs": [
+         6
+        ],
+        "value": 8,
+        "name": "outer_r"
+       },
+       {
+        "type": "radius",
+        "refs": [
+         11
+        ],
+        "value": 11,
+        "name": "inner_r"
+       },
+       {
+        "type": "radius",
+        "refs": [
+         5
+        ],
+        "value": 8,
+        "name": "hub_r"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Push **Close**. Push **{PartDesign_Pad|Pad}**. Keep the default length. Push **OK**.",
+   "why": "Pad pushes the closed outline into a solid; the circle makes a hole.",
+   "picture": {
+    "file": "pictures/10_Sk01_Sketcher_solid_extrusion.png",
+    "alt": "The padded star: a solid with five round arms and a hole in the middle."
+   },
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pad"
+     },
+     {
+      "volume": "$body",
+      "eq": 24247.5,
+      "tol": 1
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Close the sketch with the button at the top of the Tasks panel.",
+    "Find Pad in the Part Design toolbar.",
+    "Pad length = 10 mm, the default."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "body": "$body",
+      "sketch": "$sketch",
+      "length": 10
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a fully constrained star sketch, padded into a solid.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$body"
+     },
+     {
+      "volume": "$body",
+      "eq": 24247.5,
+      "tol": 1
+     }
+    ]
+   }
+  }
+ ]
+}

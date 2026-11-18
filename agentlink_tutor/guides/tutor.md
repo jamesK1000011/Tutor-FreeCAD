@@ -20,7 +20,7 @@ done for the person. `tool_groups enable: ["tutor"]` gives `tutor`,
 
 ## the lesson library
 - First steps: pad a sketch, a pocket and a hole, export an STL, a fully constrained sketch, a fillet and a chamfer, a parameter, a TechDraw page, a fixed joint.
-- Adapted from the FreeCAD wiki (CC BY 3.0, "FreeCAD wiki contributors", each with its credit): Basic Part Design, Basic TechDraw (chapter 2 of the same course: it builds the part through the tools when the document does not hold it), the film hinge of the Sketcher examples, Basic Attachment, Whiffle Ball.
+- Adapted from the FreeCAD wiki (CC BY 3.0, "FreeCAD wiki contributors", each with its credit): Basic Part Design, Basic TechDraw (chapter 2 of the same course: it builds the part through the tools when the document does not hold it), the film hinge of the Sketcher examples, Basic Attachment, Whiffle Ball, Basic Sketcher (the star), the crank and slider of the Assembly workbench (two chapters: the parts in Part, then the assembly), Configuration Tables (a hex nut, M10 and M12).
 - Add-ons ship their own (Workshop: hole for hardware).
 
 ## inline lessons

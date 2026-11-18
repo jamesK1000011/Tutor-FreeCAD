@@ -104,3 +104,99 @@ path = "agentlink_tutor/lessons/pictures/Tutorial_WhiffleBall.jpg"
 precedence = "override"
 SPDX-FileCopyrightText = "FreeCAD wiki contributors, Whiffle Ball tutorial (https://wiki.freecad.org/Whiffle_Ball_tutorial)"
 SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-basic-sketcher.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/02_Sk01_Sketcher_construction.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/04_Sk01_Sketcher_inner_arcs.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/06_Sk01_Sketcher_tangency_constraints.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/09_Sk01_Sketcher_fully_constrained.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/10_Sk01_Sketcher_solid_extrusion.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Sketcher Tutorial (https://wiki.freecad.org/Basic_Sketcher_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-configuration-tables.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Configuration Tables (https://wiki.freecad.org/Configuration_Tables), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Variant-link-example-hex-nut-sketch-unconstrained.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Configuration Tables (https://wiki.freecad.org/Configuration_Tables)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Variant-link-spreadsheet-table-example.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Configuration Tables (https://wiki.freecad.org/Configuration_Tables)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Variant-link-example-hex-nut-sketch.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Configuration Tables (https://wiki.freecad.org/Configuration_Tables)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-crank-slider-assembly.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Assembly_KinematicExample-06.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Assembly_KinematicExample-08.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Assembly_KinematicExample-14.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Assembly3_KinematicExample-01.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-crank-slider-parts.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"

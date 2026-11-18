@@ -19,6 +19,18 @@ in its credit and in REUSE.toml.
 The rest of Tutor (its code, its other lessons and data) is under the GNU
 Lesser General Public License 2.1 or later: see LICENSE-Code.
 
+The adapted lessons and their source pages:
+
+  wiki-basic-attachment              https://wiki.freecad.org/Basic_Attachment_Tutorial
+  wiki-basic-part-design             https://wiki.freecad.org/Basic_Part_Design_Tutorial
+  wiki-basic-sketcher                https://wiki.freecad.org/Basic_Sketcher_Tutorial
+  wiki-basic-techdraw                https://wiki.freecad.org/Basic_TechDraw_Tutorial
+  wiki-configuration-tables          https://wiki.freecad.org/Configuration_Tables
+  wiki-crank-slider-assembly         https://wiki.freecad.org/Assembly_Workbench
+  wiki-crank-slider-parts            https://wiki.freecad.org/Assembly_Workbench
+  wiki-film-hinge-sketch             https://wiki.freecad.org/Sketcher_Examples
+  wiki-whiffle-ball                  https://wiki.freecad.org/Whiffle_Ball_tutorial
+
 Not affiliated with or endorsed by the FreeCAD project or the FPA.
 
 The full text of CC BY 3.0 follows.

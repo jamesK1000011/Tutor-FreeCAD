@@ -187,10 +187,15 @@ page, "FreeCAD wiki contributors", licence, link, adapted):
 | `wiki.film-hinge-sketch` | [Sketcher Examples](https://wiki.freecad.org/Sketcher_Examples) (film hinge) | 8 | a fully constrained sketch; the line's length an expression of the arc's radius |
 | `wiki.basic-attachment` | [Basic Attachment Tutorial](https://wiki.freecad.org/Basic_Attachment_Tutorial) | 12 | a block of 98000 mm³: a pad from a named constraint, a triangle hooked on by its attachment offset |
 | `wiki.whiffle-ball` | [Whiffle Ball tutorial](https://wiki.freecad.org/Whiffle_Ball_tutorial) | 19 | the ball from Part booleans, filleted |
+| `wiki.basic-sketcher` | [Basic Sketcher Tutorial](https://wiki.freecad.org/Basic_Sketcher_Tutorial) | 11 | a fully constrained star sketch, padded to 24247.5 mm³ |
+| `wiki.crank-slider-parts` | [Assembly Workbench: Example crank and slider](https://wiki.freecad.org/Assembly_Workbench) | 6 | the four parts, each box and place checked (crank 2607.39 mm³, link rod 2450.27 mm³) |
+| `wiki.crank-slider-assembly` | [Assembly Workbench: Example crank and slider](https://wiki.freecad.org/Assembly_Workbench) | 8 | an assembly with Base grounded and a revolute, a slider, a revolute and a cylindrical joint |
+| `wiki.configuration-tables` | [Configuration Tables](https://wiki.freecad.org/Configuration_Tables) | 8 | a hex nut bound to a configuration table: 1203.53 mm³ as M10, 1807.6 mm³ as M12 |
 
 Basic Part Design and Basic TechDraw are the two chapters of one course
 (`wiki-part-to-drawing`): the TechDraw lesson goes on from the part, and
 builds it through the tools when the document in front does not hold it.
+The crank and slider is a course of two chapters (`wiki-crank-slider`): the parts, then the assembly.
 `tutor {action: "list", query: "wiki"}` lists them.
 
 ### Lessons from other add-ons

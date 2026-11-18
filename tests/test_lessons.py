@@ -41,12 +41,15 @@ def tiny(**over):
 class CoreLessons(unittest.TestCase):
     def test_starter_lessons_and_the_course(self):
         ids = {load(n)["id"] for n in core_files()}
-        self.assertEqual(ids, {"agentlink_tutor.pd.pad-sketch", "agentlink_tutor.pd.pocket-hole", "agentlink_tutor.io.export-stl",
-                               "agentlink_tutor.sk.constrain-rectangle", "agentlink_tutor.pd.fillet-chamfer",
-                               "agentlink_tutor.param.parameter-depth", "agentlink_tutor.td.drawing-page",
-                               "agentlink_tutor.asm.fixed-joint", "agentlink_tutor.wiki.basic-part-design",
-                               "agentlink_tutor.wiki.basic-techdraw", "agentlink_tutor.wiki.film-hinge-sketch",
-                               "agentlink_tutor.wiki.basic-attachment", "agentlink_tutor.wiki.whiffle-ball"})
+        self.assertEqual(ids, {"agentlink_tutor.pd.pad-sketch", "agentlink_tutor.pd.pocket-hole",
+                               "agentlink_tutor.io.export-stl", "agentlink_tutor.sk.constrain-rectangle",
+                               "agentlink_tutor.pd.fillet-chamfer", "agentlink_tutor.param.parameter-depth",
+                               "agentlink_tutor.td.drawing-page", "agentlink_tutor.asm.fixed-joint",
+                               "agentlink_tutor.wiki.basic-part-design", "agentlink_tutor.wiki.basic-techdraw",
+                               "agentlink_tutor.wiki.film-hinge-sketch", "agentlink_tutor.wiki.basic-attachment",
+                               "agentlink_tutor.wiki.whiffle-ball", "agentlink_tutor.wiki.basic-sketcher",
+                               "agentlink_tutor.wiki.configuration-tables", "agentlink_tutor.wiki.crank-slider-assembly",
+                               "agentlink_tutor.wiki.crank-slider-parts"})
 
     def test_each_fits_the_schema_and_the_rules(self):
         tools = gen_agentlink_tools.vendored()
