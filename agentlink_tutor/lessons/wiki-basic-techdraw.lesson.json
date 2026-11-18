@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.basic-techdraw",
- "version": "1.0.0",
+ "version": "1.0.1",
  "title": "Basic TechDraw tutorial",
  "summary": "Put the part of the Basic Part Design tutorial on TechDraw pages: a view, its scale, two dimensions, a note and a projection group.",
  "level": "basic",
@@ -26,7 +26,7 @@
   "licence": "CC-BY-3.0",
   "link": "https://wiki.freecad.org/Basic_TechDraw_Tutorial",
   "adapted": true,
-  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The part comes from the chapter before (the Basic Part Design lesson), built through the tools, not from the page's example file. The step that links a dimension to the 3D model is left out."
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The part comes from the chapter before (the Basic Part Design lesson), built through the tools, not from the page's example file. The step that links a dimension to the 3D model is left out. A dimension is made from one edge, not from two points, because an edge is easier to select."
  },
  "course": {
   "id": "wiki-part-to-drawing",
@@ -182,7 +182,7 @@
   },
   {
    "id": "vertical",
-   "say": "Select the top left point of the view. Hold **Ctrl**. Select the bottom left point. Push **{TechDraw_VerticalDimension|Insert Vertical Dimension}**.",
+   "say": "Select the left edge of the view. Push **{TechDraw_VerticalDimension|Insert Vertical Dimension}**.",
    "targets": [
     {
      "cmd": "TechDraw_VerticalDimension"
@@ -197,7 +197,8 @@
     }
    },
    "hints": [
-    "The points are the small dots at the corners of the view.",
+    "Click on the line, not on the dots at its ends.",
+    "Or select the top left point, hold **Ctrl** and select the bottom left point.",
     "Find the vertical dimension button in the TechDraw toolbar."
    ],
    "do": [
@@ -224,11 +225,12 @@
       ]
      }
     }
-   ]
+   ],
+   "why": "One edge is easier to select than two small points."
   },
   {
    "id": "horizontal",
-   "say": "Select the top left point. Hold **Ctrl**. Select the top right point. Push **{TechDraw_HorizontalDimension|Insert Horizontal Dimension}**.",
+   "say": "Select the top edge of the view. Push **{TechDraw_HorizontalDimension|Insert Horizontal Dimension}**.",
    "targets": [
     {
      "cmd": "TechDraw_HorizontalDimension"
@@ -243,7 +245,8 @@
     }
    },
    "hints": [
-    "Pick the two top corners of the view.",
+    "Click on the line, not on the dots at its ends.",
+    "Or select the top left point, hold **Ctrl** and select the top right point.",
     "Find the horizontal dimension button in the TechDraw toolbar."
    ],
    "do": [

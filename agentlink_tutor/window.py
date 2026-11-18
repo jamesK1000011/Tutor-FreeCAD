@@ -462,6 +462,13 @@ class Window:
                     tree, item = t, row
                     break
             if item is None:
+                # The rows as Qt's model holds them (indexes, never row
+                # wrappers that a rebuild can leave dead or stale): live
+                # finding 46, a Body that the item walk missed while a
+                # TechDraw page was the window's active tab.
+                got = self._row_by_model(order, obj, key)
+                if got is not None:
+                    return got
                 why = f"{label} is not in the Model tree" + (f" under {doc}" if doc else "")
                 if seen:
                     try:
@@ -481,12 +488,35 @@ class Window:
         if top is not item or not any(_same(item.text(0), n) for n in _names(obj)):
             note = f"inside {top.text(0)}, which is folded: its row is ringed"
         row_label = top.text(0)
+        top = item = p = None  # no row is held past here
+        return self._ring_row(tree, row_label, key, note)
+
+    def _row_by_model(self, trees, obj, key):
+        """obj's row found through each tree's model (by Label, then Name,
+        under the document's row), its parents unfolded and the row
+        scrolled into view (QTreeView.scrollTo), then ringed: (spec, note),
+        or None when no tree's model holds it."""
+        for t in trees:
+            ix = _safe(lambda t=t: _index_of(t, _names(obj), key))
+            if ix is None:
+                continue
+            row_label = str(ix.data())
+            try:
+                t.scrollTo(ix)
+            except Exception:  # noqa: BLE001  (a stand-in, or a tree rebuilt meanwhile)
+                pass
+            self.pump()
+            return self._ring_row(t, row_label, key, None)
+        return None
+
+    def _ring_row(self, tree, row_label, key, note):
+        """The ring spec of the row labelled row_label in tree (the Model
+        tab's header first when the tree is behind another tab)."""
         if not self.front(tree):
             head = self._tab_header(tree)
             if head is not None:
                 return head, MODEL_TAB
         box = {"tree": tree}
-        top = item = p = None  # no row is held past here
 
         def rect():
             # The row again whenever its tree or item has been rebuilt.
@@ -927,6 +957,31 @@ def _index_rect(tree, label, doc_label=None):
     if not pick:
         return None
     return _r(tree.visualRect(pick[0]))
+
+
+def _index_of(tree, names, doc_label=None):
+    """The model index of the first row whose text is one of names (in that
+    order), under the document's row when the tree has one for it; None
+    when there is no such row or the tree has no model."""
+    model = tree.model()
+    if model is None:
+        return None
+    rows, stack, has_doc = [], [(model.index(i, 0), False) for i in range(model.rowCount())], False
+    while stack:
+        ix, mine = stack.pop(0)
+        if not ix.isValid():
+            continue
+        text = ix.data()
+        if _doc_is(text, doc_label):
+            mine = has_doc = True
+        elif ix.parent().isValid():
+            rows.append((ix, mine, text))
+        stack += [(model.index(j, 0, ix), mine) for j in range(model.rowCount(ix))]
+    for n in names:
+        for ix, mine, text in rows:
+            if _same(text, n) and (mine or not has_doc or doc_label is None):
+                return ix
+    return None
 
 
 def _same(text, label):

@@ -16,6 +16,7 @@ Command.getInfo()['menuText'], & and … taken off), so the step's words and
 the window agree in every FreeCAD release and language.
 """
 import re
+import sys
 
 # Type ids as the person knows them. Anything else: the last part of the
 # id, split at its capitals and lower-cased (PartDesign::AdditiveBox ->
@@ -139,12 +140,27 @@ def command_words(cmd, fallback=None):
 TOKEN = re.compile(r"\{([A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)(?:\|([^{}]*))?\}")
 
 
-def ui_text(text):
-    """text with each {Command} or {Command|fallback} token swapped for the
-    command's words (command_words). None stays None."""
+# On macOS, FreeCAD (Qt) reads the Command key where a lesson says Ctrl:
+# multi-select and every Ctrl+ shortcut (live finding 50). Lessons keep
+# "Ctrl"; the person's words name the key of their own system.
+MAC = sys.platform == "darwin"
+CTRL = re.compile(r"\bCtrl\b")
+
+
+def platform_keys(text, mac=None):
+    """text with Ctrl named as this system's key: Cmd on macOS."""
     if text is None:
         return None
-    return TOKEN.sub(lambda m: command_words(m.group(1), (m.group(2) or "").strip() or None), str(text))
+    return CTRL.sub("Cmd", text) if (MAC if mac is None else mac) else text
+
+
+def ui_text(text):
+    """text with each {Command} or {Command|fallback} token swapped for the
+    command's words (command_words), and Ctrl named as this system's key
+    (platform_keys). None stays None."""
+    if text is None:
+        return None
+    return platform_keys(TOKEN.sub(lambda m: command_words(m.group(1), (m.group(2) or "").strip() or None), str(text)))
 
 
 def tokens(text):

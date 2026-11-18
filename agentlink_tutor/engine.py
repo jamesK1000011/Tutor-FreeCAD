@@ -108,6 +108,8 @@ class Engine:
         self.explain = True  # the step's why line in answers (prefs.ShowExplainers)
         self.done_for = set()  # steps done for the person (do, or the agent's own calls)
         self.did = None  # the step do() last ran
+        self.partial = None  # the step whose do was refused after some of its calls ran
+        self._ran = 0  # calls of the do in hand that ran
         if lesson is not None:
             self._ids = [s["id"] for s in lesson["steps"]]
             self._detours = lessons.detours(lesson)
@@ -296,6 +298,7 @@ class Engine:
                 continue
             if refused:
                 raise TutorError(f"{where}: {c['tool']} was refused — {_reason(out)}")
+            self._ran += 1
             if c["tool"] in ("doc_new", "doc_open") and isinstance(out, dict) and out.get("document"):
                 self._own_doc(out["document"])  # the lesson's document from here on
         return answers
@@ -344,6 +347,7 @@ class Engine:
         self.passed = False
         self.result = None
         self.did = None
+        self.partial = None
         self.before = self._names()
 
     # ---- moving -------------------------------------------------------------
@@ -414,6 +418,7 @@ class Engine:
             return self.status()
         self.index = self.history.pop()
         self.did = None
+        self.partial = None
         self.hint = 0
         self.passed = False
         self.result = None
@@ -431,8 +436,23 @@ class Engine:
         self._need_step()
         if not self.step.get("do"):
             raise TutorError(f"step {self.step['id']} has nothing to do for the person")
-        self._run(self.step["do"], f"step {self.step['id']}")
-        self.did = self.step["id"]
+        sid = self.step["id"]
+        if self.partial == sid:
+            # Live finding 53: a do refused after some of its calls ran, run
+            # again on each Next, added those calls' geometry again each time.
+            raise TutorError(f"step {sid}: its calls stopped partway at the last try, and what ran stays. They are not run again "
+                             "(they would add the same things twice): skip the step, or finish it in the window.")
+        if self.did == sid and self.result is not None and self.result.status != "fail":
+            return self.check()  # ran already, its check could not tell yet: told again, not done twice
+        self._ran = 0
+        try:
+            self._run(self.step["do"], f"step {sid}")
+        except TutorError as e:
+            if self._ran:
+                self.did = self.partial = sid
+                raise TutorError(f"{e} The {self._ran} call(s) before it ran and stay: Next and Do it do not run this step's calls again.") from None
+            raise
+        self.did = sid
         self.done_for.add(self.step["id"])
         if not self.passed:
             # What the step's own calls made is the step's object, even when

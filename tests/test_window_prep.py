@@ -434,6 +434,66 @@ class TreeRows(unittest.TestCase):
         w = self.win(Tree(Item("Application", Item("BikeStem*", Item("Body ")))))
         self.assertEqual(w.tree_row(body)[1], None)  # matched by label, ends trimmed
 
+    def test_row_found_through_the_model_when_the_item_walk_misses(self):
+        """Live finding 46: the item walk missed the Body (a TechDraw page
+        was the active tab); the tree's model still holds the row. It is
+        scrolled to (its parents unfolded) and ringed, not refused."""
+        _doc, body, _sk = self.objs()
+
+        class Ix:
+            def __init__(self, text, parent=None, kids=()):
+                self.t, self.p, self.kids = text, parent, list(kids)
+
+            def isValid(self):
+                return True
+
+            def data(self):
+                return self.t
+
+            def parent(self):
+                return self.p if self.p is not None else types.SimpleNamespace(isValid=lambda: False)
+
+        doc_ix = Ix("BikeStem")
+        page_ix = Ix("Page", doc_ix)
+        body_ix = Ix("Body", doc_ix)
+        doc_ix.kids = [page_ix, body_ix]
+        app_ix = Ix("Application", kids=[doc_ix])
+        doc_ix.p = app_ix
+
+        class Model:
+            def rowCount(self, parent=None):
+                return len(parent.kids) if parent is not None else 1
+
+            def index(self, r, _c, parent=None):
+                return parent.kids[r] if parent is not None else app_ix
+
+        class BlindTree(Tree):  # the item walk sees no rows at all
+            def topLevelItemCount(self):
+                return 0
+
+            def model(self):
+                return Model()
+
+            def scrollTo(self, ix):
+                self.scrolled = ix.data()
+
+            def visualRect(self, ix):
+                return types.SimpleNamespace(x=lambda: 0, y=lambda: 40, width=lambda: 100, height=lambda: 18)
+
+        t = BlindTree(None)
+        w = self.win(t)
+        got, note = w.tree_row(body)
+        self.assertIsNotNone(got)
+        self.assertIsNone(note)
+        self.assertEqual(t.scrolled, "Body")
+        self.assertIs(got["widget"], t)
+        self.assertEqual(got["rect"](), (0, 40, 100, 18))
+        # No such row in the model either: still refused, with the reason.
+        body.Label = body.Name = "Body001"
+        got, why = w.tree_row(body)
+        self.assertIsNone(got)
+        self.assertIn("Body001 is not in the Model tree", why)
+
     def test_ancestors(self):
         _doc, body, sk = self.objs()
         self.assertEqual([a.Name for a in window.ancestors(sk)], ["Body"])
