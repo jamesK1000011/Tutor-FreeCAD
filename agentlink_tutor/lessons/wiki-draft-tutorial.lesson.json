@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.draft-tutorial",
- "version": "1.0.2",
+ "version": "1.1.0",
  "title": "Draft tutorial",
  "summary": "Draw arcs, lines, a rectangle, a circle and a polygon in the Draft workbench. Join a profile into a wire, array it round the centre and add dimensions.",
  "level": "basic",
@@ -26,7 +26,7 @@
   "licence": "CC-BY-3.0",
   "link": "https://wiki.freecad.org/Draft_tutorial",
   "adapted": true,
-  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Steps 3 to 13 of the page. The changes to font size and extension lines of the dimensions, the text, the ShapeString and the TechDraw page are left out. Each check reads the size and place of what you drew, or the distance a dimension measures."
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Steps 3 to 13 of the page; font size, extension lines, text, ShapeString and TechDraw page left out. Each check reads the Draft kind, size, place and Draft values of what you drew. In FreeCAD 1.1, Upgrade of the arcs and lines makes one closed wire that is a plain Part::Feature, not a Draft object."
  },
  "setup": {
   "calls": [
@@ -91,7 +91,22 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::Part2DObjectPython",
+     "draft": "Circle",
+     "where": {
+      "Radius": {
+       "eq": 30,
+       "tol": 0.01
+      },
+      "FirstAngle": {
+       "eq": 60,
+       "tol": 0.01
+      },
+      "LastAngle": {
+       "eq": 120,
+       "tol": 0.01
+      }
+     }
     },
     "size": [
      30,
@@ -107,7 +122,10 @@
    },
    "bind": {
     "arc30": {
-     "new": "Part::Feature"
+     "new": {
+      "type": "Part::Part2DObjectPython",
+      "draft": "Circle"
+     }
     }
    },
    "hints": [
@@ -138,7 +156,22 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::Part2DObjectPython",
+     "draft": "Circle",
+     "where": {
+      "Radius": {
+       "eq": 25,
+       "tol": 0.01
+      },
+      "FirstAngle": {
+       "eq": 60,
+       "tol": 0.01
+      },
+      "LastAngle": {
+       "eq": 120,
+       "tol": 0.01
+      }
+     }
     },
     "size": [
      25,
@@ -154,7 +187,10 @@
    },
    "bind": {
     "arc25": {
-     "new": "Part::Feature"
+     "new": {
+      "type": "Part::Part2DObjectPython",
+      "draft": "Circle"
+     }
     }
    },
    "hints": [
@@ -186,7 +222,11 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::FeaturePython",
+     "draft": "Wire",
+     "shape": {
+      "edges": 1
+     }
     },
     "size": [
      2.5,
@@ -202,7 +242,13 @@
    },
    "bind": {
     "tie1": {
-     "new": "Part::Feature"
+     "new": {
+      "type": "Part::FeaturePython",
+      "draft": "Wire",
+      "shape": {
+       "edges": 1
+      }
+     }
     }
    },
    "hints": [
@@ -246,7 +292,11 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::FeaturePython",
+     "draft": "Wire",
+     "shape": {
+      "edges": 1
+     }
     },
     "size": [
      2.5,
@@ -262,7 +312,13 @@
    },
    "bind": {
     "tie2": {
-     "new": "Part::Feature"
+     "new": {
+      "type": "Part::FeaturePython",
+      "draft": "Wire",
+      "shape": {
+       "edges": 1
+      }
+     }
     }
    },
    "hints": [
@@ -295,37 +351,76 @@
   {
    "id": "upgrade",
    "say": "Select the two arcs and the two lines. Push **{Draft_Upgrade|Upgrade}**.",
-   "why": "Upgrade joins the four edges into one wire; it is no longer parametric.",
+   "why": "Upgrade joins the four edges into one closed wire that is not parametric.",
    "targets": [
     {
      "cmd": "Draft_Upgrade"
     }
    ],
    "check": {
-    "bbox": {
-     "type": "Part::Feature"
-    },
-    "size": [
-     30,
-     8.349,
-     0
-    ],
-    "min": [
-     -15,
-     21.651,
-     0
-    ],
-    "tol": 0.2
+    "all": [
+     {
+      "bbox": {
+       "type": "Part::Feature",
+       "draft": false,
+       "shape": {
+        "wires": 1,
+        "edges": 4,
+        "closed": true
+       }
+      },
+      "size": [
+       30,
+       8.349,
+       0
+      ],
+      "min": [
+       -15,
+       21.651,
+       0
+      ],
+      "tol": 0.2
+     },
+     {
+      "new": {
+       "type": "Part::Feature",
+       "draft": false,
+       "shape": {
+        "wires": 1,
+        "edges": 4,
+        "closed": true
+       }
+      }
+     },
+     {
+      "absent": {
+       "draft": "Circle"
+      }
+     },
+     {
+      "absent": {
+       "draft": "Wire"
+      }
+     }
+    ]
    },
    "bind": {
     "wire": {
-     "new": "Part::Feature"
+     "new": {
+      "type": "Part::Feature",
+      "draft": false,
+      "shape": {
+       "wires": 1,
+       "edges": 4,
+       "closed": true
+      }
+     }
     }
    },
    "hints": [
     "Hold **Ctrl** to select more than one object.",
-    "Use Upgrade in the Draft modification tools.",
-    "Four objects selected, one Upgrade: a wire."
+    "Use Upgrade in the Draft modification tools. Push it one time only.",
+    "Four objects selected, one Upgrade: one closed wire of four edges."
    ],
    "do": [
     {
@@ -352,7 +447,8 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::Part2DObjectPython",
+     "draft": "Rectangle"
     },
     "size": [
      240,
@@ -398,7 +494,14 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::Part2DObjectPython",
+     "draft": "Circle",
+     "where": {
+      "Radius": {
+       "eq": 15,
+       "tol": 0.01
+      }
+     }
     },
     "size": [
      30,
@@ -442,7 +545,15 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Feature"
+     "type": "Part::Part2DObjectPython",
+     "draft": "Polygon",
+     "where": {
+      "FacesNumber": 6,
+      "Radius": {
+       "eq": 50,
+       "tol": 0.01
+      }
+     }
     },
     "size": [
      100,
@@ -487,20 +598,44 @@
     }
    ],
    "check": {
-    "bbox": {
-     "type": "Part::FeaturePython"
-    },
-    "size": [
-     60,
-     60,
-     0
-    ],
-    "min": [
-     -30,
-     -30,
-     0
-    ],
-    "tol": 0.2
+    "all": [
+     {
+      "bbox": {
+       "type": "Part::FeaturePython",
+       "draft": "Array",
+       "where": {
+        "ArrayType": "polar",
+        "NumberPolar": 4,
+        "Angle": {
+         "eq": 360,
+         "tol": 0.01
+        }
+       }
+      },
+      "size": [
+       60,
+       60,
+       0
+      ],
+      "min": [
+       -30,
+       -30,
+       0
+      ],
+      "tol": 0.2
+     },
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "draft": "Array",
+       "where": {
+        "Base": {
+         "set": true
+        }
+       }
+      }
+     }
+    ]
    },
    "hints": [
     "Find Polar array in the array tools of the Draft workbench.",
@@ -536,6 +671,7 @@
    "check": {
     "exists": {
      "type": "App::FeaturePython",
+     "draft": "LinearDimension",
      "where": {
       "Distance": {
        "eq": 43.301,
@@ -591,6 +727,7 @@
      {
       "exists": {
        "type": "App::FeaturePython",
+       "draft": "LinearDimension",
        "where": {
         "Distance": {
          "eq": 30,
@@ -602,6 +739,7 @@
      {
       "exists": {
        "type": "App::FeaturePython",
+       "draft": "LinearDimension",
        "where": {
         "Distance": {
          "eq": 25,
@@ -613,6 +751,7 @@
      {
       "exists": {
        "type": "App::FeaturePython",
+       "draft": "LinearDimension",
        "where": {
         "Distance": {
          "eq": 15,
@@ -710,6 +849,7 @@
      {
       "exists": {
        "type": "App::FeaturePython",
+       "draft": "LinearDimension",
        "where": {
         "Distance": {
          "eq": 43.301,
@@ -721,6 +861,7 @@
      {
       "exists": {
        "type": "App::FeaturePython",
+       "draft": "LinearDimension",
        "where": {
         "Distance": {
          "eq": 15,
@@ -731,7 +872,8 @@
      },
      {
       "bbox": {
-       "type": "Part::Feature"
+       "type": "Part::Part2DObjectPython",
+       "draft": "Rectangle"
       },
       "size": [
        240,
@@ -744,6 +886,18 @@
        0
       ],
       "tol": 0.01
+     },
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "draft": "Array"
+      }
+     },
+     {
+      "exists": {
+       "type": "Part::Part2DObjectPython",
+       "draft": "Polygon"
+      }
      }
     ]
    }

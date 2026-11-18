@@ -5,9 +5,15 @@ the session's document and (when there is a window) what the window shows.
 A check is a one-key object, the key its kind:
 
     exists / absent  an object ("$pad", a name) or a query {type, in, label,
-                     where}; a string with "::" is a type ("PartDesign::Pocket");
-                     where: {property: value or {eq|lt|gt|le|ge, tol}} (a hole
-                     whose ThreadSize is "M4" and Diameter at least 4.3)
+                     where, draft, shape, count}; a string with "::" is a type
+                     ("PartDesign::Pocket"); where: {property: value or
+                     {eq|lt|gt|le|ge, tol}} (a hole whose ThreadSize is "M4"
+                     and Diameter at least 4.3); draft: the Draft object kind
+                     its Proxy gives ("Circle", "Wire", "BSpline", "Array",
+                     "LinearDimension"), or false for a plain shape with no
+                     Draft Proxy; shape: {edges: n, wires: n, closed: bool}
+                     (closed: each wire of the shape is closed); count: n
+                     (exists and new: n such objects or more)
     new              an object of a type made since the step began
     prop             {"prop": "$pad", "name": "Length", "eq"|"lt"|"gt"|"le"|"ge": n,
                      "tol": mm or deg, "unit": "mm"}
@@ -171,6 +177,46 @@ def _is_type(o, t):
         return False
 
 
+def draft_kind(o):
+    """The kind a Draft object's Proxy gives ("Circle", "Wire", "Array"), or
+    "" for an object with no Draft Proxy (a plain Part::Feature shape)."""
+    try:
+        t = getattr(getattr(o, "Proxy", None), "Type", "")
+    except Exception:
+        return ""
+    return t if isinstance(t, str) else ""
+
+
+def shape_counts(o):
+    """(edges, wires, closed) of an object's shape: closed is True when it has
+    wires and each one is closed."""
+    sh = getattr(o, "Shape", None)
+    edges = list(getattr(sh, "Edges", None) or [])
+    wires = list(getattr(sh, "Wires", None) or [])
+    closed = bool(wires)
+    for w in wires:
+        try:
+            closed = closed and bool(w.isClosed())
+        except Exception:
+            closed = False
+    return len(edges), len(wires), closed
+
+
+def _draft_ok(o, want):
+    if want is None:
+        return True
+    have = draft_kind(o)
+    return have == "" if want is False else have == want
+
+
+def _shape_ok(o, want):
+    if not want:
+        return True
+    edges, wires, closed = shape_counts(o)
+    return ((want.get("edges") is None or edges == want["edges"]) and (want.get("wires") is None or wires == want["wires"])
+            and (want.get("closed") is None or closed == bool(want["closed"])))
+
+
 def _inside(o, container):
     try:
         if container.hasObject(o):
@@ -207,7 +253,9 @@ def find(ctx, spec, only_new=False):
                  if (not q.get("type") or _is_type(o, q["type"]))
                  and (not q.get("label") or getattr(o, "Label", None) == q["label"])
                  and (inside is None or _inside(o, inside))
-                 and matches(o, q.get("where"))]
+                 and matches(o, q.get("where"))
+                 and _draft_ok(o, q.get("draft"))
+                 and _shape_ok(o, q.get("shape"))]
     if only_new:
         found = [o for o in found if o.Name not in ctx.before]
     return found
@@ -258,8 +306,28 @@ def describe(spec, doc=None):
     if q is None:
         return _label(doc, spec) if doc is not None else str(spec)
     t = words.type_words(q["type"]) if q.get("type") else "object"
+    if isinstance(q.get("draft"), str) and q["draft"]:
+        t = "Draft " + words.split_camel(q["draft"]).lower()
+    elif q.get("draft") is False:
+        t = "plain " + t + " (not a Draft object)"
+    n = q.get("count")
+    if isinstance(n, int) and not isinstance(n, bool) and n > 1:
+        t = f"{n} of: {t}"
     where = f" in {_label(doc, q['in'])}" if q.get("in") else ""
-    return t + (f" labelled {q['label']}" if q.get("label") else "") + _where_words(q.get("where")) + where
+    return t + (f" labelled {q['label']}" if q.get("label") else "") + _where_words(q.get("where")) + _shape_words(q.get("shape")) + where
+
+
+def _shape_words(shape):
+    if not shape:
+        return ""
+    out = []
+    if shape.get("wires") is not None:
+        out.append(f"{shape['wires']} wire" + ("" if shape["wires"] == 1 else "s"))
+    if shape.get("edges") is not None:
+        out.append(f"{shape['edges']} edge" + ("" if shape["edges"] == 1 else "s"))
+    if shape.get("closed") is not None:
+        out.append("closed" if shape["closed"] else "open")
+    return (", " + ", ".join(out)) if out else ""
 
 
 # ---- numbers ---------------------------------------------------------------
@@ -305,9 +373,17 @@ def compare(what, have, spec, unit=""):
 # ---- the kinds -------------------------------------------------------------
 
 
+def _wanted(spec):
+    n = spec.get("count", 1) if isinstance(spec, dict) else 1
+    return n if isinstance(n, int) and not isinstance(n, bool) and n >= 1 else 1
+
+
 def _exists(spec, ctx):
-    if find(ctx, spec):
+    got, n = find(ctx, spec), _wanted(spec)
+    if len(got) >= n:
         return PASS
+    if got:
+        return fail(f"there are {len(got)} of the {n} wanted: {describe(spec, ctx.doc)}")
     return fail(f"there is no {describe(spec, ctx.doc)} yet")
 
 
@@ -319,8 +395,11 @@ def _absent(spec, ctx):
 
 
 def _new(spec, ctx):
-    if find(ctx, spec, only_new=True):
+    got, n = find(ctx, spec, only_new=True), _wanted(spec)
+    if len(got) >= n:
         return PASS
+    if got:
+        return fail(f"{len(got)} new of the {n} wanted: {describe(spec, ctx.doc)}")
     return fail(f"no new {describe(spec, ctx.doc)} yet")
 
 
@@ -961,6 +1040,33 @@ def _is_var(x):
     return isinstance(x, str) and x.startswith("$") and x[1:].isidentifier()
 
 
+QUERY_KEYS = {"type", "in", "label", "where", "draft", "shape", "count"}
+
+
+def query_problems(q, where, count_ok=True):
+    """What is wrong with a query's draft, shape and count (where is checked
+    with its kind)."""
+    out = []
+    if "draft" in q and not (q["draft"] is False or (isinstance(q["draft"], str) and q["draft"].isidentifier())):
+        out.append(f"{where}.draft: a Draft object kind (\"Circle\", \"Wire\"), or false for a plain shape")
+    if "shape" in q:
+        sh = q["shape"]
+        if not (isinstance(sh, dict) and sh and set(sh) <= {"edges", "wires", "closed"}):
+            out.append(f"{where}.shape: {{edges: n, wires: n, closed: true or false}}")
+        else:
+            for k in ("edges", "wires"):
+                if k in sh and not (isinstance(sh[k], int) and not isinstance(sh[k], bool) and sh[k] >= 0):
+                    out.append(f"{where}.shape.{k}: a whole number")
+            if "closed" in sh and not isinstance(sh["closed"], bool):
+                out.append(f"{where}.shape.closed: true or false")
+    if "count" in q:
+        if not count_ok:
+            out.append(f"{where}.count: only exists and new take count")
+        elif not (isinstance(q["count"], int) and not isinstance(q["count"], bool) and q["count"] >= 1):
+            out.append(f"{where}.count: a whole number, 1 or more")
+    return out
+
+
 # What each kind's operand must look like (lessons.validate uses this).
 def problems(check, where, extra_kinds=()):
     out = []
@@ -988,9 +1094,12 @@ def problems(check, where, extra_kinds=()):
             out += problems(c, f"{where}.{kind}" + (f"[{i}]" if kind != "not" else ""), extra_kinds)
         return out
     if kind in ("exists", "absent", "new"):
-        if not (isinstance(v, str) and v) and not (isinstance(v, dict) and v and set(v) <= {"type", "in", "label", "where"}):
-            out.append(f"{where}.{kind}: an object, a type (\"PartDesign::Pad\") or {{type, in, label, where}}")
-        elif isinstance(v, dict) and "where" in v:
+        if not (isinstance(v, str) and v) and not (isinstance(v, dict) and v and set(v) <= QUERY_KEYS):
+            out.append(f"{where}.{kind}: an object, a type (\"PartDesign::Pad\") or {{type, in, label, where, draft, shape, count}}")
+        else:
+            if isinstance(v, dict):
+                out += query_problems(v, f"{where}.{kind}", count_ok=kind != "absent")
+        if isinstance(v, dict) and set(v) <= QUERY_KEYS and "where" in v:
             w = v["where"]
             if not (isinstance(w, dict) and w):
                 out.append(f"{where}.{kind}.where: {{property: value}}, such as {{\"ThreadSize\": \"M4\"}}")
@@ -1060,8 +1169,10 @@ def problems(check, where, extra_kinds=()):
             out.append(f"{where}.{kind}: an object")
     if kind in ("volume", "bbox"):
         v = check[kind]
-        if not ((isinstance(v, str) and v) or (isinstance(v, dict) and v and set(v) <= {"type", "in", "label", "where"})):
-            out.append(f"{where}.{kind}: an object, or a query {{type, in, label, where}}")
+        if not ((isinstance(v, str) and v) or (isinstance(v, dict) and v and set(v) <= QUERY_KEYS)):
+            out.append(f"{where}.{kind}: an object, or a query {{type, in, label, where, draft, shape}}")
+        elif isinstance(v, dict):
+            out += query_problems(v, f"{where}.{kind}", count_ok=False)
     if kind == "sketch" and "radii" in check:
         r = check["radii"]
         if not (isinstance(r, list) and r and all(_is_var(x) or (number(x) is not None and number(x) > 0) for x in r)):

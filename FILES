@@ -102,6 +102,7 @@ docs/hardening/tutor-findings.md
 docs/hardening/tutor-r4-findings.md
 docs/hooks.md
 package.xml
+tests/_draft_standin.py
 tests/_fc.py
 tests/data/agentlink_tools.txt
 tests/fakes.py
@@ -113,6 +114,7 @@ tests/test_chapters.py
 tests/test_checks.py
 tests/test_course.py
 tests/test_doc_closing.py
+tests/test_draft_lesson.py
 tests/test_engine.py
 tests/test_files.py
 tests/test_general.py

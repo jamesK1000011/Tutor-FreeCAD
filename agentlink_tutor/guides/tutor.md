@@ -24,7 +24,7 @@ done for the person. `tool_groups enable: ["tutor"]` gives `tutor`,
 - Add-ons ship their own (Workshop: hole for hardware).
 
 ## inline lessons
-`start` takes a lesson you write: `{id: "inline.x", title, steps}`, 30 steps at most; a longer job goes in batches (`setup: {after: <the batch before>}`). Each step: `{id, say, why?, targets, do: [{tool, args}], check}`. The check reads what was made, never how: `new`, `exists {type, where}`, `prop`, `volume`, `bbox {size, min}`, `sketch {closed, full, dims}`, `expr {uses}`. `volume` and `bbox` take a query (`{type: "Part::Feature"}`) when the object's name is not known. An inline lesson has no pictures and no files.
+`start` takes a lesson you write: `{id: "inline.x", title, steps}`, 30 steps at most; a longer job goes in batches (`setup: {after: <the batch before>}`). Each step: `{id, say, why?, targets, do: [{tool, args}], check}`. The check reads what was made, never how: `new`, `exists {type, where, draft, shape, count}` (draft: the Draft kind, such as `Circle`, or false for a plain shape; shape: `{edges, wires, closed}`), `prop`, `volume`, `bbox {size, min}`, `sketch {closed, full, dims}`, `expr {uses}`. `volume` and `bbox` take a query (`{type: "Part::Feature"}`) when the object's name is not known. An inline lesson has no pictures and no files.
 
 ## traps
 - A step only the window can tell (a workbench switch) stays `pending` without a window; its `do` needs the window.
