@@ -133,7 +133,10 @@ class Guided(unittest.TestCase):
         w, c = make(timer=clock)
         c.start("guided")
         act(w, c, "workbench", {})
-        c.act("hint")  # any move drops the waiting advance
+        c.act("hint")  # finding 63: the waiting advance is done first, the hint is the next step's
+        self.assertEqual((c.e.step["id"], c.e.hint), ("pick", 1))
+        act(w, c, "selection", {"objects": ["Sketch"]})
+        c.act("back")  # back drops the waiting advance
         clock.flush()
         self.assertEqual(c.e.step["id"], "bench")
         c.act("next"), c.act("next")
@@ -166,6 +169,75 @@ class Guided(unittest.TestCase):
         self.assertEqual(c.e.step["id"], "pad")  # the detour passed: back where it came from
         act(w, c, "pd_pad", {"sketch": "Sketch", "length": 10})
         self.assertEqual(c.e.step["id"], "length")
+
+
+class BatchedDo(unittest.TestCase):
+    """Finding 63: inside a batch the window thread is held, so the 600 ms
+    advance after a pass cannot fire between calls. The next call does it
+    first; a passed step's calls never run again."""
+
+    def test_do_do_do_walks_the_steps(self):
+        clock = Clock()  # never flushed: as inside one batch
+        w, c = make(timer=clock)
+        c.start("guided")
+        seen = []
+        for _ in range(4):
+            st = c.act("do")
+            seen.append((st["id"], st["check"]))
+        self.assertEqual(seen, [("bench", "pass"), ("pick", "pass"), ("pad", "pass"), ("length", "pass")])
+        st = c.act("next")
+        self.assertEqual(st["id"], "see")
+
+    def test_a_passed_step_is_not_done_again(self):
+        clock = Clock()
+        w, c = make(timer=clock)
+        c.start("guided")
+        c.act("do"), c.act("do")  # bench, pick
+        c.act("do")  # pad: its calls run once
+        pads = [n for n, _ in w.calls if n == "pd_pad"]
+        self.assertEqual(len(pads), 1)
+        clock.due.clear()  # the advance timer lost (the window thread was held)
+        c._token = None
+        st = c.act("do")  # pad passed: on to length, whose do this is
+        self.assertEqual((st["id"], st["check"]), ("length", "pass"))
+        self.assertEqual(len([n for n, _ in w.calls if n == "pd_pad"]), 1)
+
+    def test_two_calls_closer_than_the_timer(self):
+        clock = Clock()
+        w, c = make(timer=clock)
+        c.start("guided")
+        self.assertEqual(c.act("do")["id"], "bench")
+        self.assertEqual(c.act("do")["id"], "pick")  # the second call: the next step, not bench again
+        clock.flush()  # bench's late timer does nothing; pick's own goes on once
+        self.assertEqual(c.e.step["id"], "pad")
+
+    def test_next_and_skip_after_a_pass_go_on_once(self):
+        clock = Clock()
+        w, c = make(timer=clock)
+        c.start("guided")
+        c.act("do")
+        self.assertEqual(c.act("next")["id"], "pick")
+        c.act("do")
+        st = c.act("skip")
+        self.assertEqual((st["id"], st["skipped"] if "skipped" in st else []), ("pad", []))
+
+    def test_a_step_undone_meanwhile_stays(self):
+        clock = Clock()
+        w, c = make(timer=clock)
+        c.start("guided")
+        c.act("next"), c.act("next")
+        c.act("do")  # pad
+        w("history_undo", {})
+        st = c.act("hint")
+        self.assertEqual(st["id"], "pad")
+
+    def test_demo_do_on_a_passed_step_runs_nothing(self):
+        w, c = make()
+        c.start("demo")
+        c.act("do")
+        n = len(w.calls)
+        st = c.act("do")
+        self.assertEqual((st["id"], len(w.calls)), ("bench", n))
 
 
 class Demo(unittest.TestCase):

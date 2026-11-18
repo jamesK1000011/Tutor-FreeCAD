@@ -7,6 +7,11 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Fixed (18 Nov 2026: finding 63)
+
+- Guided mode: a pass waits 0.6 s before the lesson goes on. A batch holds the window thread, so that timer did not fire between its calls: do, do, do answered step 1/8 each time. Now the next tutor call (next, skip, hint or do) does a waiting advance first; next and skip after a pass go on once, not twice; back and stop drop it. A do on a passed step never runs its calls again (guided: it goes on to the next step and does that one; demo: nothing). Fixed on main, not yet seen live.
+- Film hinge 1.0.3: step 1 says what the person sees when the arc is made.
+
 ### Added (18 Nov 2026: lesson library, T5 and T6 finished)
 
 - A lesson library adapted from FreeCAD wiki tutorials (CC BY 3.0, "FreeCAD wiki contributors", each lesson's `credit` block names its page, licence and link and says it is adapted): Basic Part Design (21 steps, the part of 18465.69 mm³), Basic TechDraw (10 steps, chapter 2 of the same course `wiki-part-to-drawing`: it builds the part through chapter 1's calls when the document does not hold it, so it needs no example file and no fixture), the film hinge of the Sketcher examples (8 steps, a length bound to `.Constraints.neutral_radius * pi`), Basic Attachment (12 steps: an attachment offset, a pad from a named constraint, a sketch moved to another plane and hooked on by its offset) and Whiffle Ball (19 steps, Part booleans and turned boxes). Words in Simplified Technical English; eleven of the wiki's pictures beside them (`agentlink_tutor/lessons/pictures/`).
