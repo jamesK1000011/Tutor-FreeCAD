@@ -82,6 +82,16 @@ def step_view(lesson, step):
     return v if v in VIEWS else None
 
 
+def wants_quiet(check):
+    """True when a step's check asks for nothing in edit or no panel open
+    ({editing: null} or {task_open: null}, alone or in an all)."""
+    if not isinstance(check, dict):
+        return False
+    if ("editing" in check and check["editing"] is None) or ("task_open" in check and check["task_open"] is None):
+        return True
+    return any(wants_quiet(c) for c in check.get("all") or ())
+
+
 def task_targets(step):
     """True when some of the step's targets are in a task panel."""
     return any(isinstance(t, dict) and "task" in t for t in (step or {}).get("targets") or ())
@@ -412,6 +422,15 @@ class Controller:
             if self.ui is not None and task_targets(self.e.step):
                 self.ui.close_task()  # the panel opened to show it; the do sets the value
             self.e.do()
+            if not self.e.passed and self.ui is not None and wants_quiet(self.e.step.get("check")):
+                # The step ends with Close or OK (its check wants no sketch
+                # in edit, no panel open): the person's last push, done
+                # for them too. The window's echo had opened the sketch.
+                try:
+                    self.ui.settle(self.e._doc())
+                except Exception:  # noqa: BLE001
+                    pass
+                self.e.check()
         finally:
             self.busy = False
         if self.e.passed:

@@ -18,6 +18,7 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ### Changed
 
+- Demo and "Do it for me" end a step whose check wants no sketch in edit and no panel open (the step says Push Close or OK) by closing it, as the person would: live on FreeCAD 1.1.3 the window's echo left each new sketch open, so basic-part-design step 5 failed "still open for editing" and Next did its constraints again (refused as redundant), and film-hinge-sketch ended the same way. The film hinge's Close moves to step 7 (flex), its check with it.
 - The Tutor tab's keys are Alt+Shift with a key (Alt+Shift+Right Next, Alt+Shift+H Hint …): Alt+Return is FreeCAD's Properties and Alt with a menu's letter opens that menu on Windows and Linux (Alt+H Help, Alt+D …). `data/freecad_keys.json` lists FreeCAD 1.1.3's own.
 - A chapter replayed for a later one leaves out the steps only the window tells (a workbench switch): they change no document, and without a window they were refused.
 - "Do it for me" binds what its calls made even when the step's check cannot pass just now, so the next steps' calls find it.

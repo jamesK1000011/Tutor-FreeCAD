@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.film-hinge-sketch",
- "version": "1.0.0",
+ "version": "1.0.1",
  "title": "Sketcher example: the basic sketch of a film hinge",
  "summary": "Draw the master sketch of a film hinge: an arc for the closed lid, a line for the open one, its length an expression of the arc's radius.",
  "level": "intermediate",
@@ -370,20 +370,32 @@
   },
   {
    "id": "flex",
-   "say": "Double-click **neutral_radius** in the constraint list. Set it to 8 mm. Look at the line: its length follows.",
+   "say": "Double-click **neutral_radius** in the constraint list. Set it to 8 mm. Look at the line: its length follows. Push **Close**.",
    "targets": [
     {
      "task": "Constraints"
+    },
+    {
+     "task": {
+      "button": "close"
+     }
     }
    ],
    "check": {
-    "sketch": "$sketch",
-    "full": true,
-    "dims": [
-     "$r2",
-     25.1327
-    ],
-    "tol": 0.01
+    "all": [
+     {
+      "sketch": "$sketch",
+      "full": true,
+      "dims": [
+       "$r2",
+       25.1327
+      ],
+      "tol": 0.01
+     },
+     {
+      "editing": null
+     }
+    ]
    },
    "hints": [
     "The Tasks panel lists the constraints by name.",
@@ -407,12 +419,10 @@
   },
   {
    "id": "see",
-   "say": "Push **Close**. Done: the basic sketch of a film hinge.",
+   "say": "Done: the basic sketch of a film hinge.",
    "targets": [
     {
-     "task": {
-      "button": "close"
-     }
+     "tree": "$sketch"
     }
    ],
    "check": {
