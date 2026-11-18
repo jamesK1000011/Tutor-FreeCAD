@@ -39,6 +39,9 @@ HOLD_MS = 10000  # the last step's rings stay this long after the lesson is done
 VIEWS = ("isometric", "front", "top", "right", "left", "rear", "bottom")
 SPATIAL = ("face", "edge", "sub")
 ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do", "explain")
+# The actions that first do the advance a pass left waiting (_flush_advance).
+# back and stop drop it; status and explain only read or set a preference.
+FLUSH_ACTIONS = ("next", "skip", "hint", "do")
 NO_WINDOW = "no window: nothing ringed"
 
 
@@ -390,6 +393,12 @@ class Controller:
             return self.set_explain(on)
         if action not in ACTIONS:
             raise engine_mod.TutorError(f"action: one of {', '.join(ACTIONS)}")
+        went_on = False
+        if action in FLUSH_ACTIONS:
+            # A pass waits ADVANCE_MS before the lesson goes on. A batch
+            # holds the window thread, so that timer cannot fire between
+            # its calls: the waiting advance is done first, here.
+            went_on = self._flush_advance()
         if action != "status":
             self._token = None
         if mode is not None and mode != self.e.mode:
@@ -403,16 +412,26 @@ class Controller:
         elif action == "back":
             self.e.back()
         elif action == "skip":
-            self.e.skip()
+            if not went_on:  # the pass already took the lesson on
+                self.e.skip()
         elif action == "hint":
             self.e.raise_hint()
         elif action == "do":
             self.acted = True
-            self._do()
-            if self.e.passed and self.e.mode == "guided":
-                self._advance_later()
+            if not went_on:
+                self.e._need_step()  # no lesson running: refused as before
+            if self.stepping and self.e.passed and self.e.mode == "guided":
+                # Passed, and its advance no longer waits: on to the next
+                # step, whose do this is. A passed step's calls never run again.
+                self.passed_note = self.e.position()
+                self.e.next()
+            if self.stepping and not self.e.passed:
+                self._do()
+                if self.e.passed and self.e.mode == "guided":
+                    self._advance_later()
         elif action == "next":
-            self._next()
+            if not went_on:  # the pass already took the lesson on
+                self._next()
         self._changed()
         return self.state(detail=detail)
 
@@ -497,6 +516,21 @@ class Controller:
             if e.mode == "guided":
                 self._advance_later()
         self._changed()
+
+    def _flush_advance(self):
+        """The advance a pass left waiting (_advance_later), done now. True
+        when the lesson went on to the next step. The check runs again
+        first: a step undone meanwhile stays."""
+        tok, self._token = self._token, None
+        if tok is None or not self.stepping or not self.e.passed:
+            return False
+        at = self.e.index
+        if self.e.check().get("check") != "pass" or self.e.index != at:
+            self._changed()
+            return False
+        self.e.next()
+        self._changed()
+        return True
 
     def _advance_later(self):
         tok, at = object(), self.e.index

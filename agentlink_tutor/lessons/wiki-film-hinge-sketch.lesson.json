@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.film-hinge-sketch",
- "version": "1.0.2",
+ "version": "1.0.3",
  "title": "Sketcher example: the basic sketch of a film hinge",
  "summary": "Draw the master sketch of a film hinge: an arc for the closed lid, a line for the open one, its length an expression of the arc's radius.",
  "level": "intermediate",
@@ -61,7 +61,7 @@
  "steps": [
   {
    "id": "arc",
-   "say": "Double-click **Basic_sketch** in the tree to open it. Push **{Sketcher_CreateArc|Arc}**. Click the centre. Click the top point. Click the bottom point on the right side.",
+   "say": "Double-click **Basic_sketch** in the tree to open it. Push **{Sketcher_CreateArc|Arc}**. Click the centre. Click the top point. Click the bottom point on the right side. Look at the sketch: the arc is on the right of the centre.",
    "why": "The arc is the strip of the hinge with the lid shut.",
    "targets": [
     {

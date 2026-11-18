@@ -45,7 +45,8 @@ switchable at any step:
 - **Guided**: you do each step. Its controls are ringed, and the step is
   checked as you work (after a recompute, an undo, a selection, a workbench
   switch, or a call of the agent's); 0.6 s after it passes the lesson goes
-  on by itself. Hint climbs a ladder: a nudge, then only the exact field
+  on by itself. The next tutor call goes on first when that pass still
+  waits, so a batch of do, do, do walks the steps. Hint climbs a ladder: a nudge, then only the exact field
   ringed, then the exact value, then "Do it for me".
 - **Demo**: Claude does each step with the ordinary tools while you watch
   (each call is one undo step), the callout saying what and why, and waits
