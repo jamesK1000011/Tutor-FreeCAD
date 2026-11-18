@@ -12,6 +12,7 @@ All notable changes to Tutor for FreeCAD. The format follows
 - Finding 76: a demo Next on a step whose check failed after its do ran the do again (the crank of crank-slider-parts grew on each Next). Now the check runs again; the calls do not. Test: `test_next_after_a_failed_do_runs_nothing_again`. Fixed on main, not yet seen live.
 - crank-slider-parts 1.0.1: the crank and link-rod boxes have a tolerance of 0.2 mm (FreeCAD read the crank as 44.891 mm, not 45 mm).
 - fem-cantilever 1.0.1: the load step wants a result and the 500 MN force, not a new result object (the second fea_solve made no new one).
+- draft-tutorial 1.0.2: the two tie lines end exactly on the arc ends (the arc ends worked out from centre, radius and angle to full precision). With six decimals the outer arc stayed apart and Upgrade made two wires.
 - draft-tutorial 1.0.1 and surface-examples 1.0.1: the line, curve and box checks take any shape object (Part::Feature and types made from it), not only Part::Part2DObjectPython; the circle, wire and array boxes have a tolerance of 0.2 mm.
 
 ### Added (18 Nov 2026: lesson library, one lesson per workbench)
