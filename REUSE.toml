@@ -200,3 +200,81 @@ path = "agentlink_tutor/lessons/wiki-crank-slider-parts.lesson.json"
 precedence = "override"
 SPDX-FileCopyrightText = "FreeCAD wiki contributors, Assembly Workbench: Example crank and slider (https://wiki.freecad.org/Assembly_Workbench), adapted"
 SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-arch-house.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Arch tutorial (https://wiki.freecad.org/Arch_tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Arch_tutorial_04.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Arch tutorial (https://wiki.freecad.org/Arch_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Arch_tutorial_23.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Arch tutorial (https://wiki.freecad.org/Arch_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Arch_tutorial_08.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Arch tutorial (https://wiki.freecad.org/Arch_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-draft-tutorial.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Draft tutorial (https://wiki.freecad.org/Draft_tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/01_Dr01_Draft_Arc_profile.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Draft tutorial (https://wiki.freecad.org/Draft_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/02_Dr01_Draft_Rectangle_circle_polygon.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Draft tutorial (https://wiki.freecad.org/Draft_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/03_Dr01_Draft_PolarArray.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Draft tutorial (https://wiki.freecad.org/Draft_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/04_Dr01_Draft_Dimension.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Draft tutorial (https://wiki.freecad.org/Draft_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-fem-cantilever.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, FEM CalculiX Cantilever 3D (https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/FEM_example01_pic13.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, FEM CalculiX Cantilever 3D (https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/FEM_example01_pic15.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, FEM CalculiX Cantilever 3D (https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/FEM_example01_pic16.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, FEM CalculiX Cantilever 3D (https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D)"
+SPDX-License-Identifier = "CC-BY-3.0"

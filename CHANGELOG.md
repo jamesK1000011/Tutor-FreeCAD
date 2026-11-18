@@ -10,6 +10,7 @@ All notable changes to Tutor for FreeCAD. The format follows
 ### Added (18 Nov 2026: lesson library, one lesson per workbench)
 
 - Basic Sketcher (11 steps: the five-armed star, fully constrained, padded to 24247.5 mm³), the crank and slider of the Assembly workbench page (course `wiki-crank-slider`: chapter 1 makes the four parts in Part, 6 steps; chapter 2 the assembly, grounded, with revolute, slider, revolute and cylindrical joints, 8 steps) and Configuration Tables (8 steps: a hex nut bound to a configuration table, M10 1203.53 mm³, M12 1807.6 mm³). Each step's do is the hardening model's calls that ran live (sketcher-model.json, asmtd-assembly-model.json, sheetfem-sheet-model.json); the wiki's pictures beside them, each listed in REUSE.toml and looked at (images.txt).
+- FEM CalculiX Cantilever 3D (5 steps: the analysis of the 8000 mm steel beam, solved, the load changed to 500 MN along x and solved again), the Draft tutorial (13 steps: steps 3 to 13 of the page, from two arcs to a polar array and four dimensions) and a small house after the Arch tutorial (11 steps in BIM: walls, two doors and two windows that cut them, a slab, a column, a roof, two levels in a building). From sheetfem-fem-model.json, draftmesh-draft-model.json and bimcam-bim-model.json.
 - Test stand-in: what the Draft, Mesh, Points and Surface tools make (`MAKES`), so a do's bindings are tested for every lesson.
 
 ### Fixed (18 Nov 2026: finding 63)

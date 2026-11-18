@@ -21,6 +21,7 @@ Lesser General Public License 2.1 or later: see LICENSE-Code.
 
 The adapted lessons and their source pages:
 
+  wiki-arch-house                    https://wiki.freecad.org/Arch_tutorial
   wiki-basic-attachment              https://wiki.freecad.org/Basic_Attachment_Tutorial
   wiki-basic-part-design             https://wiki.freecad.org/Basic_Part_Design_Tutorial
   wiki-basic-sketcher                https://wiki.freecad.org/Basic_Sketcher_Tutorial
@@ -28,6 +29,8 @@ The adapted lessons and their source pages:
   wiki-configuration-tables          https://wiki.freecad.org/Configuration_Tables
   wiki-crank-slider-assembly         https://wiki.freecad.org/Assembly_Workbench
   wiki-crank-slider-parts            https://wiki.freecad.org/Assembly_Workbench
+  wiki-draft-tutorial                https://wiki.freecad.org/Draft_tutorial
+  wiki-fem-cantilever                https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D
   wiki-film-hinge-sketch             https://wiki.freecad.org/Sketcher_Examples
   wiki-whiffle-ball                  https://wiki.freecad.org/Whiffle_Ball_tutorial
 

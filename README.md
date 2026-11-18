@@ -191,6 +191,9 @@ page, "FreeCAD wiki contributors", licence, link, adapted):
 | `wiki.crank-slider-parts` | [Assembly Workbench: Example crank and slider](https://wiki.freecad.org/Assembly_Workbench) | 6 | the four parts, each box and place checked (crank 2607.39 mm³, link rod 2450.27 mm³) |
 | `wiki.crank-slider-assembly` | [Assembly Workbench: Example crank and slider](https://wiki.freecad.org/Assembly_Workbench) | 8 | an assembly with Base grounded and a revolute, a slider, a revolute and a cylindrical joint |
 | `wiki.configuration-tables` | [Configuration Tables](https://wiki.freecad.org/Configuration_Tables) | 8 | a hex nut bound to a configuration table: 1203.53 mm³ as M10, 1807.6 mm³ as M12 |
+| `wiki.fem-cantilever` | [FEM CalculiX Cantilever 3D](https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D) | 5 | a CalculiX analysis (material, fixed, force, mesh) solved twice, the second time with 500 MN along x |
+| `wiki.draft-tutorial` | [Draft tutorial](https://wiki.freecad.org/Draft_tutorial) | 13 | a frame, a hexagon, a circle, a polar array of the profile, dimensions of 43.301, 30, 25 and 15 mm |
+| `wiki.arch-house` | [Arch tutorial](https://wiki.freecad.org/Arch_tutorial) | 11 | walls of 16.1275 m³ after a door and two windows, an inner wall and door, a slab, a column, a roof, two levels in a building |
 
 Basic Part Design and Basic TechDraw are the two chapters of one course
 (`wiki-part-to-drawing`): the TechDraw lesson goes on from the part, and
