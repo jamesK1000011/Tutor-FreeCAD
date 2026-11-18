@@ -278,3 +278,63 @@ path = "agentlink_tutor/lessons/pictures/FEM_example01_pic16.png"
 precedence = "override"
 SPDX-FileCopyrightText = "FreeCAD wiki contributors, FEM CalculiX Cantilever 3D (https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D)"
 SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-cam-walkthrough.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, CAM Walkthrough for the Impatient (https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Path-JobCreationDialog.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, CAM Walkthrough for the Impatient (https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Path-TreeWithJob.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, CAM Walkthrough for the Impatient (https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Path-SquarePocketModel.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, CAM Walkthrough for the Impatient (https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-mesh-to-part.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Mesh to Part (https://wiki.freecad.org/Mesh_to_Part), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-points-workbench.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Points Workbench (https://wiki.freecad.org/Points_Workbench), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-surface-examples.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Surface GeomFillSurface, Surface Sections and Surface BlendCurve (https://wiki.freecad.org/Surface_GeomFillSurface), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Surface_GeomFillSurface_4_edges_example.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Surface GeomFillSurface, Surface Sections and Surface BlendCurve (https://wiki.freecad.org/Surface_GeomFillSurface)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Surface_Sections_example.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Surface Sections (https://wiki.freecad.org/Surface_Sections)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Surface_BlendCurve_G3_example.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Surface BlendCurve (https://wiki.freecad.org/Surface_BlendCurve)"
+SPDX-License-Identifier = "CC-BY-3.0"

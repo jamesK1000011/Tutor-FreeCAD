@@ -1,0 +1,540 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.surface-examples",
+ "version": "1.0.0",
+ "title": "Surface workbench examples",
+ "summary": "Fill a loop of four curves with a surface, make a surface through four sections, and join two curves with a blend curve.",
+ "level": "intermediate",
+ "minutes": 30,
+ "tags": [
+  "surface",
+  "bspline",
+  "draft",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "SurfaceWorkbench",
+   "DraftWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Surface GeomFillSurface, Surface Sections and Surface BlendCurve",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Surface_GeomFillSurface",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Made from the examples of three pages: Surface_GeomFillSurface, Surface_Sections and Surface_BlendCurve (https://wiki.freecad.org/Surface_Sections, https://wiki.freecad.org/Surface_BlendCurve), with their curves. The checks read the type of each surface."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "SurfaceExamples"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Surface** workbench.",
+   "targets": [
+    {
+     "wb": "SurfaceWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "SurfaceWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Surface."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "SurfaceWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "edges",
+   "say": "Draw four B-spline curves that meet end to end in a closed loop.",
+   "why": "Four edges in a loop give the boundary of one surface.",
+   "explain": "The page gives the curves as Python. Two corners are at x -140 mm, y -100 mm and x 175 mm, y -108 mm. Two corners are at x 200 mm, y 101 mm and x -135 mm, y 107 mm, z 70 mm. Each curve has two or three points between its ends.",
+   "targets": [
+    {
+     "cmd": "Draft_BSpline"
+    }
+   ],
+   "check": {
+    "new": "Part::Part2DObjectPython"
+   },
+   "hints": [
+    "Use the B-spline tool of the Draft workbench.",
+    "Start each curve on the end of the curve before it.",
+    "Four curves; the last one ends on the start of the first."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        -140,
+        -100,
+        0
+       ],
+       [
+        -55,
+        -91,
+        65
+       ],
+       [
+        35,
+        -85,
+        -5
+       ],
+       [
+        175,
+        -108,
+        0
+       ]
+      ],
+      "face": false,
+      "name": "G1"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        175,
+        -108,
+        0
+       ],
+       [
+        217,
+        -45,
+        55
+       ],
+       [
+        217,
+        35,
+        -15
+       ],
+       [
+        200,
+        101,
+        0
+       ]
+      ],
+      "face": false,
+      "name": "G2"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        200,
+        101,
+        0
+       ],
+       [
+        33,
+        121,
+        55
+       ],
+       [
+        0,
+        91,
+        15
+       ],
+       [
+        -80,
+        121,
+        -40
+       ],
+       [
+        -135,
+        107,
+        70
+       ]
+      ],
+      "face": false,
+      "name": "G3"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        -135,
+        107,
+        70
+       ],
+       [
+        -140,
+        0,
+        45
+       ],
+       [
+        -140,
+        -100,
+        0
+       ]
+      ],
+      "face": false,
+      "name": "G4"
+     }
+    }
+   ]
+  },
+  {
+   "id": "fill",
+   "say": "Push **{Surface_GeomFillSurface|Fill boundary curves}**. Select the four curves. Push **OK**.",
+   "why": "The surface stretches across the four boundary curves.",
+   "picture": {
+    "file": "pictures/Surface_GeomFillSurface_4_edges_example.png",
+    "alt": "A green surface that fills a loop of four curved edges."
+   },
+   "targets": [
+    {
+     "cmd": "Surface_GeomFillSurface"
+    }
+   ],
+   "check": {
+    "new": "Surface::GeomFillSurface"
+   },
+   "bind": {
+    "patch": {
+     "new": "Surface::GeomFillSurface"
+    }
+   },
+   "hints": [
+    "Select the curves in the view while the panel is open.",
+    "Add all four edges to the list in the Tasks panel.",
+    "Four boundary edges, fill type Stretched."
+   ],
+   "do": [
+    {
+     "tool": "surface_boundary",
+     "args": {
+      "edges": [
+       "G1",
+       "G2",
+       "G3",
+       "G4"
+      ],
+      "name": "WikiPatch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "profiles",
+   "say": "Draw four section curves at different heights: two half circles and two B-splines above them.",
+   "explain": "The page's example has four curves. A half circle of radius 50 mm is at z 0 mm. A half circle of radius 30 mm is at z 25 mm. B-splines are at z 50 mm and z 100 mm.",
+   "targets": [
+    {
+     "cmd": "Draft_Arc"
+    },
+    {
+     "cmd": "Draft_BSpline"
+    }
+   ],
+   "check": {
+    "new": "Part::Part2DObjectPython"
+   },
+   "hints": [
+    "Use the arc and B-spline tools of the Draft workbench.",
+    "Put each curve higher than the one before.",
+    "Half circles r 50 mm at z = 0 mm and r 30 mm at z = 25 mm. B-splines at z = 50 mm and z = 100 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "arc",
+      "radius": 50,
+      "start": 0,
+      "end": 180,
+      "name": "S1"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "arc",
+      "radius": 30,
+      "start": 0,
+      "end": 180,
+      "at": [
+       0,
+       0,
+       25
+      ],
+      "name": "S2"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        18,
+        -10,
+        50
+       ],
+       [
+        12,
+        10,
+        50
+       ],
+       [
+        -12,
+        10,
+        50
+       ],
+       [
+        -18,
+        -10,
+        50
+       ]
+      ],
+      "face": false,
+      "name": "S3"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        15,
+        -20,
+        100
+       ],
+       [
+        0,
+        6,
+        100
+       ],
+       [
+        -15,
+        -20,
+        100
+       ]
+      ],
+      "face": false,
+      "name": "S4"
+     }
+    }
+   ]
+  },
+  {
+   "id": "sections",
+   "say": "Push **{Surface_Sections|Sections}**. Select the four section curves from the bottom to the top. Push **OK**.",
+   "why": "The surface goes through each section curve in turn.",
+   "picture": {
+    "file": "pictures/Surface_Sections_example.png",
+    "alt": "A green surface that goes through four section curves, from a wide arch to a small one."
+   },
+   "targets": [
+    {
+     "cmd": "Surface_Sections"
+    }
+   ],
+   "check": {
+    "new": "Surface::Sections"
+   },
+   "bind": {
+    "skin": {
+     "new": "Surface::Sections"
+    }
+   },
+   "hints": [
+    "The order of the curves sets the order of the surface.",
+    "Add the curves to the list in the Tasks panel.",
+    "Four sections, from the bottom curve to the top curve."
+   ],
+   "do": [
+    {
+     "tool": "surface_sections",
+     "args": {
+      "sections": [
+       "S1",
+       "S2",
+       "S3",
+       "S4"
+      ],
+      "name": "WikiSections"
+     }
+    }
+   ]
+  },
+  {
+   "id": "ends",
+   "say": "Draw two B-spline curves whose ends are near each other.",
+   "explain": "The page's example has two curves. One goes from x -20 mm, y -20 mm up to x -18 mm, y 25 mm. One goes from x 60 mm, y 26 mm down to x 33 mm, y -20 mm.",
+   "targets": [
+    {
+     "cmd": "Draft_BSpline"
+    }
+   ],
+   "check": {
+    "new": "Part::Part2DObjectPython"
+   },
+   "hints": [
+    "Use the B-spline tool of the Draft workbench.",
+    "Leave a gap between the two curves.",
+    "Two curves in the XY plane, with a gap of about 50 mm between their lower ends."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        -20,
+        -20,
+        0
+       ],
+       [
+        -20,
+        -8,
+        0
+       ],
+       [
+        -17,
+        7,
+        0
+       ],
+       [
+        -18,
+        25,
+        0
+       ]
+      ],
+      "face": false,
+      "name": "B1"
+     }
+    },
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "bspline",
+      "points": [
+       [
+        60,
+        26,
+        0
+       ],
+       [
+        37,
+        4,
+        0
+       ],
+       [
+        33,
+        -20,
+        0
+       ]
+      ],
+      "face": false,
+      "name": "B2"
+     }
+    }
+   ]
+  },
+  {
+   "id": "blend",
+   "say": "Push **{Surface_BlendCurve|Blend curve}**. Select an end of each curve.",
+   "why": "A blend curve joins two edges smoothly at their ends.",
+   "picture": {
+    "file": "pictures/Surface_BlendCurve_G3_example.png",
+    "alt": "A black blend curve that joins the ends of two white curves smoothly."
+   },
+   "targets": [
+    {
+     "cmd": "Surface_BlendCurve"
+    }
+   ],
+   "check": {
+    "new": "Surface::FeatureBlendCurve"
+   },
+   "bind": {
+    "bridge": {
+     "new": "Surface::FeatureBlendCurve"
+    }
+   },
+   "hints": [
+    "Select the two end points that face each other.",
+    "Change the size of each end in the Property view.",
+    "Start: the lower end of the first curve. End: the lower end of the second curve. Sizes -5 mm."
+   ],
+   "do": [
+    {
+     "tool": "surface_blend",
+     "args": {
+      "start": {
+       "edge": "B1",
+       "at": 0,
+       "size": -5
+      },
+      "end": {
+       "edge": "B2",
+       "at": 1,
+       "size": -5
+      },
+      "name": "WikiBlend"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a surface from four boundary curves, a surface through four sections and a blend curve.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$patch",
+      "solid": false
+     },
+     {
+      "valid": "$skin",
+      "solid": false
+     },
+     {
+      "valid": "$bridge",
+      "solid": false
+     }
+    ]
+   }
+  }
+ ]
+}

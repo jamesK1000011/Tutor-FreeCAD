@@ -1,0 +1,333 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.cam-walkthrough",
+ "version": "1.0.0",
+ "title": "CAM walkthrough for the impatient",
+ "summary": "Make a CAM job for a block with a pocket: one tool, a profile and a pocket operation, then G-code from a post processor.",
+ "level": "basic",
+ "minutes": 20,
+ "tags": [
+  "cam",
+  "job",
+  "gcode",
+  "milling",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "CAMWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "CAM Walkthrough for the Impatient",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The page gives no sizes: the lesson makes a 60 mm x 40 mm x 20 mm Part block with a 30 mm x 20 mm x 8 mm pocket, not a Part Design body. The tool is a 5 mm end mill. The checks read the job, its tool and its operations."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "CamWalkthrough"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "box",
+     "size": [
+      60,
+      40,
+      20
+     ],
+     "name": "Block"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "box",
+     "size": [
+      30,
+      20,
+      8
+     ],
+     "at": [
+      15,
+      10,
+      12
+     ],
+     "name": "Pocket tool"
+    }
+   },
+   {
+    "tool": "part_boolean",
+    "args": {
+     "op": "cut",
+     "base": "Block",
+     "tools": [
+      "Pocket tool"
+     ]
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **CAM** workbench.",
+   "targets": [
+    {
+     "wb": "CAMWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "CAMWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: CAM."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "CAMWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "job",
+   "say": "Select **Block**. Push **{CAM_Job|Job}**. Push **OK**. Set the tool to number **4**, its feeds to 2 mm/s and its spindle to **2000 rpm**.",
+   "why": "The job holds the model, the stock, the tools and the operations.",
+   "picture": {
+    "file": "pictures/Path-JobCreationDialog.png",
+    "alt": "The Job dialog: the base model and the template to start from."
+   },
+   "targets": [
+    {
+     "cmd": "CAM_Job"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "Path::FeaturePython",
+       "where": {
+        "Operations": {
+         "set": true
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "Path::FeaturePython",
+       "where": {
+        "ToolNumber": 4,
+        "SpindleSpeed": {
+         "eq": 2000,
+         "tol": 0.5
+        }
+       }
+      }
+     }
+    ]
+   },
+   "hints": [
+    "Find Job in the CAM toolbar.",
+    "Edit the default tool controller on the Tools tab of the job.",
+    "Tool number **4**, horizontal and vertical feed 2 mm/s, spindle **2000 rpm**, diameter 5 mm."
+   ],
+   "do": [
+    {
+     "tool": "cam_job",
+     "args": {
+      "body": "Block",
+      "tool": {
+       "diameter": 5,
+       "feed": 120,
+       "plunge": 120,
+       "rpm": 2000,
+       "number": 4
+      },
+      "stock": {
+       "margin": 1,
+       "top": 1,
+       "bottom": 0
+      },
+      "name": "Walkthrough"
+     }
+    }
+   ]
+  },
+  {
+   "id": "profile",
+   "say": "Push **{CAM_Profile|Profile}**. Keep the default values. Push **OK**.",
+   "why": "The profile cuts round the outside of the block.",
+   "picture": {
+    "file": "pictures/Path-TreeWithJob.png",
+    "alt": "The tree with the job: its tool, its operations, the base model and the stock."
+   },
+   "targets": [
+    {
+     "cmd": "CAM_Profile"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "Path::FeaturePython",
+     "where": {
+      "Side": "Outside"
+     }
+    }
+   },
+   "hints": [
+    "Find Profile in the CAM toolbar.",
+    "The default side is the outside of the model.",
+    "Profile, outside, default depths."
+   ],
+   "do": [
+    {
+     "tool": "cam_op",
+     "args": {
+      "kind": "profile",
+      "side": "outside",
+      "name": "Profile"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pocket",
+   "say": "Select the floor of the pocket. Push **{CAM_Pocket_Shape|Pocket Shape}**. Set the step over to 50 % and the pattern to **Offset**. Push **OK**.",
+   "why": "The pocket operation clears the inside of the pocket down to its floor.",
+   "targets": [
+    {
+     "cmd": "CAM_Pocket_Shape"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "Path::FeaturePython",
+     "where": {
+      "StepOver": {
+       "eq": 50,
+       "tol": 0.5
+      },
+      "ClearingPattern": "Offset"
+     }
+    }
+   },
+   "hints": [
+    "Select the flat face at the bottom of the pocket first.",
+    "Find the step over and the pattern on the Operation tab.",
+    "Step over 50 %, pattern Offset."
+   ],
+   "do": [
+    {
+     "tool": "cam_op",
+     "args": {
+      "kind": "pocket",
+      "faces": [
+       {
+        "normal": [
+         0,
+         0,
+         1
+        ],
+        "near": [
+         30,
+         20,
+         12
+        ]
+       }
+      ],
+      "stepOver": 50,
+      "props": {
+       "ClearingPattern": "Offset"
+      },
+      "name": "Pocket"
+     }
+    }
+   ]
+  },
+  {
+   "id": "post",
+   "say": "Select the job. Push **{CAM_Post|Post Process}**. Save the G-code as **walkthrough.nc**.",
+   "why": "The post processor writes G-code in the words of one machine.",
+   "targets": [
+    {
+     "cmd": "CAM_Post"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "file": "walkthrough.nc",
+      "min_bytes": 100
+     },
+     {
+      "used": "CAM_Post"
+     }
+    ]
+   },
+   "hints": [
+    "Find Post Process in the CAM toolbar.",
+    "The job's Output tab names the post processor and the file.",
+    "Post processor linuxcnc, file walkthrough.nc."
+   ],
+   "do": [
+    {
+     "tool": "cam_post",
+     "args": {
+      "post": "linuxcnc",
+      "path": "walkthrough.nc"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a CAM job with a profile and a pocket, written out as G-code.",
+   "picture": {
+    "file": "pictures/Path-SquarePocketModel.png",
+    "alt": "The model of the walkthrough: a block with a square pocket."
+   },
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "Path::FeaturePython",
+       "where": {
+        "Side": "Outside"
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "Path::FeaturePython",
+       "where": {
+        "ClearingPattern": "Offset"
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
