@@ -1,0 +1,263 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.points-workbench",
+ "version": "1.0.0",
+ "title": "Points workbench",
+ "summary": "Convert a cylinder to a point cloud, export it and import it again, merge two clouds and make a structured cloud.",
+ "level": "basic",
+ "minutes": 15,
+ "tags": [
+  "points",
+  "point-cloud",
+  "ply",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PointsWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Points Workbench",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Points_Workbench",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The wiki has no step-by-step Points tutorial: the steps follow the pages Points_Convert, Points_Export, Points_Import, Points_Merge and Points_Structure, on a cylinder of radius 10 mm and height 40 mm. The pages have no pictures. The checks read the new clouds and the file."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "PointsWorkbench"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "cylinder",
+     "radius": 10,
+     "height": 40,
+     "at": [
+      0,
+      0,
+      0
+     ],
+     "name": "Shaft"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Points** workbench.",
+   "targets": [
+    {
+     "wb": "PointsWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "PointsWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Points."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "PointsWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "convert",
+   "say": "Select **Shaft**. Push **{Points_Convert|Convert to points}**. Push **OK**.",
+   "why": "Points of a known shape make a cloud that you can examine.",
+   "targets": [
+    {
+     "tree": "Shaft"
+    },
+    {
+     "cmd": "Points_Convert"
+    }
+   ],
+   "check": {
+    "new": "Points::Feature"
+   },
+   "bind": {
+    "cloud": {
+     "new": "Points::Feature"
+    }
+   },
+   "hints": [
+    "Select the cylinder in the tree first.",
+    "Keep the default distance in the dialog.",
+    "Convert Shaft to points, default distance."
+   ],
+   "do": [
+    {
+     "tool": "points_sample",
+     "args": {
+      "object": "Shaft",
+      "count": 6000,
+      "seed": 1,
+      "name": "Shaft cloud"
+     }
+    }
+   ]
+  },
+  {
+   "id": "export",
+   "say": "Select the cloud. Push **{Points_Export|Export points}**. Save it as **shaft.ply**.",
+   "why": "PLY keeps each point; other programs read it.",
+   "targets": [
+    {
+     "cmd": "Points_Export"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "file": "shaft.ply",
+      "min_bytes": 100
+     },
+     {
+      "used": "Points_Export"
+     }
+    ]
+   },
+   "hints": [
+    "Find Export points in the Points menu.",
+    "Set the file type to PLY.",
+    "File name: shaft.ply."
+   ],
+   "do": [
+    {
+     "tool": "points_export",
+     "args": {
+      "points": "$cloud",
+      "path": "shaft.ply"
+     }
+    }
+   ]
+  },
+  {
+   "id": "import",
+   "say": "Push **{Points_Import|Import points}**. Open **shaft.ply**.",
+   "why": "The cloud you read back has the same points as the one you wrote.",
+   "targets": [
+    {
+     "cmd": "Points_Import"
+    }
+   ],
+   "check": {
+    "new": "Points::Feature"
+   },
+   "bind": {
+    "back": {
+     "new": "Points::Feature"
+    }
+   },
+   "hints": [
+    "Find Import points in the Points menu.",
+    "Select the file that you exported.",
+    "File: shaft.ply."
+   ],
+   "do": [
+    {
+     "tool": "points_import",
+     "args": {
+      "path": "shaft.ply",
+      "name": "Shaft back"
+     }
+    }
+   ]
+  },
+  {
+   "id": "merge",
+   "say": "Select the two clouds. Push **{Points_Merge|Merge point clouds}**.",
+   "why": "Merge puts the points of two clouds into one cloud.",
+   "targets": [
+    {
+     "cmd": "Points_Merge"
+    }
+   ],
+   "check": {
+    "new": "Points::Feature"
+   },
+   "hints": [
+    "Hold **Ctrl** to select both clouds in the tree.",
+    "Find Merge point clouds in the Points menu.",
+    "Both clouds selected, Merge."
+   ],
+   "do": [
+    {
+     "tool": "points_merge",
+     "args": {
+      "points": [
+       "$cloud",
+       "$back"
+      ],
+      "name": "Shaft parts"
+     }
+    }
+   ]
+  },
+  {
+   "id": "structure",
+   "say": "Select the first cloud. Push **{Points_Structure|Structured point cloud}**.",
+   "why": "A structured cloud keeps its points in rows and columns.",
+   "targets": [
+    {
+     "cmd": "Points_Structure"
+    }
+   ],
+   "check": {
+    "new": "Points::Structured"
+   },
+   "hints": [
+    "Select the cloud made from the cylinder.",
+    "Find Structured point cloud in the Points menu.",
+    "Structure the first cloud with a width of **100**."
+   ],
+   "do": [
+    {
+     "tool": "points_structure",
+     "args": {
+      "points": "$cloud",
+      "width": 100,
+      "name": "Shaft grid"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a point cloud from a cylinder, written and read back, merged and structured.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "Points::Feature"
+     },
+     {
+      "exists": "Points::Structured"
+     }
+    ]
+   }
+  }
+ ]
+}

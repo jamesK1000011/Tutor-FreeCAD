@@ -27,7 +27,9 @@ COURSE = ["agentlink_tutor.wiki.basic-part-design", "agentlink_tutor.wiki.basic-
 WIKI = ["agentlink_tutor.wiki.basic-part-design", "agentlink_tutor.wiki.basic-techdraw", "agentlink_tutor.wiki.film-hinge-sketch",
         "agentlink_tutor.wiki.basic-attachment", "agentlink_tutor.wiki.whiffle-ball", "agentlink_tutor.wiki.basic-sketcher",
         "agentlink_tutor.wiki.configuration-tables", "agentlink_tutor.wiki.crank-slider-assembly", "agentlink_tutor.wiki.crank-slider-parts",
-        "agentlink_tutor.wiki.arch-house", "agentlink_tutor.wiki.draft-tutorial", "agentlink_tutor.wiki.fem-cantilever"]
+        "agentlink_tutor.wiki.arch-house", "agentlink_tutor.wiki.draft-tutorial", "agentlink_tutor.wiki.fem-cantilever",
+        "agentlink_tutor.wiki.cam-walkthrough", "agentlink_tutor.wiki.mesh-to-part", "agentlink_tutor.wiki.points-workbench",
+        "agentlink_tutor.wiki.surface-examples"]
 
 
 def by_id():

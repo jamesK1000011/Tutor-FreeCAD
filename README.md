@@ -194,6 +194,10 @@ page, "FreeCAD wiki contributors", licence, link, adapted):
 | `wiki.fem-cantilever` | [FEM CalculiX Cantilever 3D](https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D) | 5 | a CalculiX analysis (material, fixed, force, mesh) solved twice, the second time with 500 MN along x |
 | `wiki.draft-tutorial` | [Draft tutorial](https://wiki.freecad.org/Draft_tutorial) | 13 | a frame, a hexagon, a circle, a polar array of the profile, dimensions of 43.301, 30, 25 and 15 mm |
 | `wiki.arch-house` | [Arch tutorial](https://wiki.freecad.org/Arch_tutorial) | 11 | walls of 16.1275 m³ after a door and two windows, an inner wall and door, a slab, a column, a roof, two levels in a building |
+| `wiki.surface-examples` | [Surface GeomFillSurface, Sections, BlendCurve](https://wiki.freecad.org/Surface_GeomFillSurface) | 8 | a GeomFillSurface, a Sections surface and a blend curve, each valid |
+| `wiki.mesh-to-part` | [Mesh to Part](https://wiki.freecad.org/Mesh_to_Part) | 8 | three meshes, cube.stl written and read back, a solid of 1000 mm³ from the mesh |
+| `wiki.cam-walkthrough` | [CAM Walkthrough for the Impatient](https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient) | 6 | a job with tool 4 at 2000 rpm, an outside profile, a pocket (step over 50 %, Offset) and G-code |
+| `wiki.points-workbench` | [Points Workbench (and its command pages)](https://wiki.freecad.org/Points_Workbench) | 7 | a cloud from a cylinder, shaft.ply written and read back, a merged cloud and a structured cloud |
 
 Basic Part Design and Basic TechDraw are the two chapters of one course
 (`wiki-part-to-drawing`): the TechDraw lesson goes on from the part, and

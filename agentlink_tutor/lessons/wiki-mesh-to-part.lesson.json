@@ -1,0 +1,330 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.mesh-to-part",
+ "version": "1.0.0",
+ "title": "Mesh to Part",
+ "summary": "Make meshes from Part shapes at two accuracies, export and import an STL file, and make a mesh into a Part solid again.",
+ "level": "basic",
+ "minutes": 20,
+ "tags": [
+  "mesh",
+  "part",
+  "stl",
+  "conversion",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "MeshWorkbench",
+   "PartWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Mesh to Part",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Mesh_to_Part",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The page shows the conversions as Python; here the commands of the Mesh and Part workbenches do them, on a 10 mm cube and a 10 mm sphere. Export and import follow the Mesh workbench page. The checks read the new meshes, the file and the volume of the solid."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "MeshToPart"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "box",
+     "size": [
+      10,
+      10,
+      10
+     ],
+     "name": "Cube"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "sphere",
+     "radius": 10,
+     "at": [
+      50,
+      0,
+      0
+     ],
+     "name": "Globe"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Mesh** workbench.",
+   "targets": [
+    {
+     "wb": "MeshWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "MeshWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Mesh."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "MeshWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cube",
+   "say": "Select **Cube**. Push **{Mesh_FromPartShape|Create mesh from shape}**. Select **Standard**. Push **OK**.",
+   "why": "The mesher cuts each face of the shape into triangles.",
+   "targets": [
+    {
+     "tree": "Cube"
+    },
+    {
+     "cmd": "Mesh_FromPartShape"
+    }
+   ],
+   "check": {
+    "new": "Mesh::Feature"
+   },
+   "bind": {
+    "cubemesh": {
+     "new": "Mesh::Feature"
+    }
+   },
+   "hints": [
+    "Select the cube in the tree first.",
+    "Use the Standard mesher with its default values.",
+    "Mesher: Standard, defaults."
+   ],
+   "do": [
+    {
+     "tool": "meshobj_from_shape",
+     "args": {
+      "body": "Cube"
+     }
+    }
+   ]
+  },
+  {
+   "id": "coarse",
+   "say": "Select **Globe**. Push **{Mesh_FromPartShape|Create mesh from shape}**. Set the surface deviation to 0.5 mm and the angular deviation to 30 deg.",
+   "why": "Large deviations give few triangles and a rough sphere.",
+   "targets": [
+    {
+     "tree": "Globe"
+    },
+    {
+     "cmd": "Mesh_FromPartShape"
+    }
+   ],
+   "check": {
+    "new": "Mesh::Feature"
+   },
+   "hints": [
+    "Select the sphere in the tree first.",
+    "Change the two deviation values of the Standard mesher.",
+    "Surface deviation 0.5 mm, angular deviation 30 deg."
+   ],
+   "do": [
+    {
+     "tool": "meshobj_from_shape",
+     "args": {
+      "body": "Globe",
+      "deflection": 0.5,
+      "angle": 30,
+      "name": "Globe coarse"
+     }
+    }
+   ]
+  },
+  {
+   "id": "fine",
+   "say": "Make a second mesh of **Globe**. Set the surface deviation to 0.01 mm and the angular deviation to 5 deg.",
+   "why": "Small deviations give many triangles and a smooth sphere.",
+   "targets": [
+    {
+     "tree": "Globe"
+    },
+    {
+     "cmd": "Mesh_FromPartShape"
+    }
+   ],
+   "check": {
+    "new": "Mesh::Feature"
+   },
+   "hints": [
+    "Use the same command again on the sphere.",
+    "Make both deviations much smaller.",
+    "Surface deviation 0.01 mm, angular deviation 5 deg."
+   ],
+   "do": [
+    {
+     "tool": "meshobj_from_shape",
+     "args": {
+      "body": "Globe",
+      "deflection": 0.01,
+      "angle": 5,
+      "name": "Globe fine"
+     }
+    }
+   ]
+  },
+  {
+   "id": "export",
+   "say": "Select the mesh of the cube. Push **{Mesh_Export|Export mesh}**. Save it as **cube.stl**.",
+   "why": "STL keeps the triangles only: no faces, no features.",
+   "targets": [
+    {
+     "cmd": "Mesh_Export"
+    }
+   ],
+   "check": {
+    "any": [
+     {
+      "file": "cube.stl",
+      "min_bytes": 684
+     },
+     {
+      "used": "Mesh_Export"
+     }
+    ]
+   },
+   "hints": [
+    "Find Export mesh in the Meshes menu.",
+    "Set the file type to STL.",
+    "File name: cube.stl."
+   ],
+   "do": [
+    {
+     "tool": "meshobj_export",
+     "args": {
+      "mesh": "$cubemesh",
+      "path": "cube.stl"
+     }
+    }
+   ]
+  },
+  {
+   "id": "import",
+   "say": "Push **{Mesh_Import|Import mesh}**. Open **cube.stl**.",
+   "targets": [
+    {
+     "cmd": "Mesh_Import"
+    }
+   ],
+   "check": {
+    "new": "Mesh::Feature"
+   },
+   "bind": {
+    "back": {
+     "new": "Mesh::Feature"
+    }
+   },
+   "hints": [
+    "Find Import mesh in the Meshes menu.",
+    "Select the file that you exported.",
+    "File: cube.stl."
+   ],
+   "do": [
+    {
+     "tool": "import_file",
+     "args": {
+      "path": "cube.stl",
+      "name": "Cube back"
+     }
+    }
+   ]
+  },
+  {
+   "id": "topart",
+   "say": "Select the mesh that you imported. Select the **Part** workbench. Push **{Part_ShapeFromMesh|Create shape from mesh}**. Push **{Part_MakeSolid|Convert to solid}** on the result.",
+   "why": "A mesh becomes a solid only when its triangles close a volume.",
+   "targets": [
+    {
+     "cmd": "Part_ShapeFromMesh"
+    },
+    {
+     "cmd": "Part_MakeSolid"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "Part::Feature"
+     },
+     {
+      "volume": {
+       "type": "Part::Feature"
+      },
+      "eq": 1000,
+      "tol": 0.5
+     }
+    ]
+   },
+   "bind": {
+    "solid": {
+     "new": "Part::Feature"
+    }
+   },
+   "hints": [
+    "Both commands are in the Part menu, under Create a shape and Convert to solid.",
+    "Use the shape from the mesh as the input of the conversion.",
+    "Shape from mesh with a tolerance of 0.1 mm. Convert it to a solid of the cube's volume."
+   ],
+   "do": [
+    {
+     "tool": "part_from_mesh",
+     "args": {
+      "mesh": "$back",
+      "name": "Cube solid"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: shapes made into meshes, a mesh exported and imported, and a mesh made into a solid again.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "Mesh::Feature"
+     },
+     {
+      "valid": "$solid",
+      "solid": true
+     },
+     {
+      "volume": "$solid",
+      "eq": 1000,
+      "tol": 0.5
+     }
+    ]
+   }
+  }
+ ]
+}

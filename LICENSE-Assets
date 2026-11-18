@@ -26,12 +26,16 @@ The adapted lessons and their source pages:
   wiki-basic-part-design             https://wiki.freecad.org/Basic_Part_Design_Tutorial
   wiki-basic-sketcher                https://wiki.freecad.org/Basic_Sketcher_Tutorial
   wiki-basic-techdraw                https://wiki.freecad.org/Basic_TechDraw_Tutorial
+  wiki-cam-walkthrough               https://wiki.freecad.org/CAM_Walkthrough_for_the_Impatient
   wiki-configuration-tables          https://wiki.freecad.org/Configuration_Tables
   wiki-crank-slider-assembly         https://wiki.freecad.org/Assembly_Workbench
   wiki-crank-slider-parts            https://wiki.freecad.org/Assembly_Workbench
   wiki-draft-tutorial                https://wiki.freecad.org/Draft_tutorial
   wiki-fem-cantilever                https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D
   wiki-film-hinge-sketch             https://wiki.freecad.org/Sketcher_Examples
+  wiki-mesh-to-part                  https://wiki.freecad.org/Mesh_to_Part
+  wiki-points-workbench              https://wiki.freecad.org/Points_Workbench
+  wiki-surface-examples              https://wiki.freecad.org/Surface_GeomFillSurface
   wiki-whiffle-ball                  https://wiki.freecad.org/Whiffle_Ball_tutorial
 
 Not affiliated with or endorsed by the FreeCAD project or the FPA.
