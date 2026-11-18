@@ -394,6 +394,7 @@ td_view
 td_view_more
 td_weld
 text_document
+tool_find
 tool_groups
 units_convert
 usage_report

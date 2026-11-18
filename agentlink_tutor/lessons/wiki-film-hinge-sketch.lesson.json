@@ -1,0 +1,443 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.film-hinge-sketch",
+ "version": "1.0.0",
+ "title": "Sketcher example: the basic sketch of a film hinge",
+ "summary": "Draw the master sketch of a film hinge: an arc for the closed lid, a line for the open one, its length an expression of the arc's radius.",
+ "level": "intermediate",
+ "minutes": 15,
+ "tags": [
+  "sketcher",
+  "constraint",
+  "expression",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Sketcher Examples (Film hinge, basic sketch)",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Sketcher_Examples",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Only the basic sketch of the film hinge, with a radius of 5 mm (the page uses 1 mm). The constraint names are neutral_radius and developed_length."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "FilmHinge"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   },
+   {
+    "tool": "sketch_new",
+    "args": {
+     "plane": "XY",
+     "name": "Basic_sketch"
+    }
+   }
+  ],
+  "bind": {
+   "sketch": {
+    "exists": "Sketcher::SketchObject"
+   }
+  }
+ },
+ "view": "top",
+ "vars": {
+  "r": 5,
+  "r2": 8
+ },
+ "steps": [
+  {
+   "id": "arc",
+   "say": "Double-click **Basic_sketch** in the tree. Push **{Sketcher_CreateArc|Arc}**. Draw a half circle. Keep its open side to the left.",
+   "why": "The arc is the strip of the hinge with the lid shut.",
+   "targets": [
+    {
+     "tree": "$sketch"
+    },
+    {
+     "cmd": "Sketcher_CreateArc"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "count": 1
+   },
+   "hints": [
+    "Find the arc button in the Sketcher toolbar.",
+    "Click the centre. Click the lower end. Click the upper end."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "arc",
+        "center": [
+         -7.854,
+         0
+        ],
+        "radius": 5,
+        "start": -90,
+        "end": 90
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "line",
+   "say": "Push **{Sketcher_CreateLine|Line}**. Draw a line from the lower end of the arc to the right.",
+   "why": "The line is the same strip when the lid is open.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateLine"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "count": 2
+   },
+   "hints": [
+    "Find the line button in the Sketcher toolbar.",
+    "Start the line on the lower end of the arc."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "line",
+        "from": [
+         -7.854,
+         -5
+        ],
+        "to": [
+         7.854,
+         -5
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "shape",
+   "say": "Make the line horizontal. Put its start on the lower end of the arc. Make the centre and the two ends of the arc vertical.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainHorizontal"
+    },
+    {
+     "cmd": "Sketcher_ConstrainVertical"
+    },
+    {
+     "cmd": "Sketcher_ConstrainCoincidentUnified"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "dof_max": 4
+   },
+   "hints": [
+    "Select two points. Push **{Sketcher_ConstrainVertical|Vertical}**.",
+    "The arc is a half circle when its ends and its centre are in one vertical line.",
+    "Line horizontal; line start on the arc's lower end; centre and both ends of the arc vertical."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          1,
+          1
+         ],
+         [
+          0,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "horizontal",
+        "refs": [
+         1
+        ]
+       },
+       {
+        "type": "vertical",
+        "refs": [
+         [
+          0,
+          3
+         ],
+         [
+          0,
+          1
+         ]
+        ]
+       },
+       {
+        "type": "vertical",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         [
+          0,
+          2
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "radius",
+   "say": "Set the radius of the arc to 5 mm. Give the constraint the name **neutral_radius**.",
+   "why": "A name lets other values use this radius.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainRadius"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "dims": [
+     "$r"
+    ],
+    "radii": [
+     "$r"
+    ]
+   },
+   "hints": [
+    "Find the radius button in the Sketcher toolbar.",
+    "The constraint dialog has a box for the value and a box for the name.",
+    "Radius = 5 mm, name neutral_radius."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "radius",
+        "refs": [
+         0
+        ],
+        "value": 5,
+        "name": "neutral_radius"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "length",
+   "say": "Give the line a length. Type **=.Constraints.neutral_radius * pi** as its value. Give it the name **developed_length**.",
+   "why": "Half a circle is radius times pi long, so the strip keeps its length.",
+   "explain": "The expression starts with a full stop: it names a value of this same sketch.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainDistance"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "expr": "$sketch",
+      "uses": "neutral_radius",
+      "count": 1
+     },
+     {
+      "sketch": "$sketch",
+      "dims": [
+       15.708
+      ],
+      "tol": 0.01
+     }
+    ]
+   },
+   "hints": [
+    "Find the length button in the Sketcher toolbar.",
+    "Type an equals sign in the value box to start an expression.",
+    "Value = .Constraints.neutral_radius * pi, name developed_length."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "distance",
+        "refs": [
+         1
+        ],
+        "value": 15.70796,
+        "name": "developed_length"
+       }
+      ]
+     }
+    },
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Basic_sketch.developed_length",
+      "expression": ".Constraints.neutral_radius * pi"
+     },
+     "else": [
+      {
+       "tool": "param_bind",
+       "args": {
+        "target": "Basic_sketch.developed_length",
+        "expression": "Basic_sketch.Constraints.neutral_radius * pi"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "axis",
+   "say": "Select the upper end of the arc, the right end of the line and the origin. Push **{Sketcher_ConstrainSymmetric|Symmetric}**.",
+   "why": "The lid turns about the origin, halfway between the two ends.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainSymmetric"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "full": true
+   },
+   "hints": [
+    "Pick the two free ends first, the origin last.",
+    "The sketch turns green when nothing can move."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "symmetric",
+        "refs": [
+         [
+          0,
+          2
+         ],
+         [
+          1,
+          2
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "flex",
+   "say": "Double-click **neutral_radius** in the constraint list. Set it to 8 mm. Look at the line: its length follows.",
+   "targets": [
+    {
+     "task": "Constraints"
+    }
+   ],
+   "check": {
+    "sketch": "$sketch",
+    "full": true,
+    "dims": [
+     "$r2",
+     25.1327
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "The Tasks panel lists the constraints by name.",
+    "Change only the radius. The expression does the rest.",
+    "neutral_radius = 8 mm."
+   ],
+   "do": [
+    {
+     "tool": "sketch_edit",
+     "args": {
+      "sketch": "$sketch",
+      "set": [
+       {
+        "constraint": "neutral_radius",
+        "value": 8
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Push **Close**. Done: the basic sketch of a film hinge.",
+   "targets": [
+    {
+     "task": {
+      "button": "close"
+     }
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "full": true,
+      "dims": [
+       "$r2",
+       25.1327
+      ],
+      "radii": [
+       "$r2"
+      ],
+      "tol": 0.01
+     },
+     {
+      "expr": "$sketch",
+      "uses": "neutral_radius"
+     },
+     {
+      "editing": null
+     }
+    ]
+   }
+  }
+ ]
+}

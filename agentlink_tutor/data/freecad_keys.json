@@ -1,0 +1,7 @@
+{
+ "about": "Keys FreeCAD 1.1.3 itself takes with Alt, read from its source (src/: every sAccel and setShortcut with Alt, and the menu titles' & letters, which open a menu with Alt and the letter on Windows and Linux). The Tutor tab's keys (tab.SHORTCUTS) must be none of these (tests/test_access.py).",
+ "source": "FreeCAD 1.1.3, src/Gui/CommandDoc.cpp (Std_Properties Alt+Return), src/Gui and src/Mod (sAccel, setShortcut), the menus' QT_TRANSLATE_NOOP(\"Workbench\", \"&…\") titles",
+ "licence": "LGPL-2.1-or-later",
+ "taken": ["Alt+Return", "Alt+F11", "Alt+C", "Alt+U", "Alt+Shift+P"],
+ "menu_letters": ["2", "3", "A", "C", "D", "E", "F", "G", "H", "I", "M", "O", "P", "R", "S", "T", "U", "V", "W", "Z"]
+}

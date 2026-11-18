@@ -38,8 +38,8 @@ Needs FreeCAD 1.1 or newer and
 Status: early. Eight starter lessons (pad a sketch; cut a pocket and drill
 a hole; export an STL; constrain a sketch fully; a fillet and a chamfer; a
 parameter driving a dimension; a TechDraw page of a body; an assembly with
-one grounded part and a fixed joint) and the first three chapters of a
-course (a bike stem, after a FreeCAD 1.0 beginner video) run in two modes,
+one grounded part and a fixed joint) and five lessons adapted from FreeCAD
+wiki tutorials (see [Lesson library](#lesson-library)) run in two modes,
 switchable at any step:
 
 - **Guided**: you do each step. Its controls are ringed, and the step is
@@ -96,7 +96,7 @@ step once passed stays passed when a later re-check cannot be told
 
 `start` works in the open document when it is empty; when it holds other
 work, the lesson's `doc_new` makes a new document whose name no open
-document and no recently saved file has (`BikeStem_2`), and the first step's
+document and no recently saved file has (`PartDesignTutorial_2`), and the first step's
 answer says which (`document`). A chapter after another goes on in the open
 document when it passes that chapter's result.
 
@@ -172,6 +172,26 @@ A lesson may be a chapter of a course (`course: {id, title, chapter}`,
 `setup: {after: "<the chapter before>"}`, and its `result`, the check a
 later chapter goes on from).
 
+### Lesson library
+
+Adapted from FreeCAD wiki tutorials, in Simplified Technical English, with
+the wiki's pictures. Each lesson builds what it needs through the tools
+(no example file), checks what you make, and carries its credit (source
+page, "FreeCAD wiki contributors", licence, link, adapted):
+
+| Lesson | From the wiki page | Steps | The end, as checked |
+|---|---|---|---|
+| `wiki.basic-part-design` | [Basic Part Design Tutorial](https://wiki.freecad.org/Basic_Part_Design_Tutorial) | 21 | a body of 18465.69 mm³, 53 × 26 × 26 mm |
+| `wiki.basic-techdraw` | [Basic TechDraw Tutorial](https://wiki.freecad.org/Basic_TechDraw_Tutorial) | 10 | two pages: a view with a horizontal and a vertical dimension, a note, a projection group at scale 2 |
+| `wiki.film-hinge-sketch` | [Sketcher Examples](https://wiki.freecad.org/Sketcher_Examples) (film hinge) | 8 | a fully constrained sketch; the line's length an expression of the arc's radius |
+| `wiki.basic-attachment` | [Basic Attachment Tutorial](https://wiki.freecad.org/Basic_Attachment_Tutorial) | 12 | a block of 98000 mm³: a pad from a named constraint, a triangle hooked on by its attachment offset |
+| `wiki.whiffle-ball` | [Whiffle Ball tutorial](https://wiki.freecad.org/Whiffle_Ball_tutorial) | 19 | the ball from Part booleans, filleted |
+
+Basic Part Design and Basic TechDraw are the two chapters of one course
+(`wiki-part-to-drawing`): the TechDraw lesson goes on from the part, and
+builds it through the tools when the document in front does not hold it.
+`tutor {action: "list", query: "wiki"}` lists them.
+
 ### Lessons from other add-ons
 
 An add-on ships lessons in a `lessons/` folder beside its
@@ -189,9 +209,18 @@ the hole's type and size).
 
 - The Tutor tab works from the keyboard alone: Tab goes through every
   control in reading order, and the lesson's buttons have keys that work
-  anywhere in the tab (Alt is Option on macOS): Alt+Right Next, Alt+Left
-  Back, Alt+H Hint, Alt+K Skip, Alt+D Do it for me, Alt+Q Stop,
-  Alt+Return Start, Alt+A to the question box. Each tooltip says its key.
+  anywhere in the tab (Alt is Option on macOS): Alt+Shift+Right Next,
+  Alt+Shift+Left Back, Alt+Shift+H Hint, Alt+Shift+K Skip, Alt+Shift+D Do it
+  for me, Alt+Shift+Q Stop, Alt+Shift+Return Start, Alt+Shift+A to the
+  question box. Each tooltip says its key. None is one of FreeCAD's own
+  keys (Alt+Return opens Properties, Alt with a menu's letter opens that
+  menu).
+- A ring is never told by its colour alone: each has its number (①, ②),
+  and the instruction names it.
+- A step never times out: it waits for you. "Do it for me" is on every
+  step.
+- A step's picture has words for a screen reader, and every label of the
+  tab has a name.
 - A screen reader has a name and a description for every control, and
   hears the step when it changes.
 - The tab sets no colours: its contrast is your theme's. The callout over
@@ -240,5 +269,10 @@ takes the agent's calls as yours: for tests only, never for real use.
 
 ## Licence
 
-LGPL-2.1-or-later. Not affiliated with or endorsed by the FreeCAD project or
-the FPA.
+The code, the starter lessons and the data files: LGPL-2.1-or-later
+([LICENSE-Code](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/LICENSE-Code)).
+The lessons adapted from the FreeCAD wiki and their pictures: CC BY 3.0, by
+FreeCAD wiki contributors, adapted
+([LICENSE-Assets](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/LICENSE-Assets));
+REUSE.toml names each file's licence. Not affiliated with or endorsed by the
+FreeCAD project or the FPA.

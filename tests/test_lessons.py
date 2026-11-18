@@ -44,8 +44,9 @@ class CoreLessons(unittest.TestCase):
         self.assertEqual(ids, {"agentlink_tutor.pd.pad-sketch", "agentlink_tutor.pd.pocket-hole", "agentlink_tutor.io.export-stl",
                                "agentlink_tutor.sk.constrain-rectangle", "agentlink_tutor.pd.fillet-chamfer",
                                "agentlink_tutor.param.parameter-depth", "agentlink_tutor.td.drawing-page",
-                               "agentlink_tutor.asm.fixed-joint", "agentlink_tutor.course.bike-stem-1",
-                               "agentlink_tutor.course.bike-stem-2", "agentlink_tutor.course.bike-stem-3"})
+                               "agentlink_tutor.asm.fixed-joint", "agentlink_tutor.wiki.basic-part-design",
+                               "agentlink_tutor.wiki.basic-techdraw", "agentlink_tutor.wiki.film-hinge-sketch",
+                               "agentlink_tutor.wiki.basic-attachment", "agentlink_tutor.wiki.whiffle-ball"})
 
     def test_each_fits_the_schema_and_the_rules(self):
         tools = gen_agentlink_tools.vendored()

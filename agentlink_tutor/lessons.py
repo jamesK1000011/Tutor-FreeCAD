@@ -429,6 +429,8 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
                        "each a lesson with setup {after: the one before}")
         if "fixture" in setup:
             out.append("setup.fixture: an inline lesson has no files")
+        if any(isinstance(st, dict) and st.get("picture") for st in lesson["steps"]):
+            out.append("steps: an inline lesson has no pictures (no files)")
     ids = [s["id"] for s in lesson["steps"]]
     for d in sorted({i for i in ids if ids.count(i) > 1}):
         out.append(f"steps: id {d} is used twice")
@@ -472,6 +474,31 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
     if detours(lesson) >= set(ids):
         out.append("steps: every step is a branch's target; the lesson has no main path")
     return out
+
+
+def pictures(lesson):
+    """The picture files a lesson's steps show, as given (pictures/x.png)."""
+    return [st["picture"]["file"] for st in lesson.get("steps") or []
+            if isinstance(st, dict) and isinstance(st.get("picture"), dict) and isinstance(st["picture"].get("file"), str)]
+
+
+def picture_problems(lesson, folder):
+    """Each picture a lesson shows is a file in its folder (pictures/)."""
+    out = []
+    for f in pictures(lesson):
+        if not os.path.isfile(os.path.join(folder, f)):
+            out.append(f"picture {f}: no such file beside the lesson")
+    return out
+
+
+def picture_path(lesson, step):
+    """The full path of a step's picture, or None."""
+    pic = (step or {}).get("picture")
+    folder = lesson.get("_folder") or CORE_DIR
+    if not isinstance(pic, dict) or not isinstance(pic.get("file"), str):
+        return None
+    path = os.path.join(folder, pic["file"])
+    return path if os.path.isfile(path) else None
 
 
 def detours(lesson):
@@ -519,7 +546,7 @@ class Library:
                 except (OSError, ValueError) as e:
                     self._refuse(path, f"cannot be read ({e})")
                     continue
-                problems = check(lesson, self.tools, self.extra_kinds)
+                problems = check(lesson, self.tools, self.extra_kinds) + picture_problems(lesson, folder)
                 if problems:
                     self._refuse(path, "; ".join(problems[:3]))
                     continue

@@ -5,3 +5,102 @@ version = 1
 path = ["FILES", "package.xml", "CHANGELOG.md", ".gitignore", ".github/**", "agentlink_tutor/data/*.json", "agentlink_tutor/lessons/*.json", "tests/data/**"]
 SPDX-FileCopyrightText = "Tutor contributors"
 SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+# The lessons adapted from FreeCAD wiki tutorials, and the pictures they show,
+# are CC-BY-3.0 like their sources (LICENSE-Assets); one entry per file.
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-basic-attachment.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Attachment Tutorial (https://wiki.freecad.org/Basic_Attachment_Tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Sketch1.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Attachment Tutorial (https://wiki.freecad.org/Basic_Attachment_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/BasePad2.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Attachment Tutorial (https://wiki.freecad.org/Basic_Attachment_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/IsoscelesSketch.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Attachment Tutorial (https://wiki.freecad.org/Basic_Attachment_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Pocket.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Attachment Tutorial (https://wiki.freecad.org/Basic_Attachment_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-basic-part-design.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Part Design Tutorial (https://wiki.freecad.org/Basic_Part_Design_Tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Tut17B_profile.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Part Design Tutorial (https://wiki.freecad.org/Basic_Part_Design_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Tut17_profilewithsideblocks.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Part Design Tutorial (https://wiki.freecad.org/Basic_Part_Design_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Tut17_final_refined.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic Part Design Tutorial (https://wiki.freecad.org/Basic_Part_Design_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-basic-techdraw.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic TechDraw Tutorial (https://wiki.freecad.org/Basic_TechDraw_Tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/TDTut_TopView2Dims.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic TechDraw Tutorial (https://wiki.freecad.org/Basic_TechDraw_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/TDTut_ProjGroup21.png"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Basic TechDraw Tutorial (https://wiki.freecad.org/Basic_TechDraw_Tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-film-hinge-sketch.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Sketcher Examples (Film hinge, basic sketch) (https://wiki.freecad.org/Sketcher_Examples), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/wiki-whiffle-ball.lesson.json"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Whiffle Ball tutorial (https://wiki.freecad.org/Whiffle_Ball_tutorial), adapted"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Tutorial_WhiffleBall_BasicShape.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Whiffle Ball tutorial (https://wiki.freecad.org/Whiffle_Ball_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+path = "agentlink_tutor/lessons/pictures/Tutorial_WhiffleBall.jpg"
+precedence = "override"
+SPDX-FileCopyrightText = "FreeCAD wiki contributors, Whiffle Ball tutorial (https://wiki.freecad.org/Whiffle_Ball_tutorial)"
+SPDX-License-Identifier = "CC-BY-3.0"

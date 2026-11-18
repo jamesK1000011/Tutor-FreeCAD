@@ -7,6 +7,26 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Added (18 Nov 2026: lesson library, T5 and T6 finished)
+
+- A lesson library adapted from FreeCAD wiki tutorials (CC BY 3.0, "FreeCAD wiki contributors", each lesson's `credit` block names its page, licence and link and says it is adapted): Basic Part Design (21 steps, the part of 18465.69 mm³), Basic TechDraw (10 steps, chapter 2 of the same course `wiki-part-to-drawing`: it builds the part through chapter 1's calls when the document does not hold it, so it needs no example file and no fixture), the film hinge of the Sketcher examples (8 steps, a length bound to `.Constraints.neutral_radius * pi`), Basic Attachment (12 steps: an attachment offset, a pad from a named constraint, a sketch moved to another plane and hooked on by its offset) and Whiffle Ball (19 steps, Part booleans and turned boxes). Words in Simplified Technical English; eleven of the wiki's pictures beside them (`agentlink_tutor/lessons/pictures/`).
+- Lesson format: `credit` {source, authors, licence (CC-BY-3.0 or CC-BY-4.0), link, adapted, changes}; a step's `picture` {file, alt}. The library refuses a lesson whose picture is not beside it; an inline lesson has no pictures. The first step's answer carries `credit`, a step with a picture `picture` (its words); the Tutor tab shows the picture (with its words for a screen reader) and the credit line.
+- Checks: `volume` and `bbox` take a query (`{type, label, where}`: one object it finds passes), for objects whose name the person's way and the tools' way make differently; `bbox` takes `min`, the box's lowest corner (where a part is, its Placement).
+- Licences: `LICENSE-Code` (LGPL-2.1-or-later, its text in `LICENSES/`), `LICENSE-Assets` (CC BY 3.0, its text there and in `LICENSES/`); REUSE.toml has an entry for each adapted lesson and each picture; package.xml names both.
+- `docs/hooks.md` (how an add-on ships lessons, pictures and credit, its checks and targets) and the agent's guide `agentlink_tutor/guides/tutor.md` (`guide_read tutor`).
+- Tests: every lesson's words (says, why lines, hints, branch words, `explain`, pictures' words) against the Tutor's writing rules and the tool cards' rule (Agent Link's `scripts/ste_check.py` when a checkout is at hand); Workshop's lesson listed only with Workshop installed, and no tool description names a lesson (no cost until installed); the lesson keys clash with none of FreeCAD's; a step never times out; every ring has its number; every label has a screen-reader name; the replay test (FreeCAD and an Agent Link checkout) replays every lesson, the wiki ones included, fails a wrong value with a why for each, and prints each lesson's end state (objects, volumes, boxes).
+
+### Changed
+
+- The Tutor tab's keys are Alt+Shift with a key (Alt+Shift+Right Next, Alt+Shift+H Hint …): Alt+Return is FreeCAD's Properties and Alt with a menu's letter opens that menu on Windows and Linux (Alt+H Help, Alt+D …). `data/freecad_keys.json` lists FreeCAD 1.1.3's own.
+- A chapter replayed for a later one leaves out the steps only the window tells (a workbench switch): they change no document, and without a window they were refused.
+- "Do it for me" binds what its calls made even when the step's check cannot pass just now, so the next steps' calls find it.
+- `tutor {action: "list", query}` also matches a course's id. A check's reason writes a value such as `DistanceY` as words (`Distance Y`).
+
+### Removed
+
+- The bike-stem course (chapters 1 to 3, after a creator's beginner video) and its tests. Agent Link's hardening script for the Tutor (`docs/hardening/tutor-rest-model.json`) uses the film-hinge lesson instead.
+
 ### Fixed
 
 From the round-4 picture review of `tutor_point` (docs/hardening/tutor-r4-findings.md):

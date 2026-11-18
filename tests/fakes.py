@@ -8,8 +8,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 
 class BoundBox:
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z, low=(0, 0, 0)):
         self.XLength, self.YLength, self.ZLength = x, y, z
+        self.XMin, self.YMin, self.ZMin = low
 
 
 class Wire:
@@ -21,9 +22,9 @@ class Wire:
 
 
 class Shape:
-    def __init__(self, volume=0.0, size=(0, 0, 0), solids=1, wires=(), null=False):
+    def __init__(self, volume=0.0, size=(0, 0, 0), solids=1, wires=(), null=False, low=(0, 0, 0)):
         self.Volume = volume
-        self.BoundBox = BoundBox(*size)
+        self.BoundBox = BoundBox(*size, low=low)
         self.Solids = [object()] * solids
         self.Wires = list(wires)
         self.null = null

@@ -92,12 +92,19 @@ add-on's package name. It also offers `hooks.service("lessons")`
 
 - **`tutor_target` and `tutor_check` readers** need nothing new:
   `hooks.register_reader`/`hooks.read` already serve them.
+- **The proof**: Workshop ships `workshop/lessons/hole-for-hardware.lesson.json`
+  beside its `agentlink_families` module; the Tutor lists it (with
+  `from: workshop`) only when Workshop is installed, and no tool
+  description names a lesson (`tests/test_chapters.py`,
+  `NoCostUntilInstalled`). The add-on side is written up in `docs/hooks.md`;
+  the agent's guide is `agentlink_tutor/guides/tutor.md`, which Agent Link
+  registers as every add-on's `guides/` folder.
 
 ## Wanted later (not needed now)
 
 - ~~A tool that makes a variable set (`App::VarSet`)~~: Agent Link has
-  `varset_new` and `varset_set` (b57959c). The bike-stem course's chapter 1
-  uses them as the video does, with `param_set` (a spreadsheet alias) as
-  each call's `else` on an Agent Link without them.
+  `varset_new` and `varset_set` (b57959c); `parameter-depth` uses a
+  parameter, and a lesson's call may carry an `else` for an Agent Link
+  without a tool.
 - The echo's lit buttons flash: a person who turned on the Tutor's Reduce
   motion would want them still too (a preference the echo reads).

@@ -1,0 +1,942 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.whiffle-ball",
+ "version": "1.0.0",
+ "title": "Whiffle Ball tutorial",
+ "summary": "Build a whiffle ball in the Part workbench from boxes and cylinders, with booleans and turned boxes that cut its corners.",
+ "level": "basic",
+ "minutes": 30,
+ "tags": [
+  "part",
+  "primitive",
+  "boolean",
+  "placement",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Whiffle Ball tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Whiffle_Ball_tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The colour, transparency and line width steps are left out. Each check reads the size, the place or the volume of what you made."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "WhiffleBall"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Part** workbench.",
+   "targets": [
+    {
+     "wb": "PartWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "PartWorkbench"
+   },
+   "hints": [
+    "Find the workbench list in the toolbar at the top.",
+    "The ring shows the list. Select Part in it."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "Part"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cube",
+   "say": "Push **{Part_Box|Cube}**. Set **Length**, **Width** and **Height** to 90 mm. Set its **Placement** position to -45 mm on x, y and z.",
+   "why": "The big cube is the outside of the ball, centred on the origin.",
+   "picture": {
+    "file": "pictures/Tutorial_WhiffleBall_BasicShape.jpg",
+    "alt": "A hollow cube with a round hole in each face."
+   },
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "Cube",
+    "size": [
+     90,
+     90,
+     90
+    ],
+    "min": [
+     -45,
+     -45,
+     -45
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Find the cube button in the Part toolbar.",
+    "The sizes and Placement are in the Data tab of the Property view.",
+    "Length = Width = Height = 90 mm, position x = y = z = -45 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       90,
+       90,
+       90
+      ],
+      "at": [
+       -45,
+       -45,
+       -45
+      ],
+      "name": "Cube"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cube1",
+   "say": "Push **{Part_Box|Cube}** again. Set the three sizes to 80 mm. Set the position to -40 mm on x, y and z.",
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "Cube001",
+    "size": [
+     80,
+     80,
+     80
+    ],
+    "min": [
+     -40,
+     -40,
+     -40
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "The new cube has the name **Cube001** in the tree.",
+    "Change its sizes and Placement in the Data tab.",
+    "Sizes = 80 mm, position x = y = z = -40 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       80,
+       80,
+       80
+      ],
+      "at": [
+       -40,
+       -40,
+       -40
+      ],
+      "name": "Cube001"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cyl",
+   "say": "Push **{Part_Cylinder|Cylinder}**. Set **Radius** to 27.5 mm and **Height** to 120 mm. Set the position to z = -60 mm.",
+   "targets": [
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "Cylinder",
+    "size": [
+     55,
+     55,
+     120
+    ],
+    "min": [
+     -27.5,
+     -27.5,
+     -60
+    ],
+    "tol": 0.1
+   },
+   "hints": [
+    "Find the cylinder button in the Part toolbar.",
+    "Change the sizes and the Placement in the Data tab.",
+    "Radius = 27.5 mm, Height = 120 mm, position z = -60 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 27.5,
+      "height": 120,
+      "at": [
+       0,
+       0,
+       -60
+      ],
+      "name": "Cylinder"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cyl1",
+   "say": "Push **{Part_Cylinder|Cylinder}** again. Give it the same sizes. Set the position to y = 60 mm. Turn it 90 deg about the x axis.",
+   "targets": [
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "cmd": "Std_Placement"
+    }
+   ],
+   "check": {
+    "bbox": "Cylinder001",
+    "size": [
+     55,
+     120,
+     55
+    ],
+    "min": [
+     -27.5,
+     -60,
+     -27.5
+    ],
+    "tol": 0.1
+   },
+   "hints": [
+    "Open the Placement dialog of the new cylinder.",
+    "Use the rotation axis with angle in the dialog.",
+    "Radius = 27.5 mm, Height = 120 mm, y = 60 mm, axis x, angle = 90 deg."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 27.5,
+      "height": 120,
+      "at": [
+       0,
+       60,
+       0
+      ],
+      "direction": [
+       0,
+       -1,
+       0
+      ],
+      "name": "Cylinder001"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cyl2",
+   "say": "Select **Cylinder001**. Push **{Std_DuplicateSelection|Duplicate selection}**. Set the copy's position to x = -60 mm, y = 0 mm. Turn it 90 deg about the y axis.",
+   "targets": [
+    {
+     "menu": "Std_DuplicateSelection"
+    },
+    {
+     "cmd": "Std_Placement"
+    }
+   ],
+   "check": {
+    "bbox": "Cylinder002",
+    "size": [
+     120,
+     55,
+     55
+    ],
+    "min": [
+     -60,
+     -27.5,
+     -27.5
+    ],
+    "tol": 0.1
+   },
+   "hints": [
+    "Find Duplicate selection in the Edit menu.",
+    "Open the Placement dialog of the copy.",
+    "x = -60 mm, y = 0 mm, axis y, angle = 90 deg."
+   ],
+   "do": [
+    {
+     "tool": "object_duplicate",
+     "args": {
+      "objects": [
+       "Cylinder001"
+      ],
+      "name": "Cylinder002"
+     }
+    },
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "Cylinder002",
+      "values": {
+       "Placement": {
+        "at": [
+         -60,
+         0,
+         0
+        ],
+        "axis": [
+         0,
+         1,
+         0
+        ],
+        "angle": 90
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "fuse",
+   "say": "Select **Cube001** and the three cylinders in the tree. Push **{Part_Fuse|Union}**.",
+   "why": "The union is the inside space and the holes of the ball.",
+   "targets": [
+    {
+     "cmd": "Part_Fuse"
+    }
+   ],
+   "check": {
+    "volume": "Fusion",
+    "eq": 797099.5,
+    "tol": 2
+   },
+   "hints": [
+    "Hold Ctrl while you click the four rows.",
+    "Find Union in the boolean buttons of the Part toolbar.",
+    "**Cube001**, **Cylinder**, **Cylinder001** and **Cylinder002**, with **Union**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "fuse",
+      "base": "Cube001",
+      "tools": [
+       "Cylinder",
+       "Cylinder001",
+       "Cylinder002"
+      ],
+      "name": "Fusion"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cut",
+   "say": "Select **Cube**. Hold **Ctrl**. Select **Fusion**. Push **{Part_Cut|Cut}**.",
+   "why": "The order counts: the first object keeps, the second cuts.",
+   "targets": [
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "volume": "Cut",
+    "eq": 145725.1,
+    "tol": 2
+   },
+   "hints": [
+    "Select the big cube first.",
+    "Find Cut in the boolean buttons of the Part toolbar.",
+    "**Cube** first, **Fusion** second, **Cut**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Cube",
+      "tools": [
+       "Fusion"
+      ],
+      "name": "Cut"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cube2",
+   "say": "Push **{Part_Box|Cube}**. Set it to 140 mm × 112 mm × 112 mm. Set the position to x = -70 mm, y = -56 mm, z = -56 mm.",
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "Cube002",
+    "size": [
+     140,
+     112,
+     112
+    ],
+    "min": [
+     -70,
+     -56,
+     -56
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "The new cube has the name **Cube002**.",
+    "Change its sizes and Placement in the Data tab.",
+    "Length = 140 mm, Width = Height = 112 mm, x = -70 mm, y = z = -56 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       140,
+       112,
+       112
+      ],
+      "at": [
+       -70,
+       -56,
+       -56
+      ],
+      "name": "Cube002"
+     }
+    }
+   ]
+  },
+  {
+   "id": "cube3",
+   "say": "Push **{Part_Box|Cube}**. Set the three sizes to 180 mm. Set the position to -90 mm on x, y and z.",
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "Cube003",
+    "size": [
+     180,
+     180,
+     180
+    ],
+    "min": [
+     -90,
+     -90,
+     -90
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "The new cube has the name **Cube003**.",
+    "Change its sizes and Placement in the Data tab.",
+    "Sizes = 180 mm, x = y = z = -90 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       180,
+       180,
+       180
+      ],
+      "at": [
+       -90,
+       -90,
+       -90
+      ],
+      "name": "Cube003"
+     }
+    }
+   ]
+  },
+  {
+   "id": "copies",
+   "say": "Select **Cube002**. Push **{Std_DuplicateSelection|Duplicate selection}**. Do the same for **Cube003**.",
+   "why": "Each corner cut needs its own pair of boxes.",
+   "targets": [
+    {
+     "menu": "Std_DuplicateSelection"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": "Cube004",
+      "size": [
+       140,
+       112,
+       112
+      ],
+      "min": [
+       -70,
+       -56,
+       -56
+      ],
+      "tol": 0.01
+     },
+     {
+      "bbox": "Cube005",
+      "size": [
+       180,
+       180,
+       180
+      ],
+      "min": [
+       -90,
+       -90,
+       -90
+      ],
+      "tol": 0.01
+     }
+    ]
+   },
+   "hints": [
+    "Find Duplicate selection in the Edit menu.",
+    "The copies have the names **Cube004** and **Cube005**."
+   ],
+   "do": [
+    {
+     "tool": "object_duplicate",
+     "args": {
+      "objects": [
+       "Cube002"
+      ],
+      "name": "Cube004"
+     }
+    },
+    {
+     "tool": "object_duplicate",
+     "args": {
+      "objects": [
+       "Cube003"
+      ],
+      "name": "Cube005"
+     }
+    }
+   ]
+  },
+  {
+   "id": "turn1",
+   "say": "Select **Cube002** and **Cube003**. Open **{Std_Placement|Placement…}**. Select **Apply incremental changes**. Turn them 45 deg about x. Push **Apply**. Turn them 45 deg about z. Push **OK**.",
+   "why": "Each turn goes about the origin, so the boxes stay centred.",
+   "targets": [
+    {
+     "cmd": "Std_Placement"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": "Cube002",
+      "size": [
+       210.995,
+       210.995,
+       158.392
+      ],
+      "min": [
+       -105.497,
+       -105.497,
+       -79.196
+      ],
+      "tol": 0.05
+     },
+     {
+      "bbox": "Cube003",
+      "size": [
+       307.279,
+       307.279,
+       254.558
+      ],
+      "min": [
+       -153.64,
+       -153.64,
+       -127.279
+      ],
+      "tol": 0.05
+     }
+    ]
+   },
+   "hints": [
+    "Placement is in the Edit menu.",
+    "Apply incremental changes adds each turn to the one before.",
+    "Axis x, angle 45 deg, Apply. Axis z, angle 45 deg, OK."
+   ],
+   "do": [
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "Cube002",
+      "values": {
+       "Placement": {
+        "at": [
+         -49.4975,
+         -49.4975,
+         -79.196
+        ],
+        "axis": [
+         0.678598,
+         0.281085,
+         0.678598
+        ],
+        "angle": 62.79943
+       }
+      }
+     }
+    },
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "Cube003",
+      "values": {
+       "Placement": {
+        "at": [
+         -63.6396,
+         -63.6396,
+         -127.2792
+        ],
+        "axis": [
+         0.678598,
+         0.281085,
+         0.678598
+        ],
+        "angle": 62.79943
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "cut1",
+   "say": "Select **Cube003**. Hold **Ctrl**. Select **Cube002**. Push **{Part_Cut|Cut}**.",
+   "targets": [
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "volume": "Cut001",
+    "eq": 4075840,
+    "tol": 5
+   },
+   "hints": [
+    "The bigger box goes first.",
+    "Find Cut in the boolean buttons of the Part toolbar.",
+    "**Cube003** first, **Cube002** second, **Cut**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Cube003",
+      "tools": [
+       "Cube002"
+      ],
+      "name": "Cut001"
+     }
+    }
+   ]
+  },
+  {
+   "id": "turn2",
+   "say": "Select **Cube004** and **Cube005**. Open **{Std_Placement|Placement…}**. Select **Apply incremental changes**. Turn them 45 deg about x. Push **Apply**. Turn them -45 deg about z. Push **OK**.",
+   "targets": [
+    {
+     "cmd": "Std_Placement"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": "Cube004",
+      "size": [
+       210.995,
+       210.995,
+       158.392
+      ],
+      "min": [
+       -105.497,
+       -105.497,
+       -79.196
+      ],
+      "tol": 0.05
+     },
+     {
+      "bbox": "Cube005",
+      "size": [
+       307.279,
+       307.279,
+       254.558
+      ],
+      "min": [
+       -153.64,
+       -153.64,
+       -127.279
+      ],
+      "tol": 0.05
+     }
+    ]
+   },
+   "hints": [
+    "Placement is in the Edit menu.",
+    "The second turn goes the other way about z.",
+    "Axis x, angle 45 deg, Apply. Axis z, angle -45 deg, OK."
+   ],
+   "do": [
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "Cube004",
+      "values": {
+       "Placement": {
+        "at": [
+         -49.4975,
+         49.4975,
+         -79.196
+        ],
+        "axis": [
+         0.678598,
+         -0.281085,
+         -0.678598
+        ],
+        "angle": 62.79943
+       }
+      }
+     }
+    },
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "Cube005",
+      "values": {
+       "Placement": {
+        "at": [
+         -63.6396,
+         63.6396,
+         -127.2792
+        ],
+        "axis": [
+         0.678598,
+         -0.281085,
+         -0.678598
+        ],
+        "angle": 62.79943
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "cut2",
+   "say": "Select **Cube005**. Hold **Ctrl**. Select **Cube004**. Push **{Part_Cut|Cut}**.",
+   "targets": [
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "volume": "Cut002",
+    "eq": 4075840,
+    "tol": 5
+   },
+   "hints": [
+    "The bigger box goes first.",
+    "Find Cut in the boolean buttons of the Part toolbar.",
+    "**Cube005** first, **Cube004** second, **Cut**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Cube005",
+      "tools": [
+       "Cube004"
+      ],
+      "name": "Cut002"
+     }
+    }
+   ]
+  },
+  {
+   "id": "corners1",
+   "say": "Select **Cut**. Hold **Ctrl**. Select **Cut001**. Push **{Part_Cut|Cut}**.",
+   "why": "The turned frame cuts away four corners of the cube.",
+   "picture": {
+    "file": "pictures/Tutorial_WhiffleBall.jpg",
+    "alt": "The finished whiffle ball: round holes and cut corners."
+   },
+   "targets": [
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "volume": "Cut003",
+    "eq": 118681.0,
+    "tol": 40
+   },
+   "hints": [
+    "The hollow cube goes first.",
+    "Find Cut in the boolean buttons of the Part toolbar.",
+    "**Cut** first, **Cut001** second, **Cut**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Cut",
+      "tools": [
+       "Cut001"
+      ],
+      "name": "Cut003"
+     }
+    }
+   ]
+  },
+  {
+   "id": "corners2",
+   "say": "Select **Cut003**. Hold **Ctrl**. Select **Cut002**. Push **{Part_Cut|Cut}**.",
+   "targets": [
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "volume": "Cut004",
+    "eq": 91636.0,
+    "tol": 40
+   },
+   "hints": [
+    "The ball goes first.",
+    "Find Cut in the boolean buttons of the Part toolbar.",
+    "**Cut003** first, **Cut002** second, **Cut**."
+   ],
+   "do": [
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Cut003",
+      "tools": [
+       "Cut002"
+      ],
+      "name": "Cut004"
+     }
+    }
+   ]
+  },
+  {
+   "id": "fillet",
+   "say": "Select **Cut004**. Push **{Part_Fillet|Fillet…}**. Select all edges. Set **Radius** to 1 mm. Push **OK**.",
+   "why": "Real parts have no knife edges.",
+   "targets": [
+    {
+     "cmd": "Part_Fillet"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "volume": "Fillet",
+      "ge": 89803.0,
+      "le": 93469.0
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find Fillet in the Part toolbar.",
+    "The Tasks panel has a button for all edges.",
+    "All edges, Radius = 1 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_fillet",
+     "args": {
+      "body": "Cut004",
+      "radius": 1,
+      "edges": "all",
+      "name": "Fillet"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a whiffle ball made from boxes and cylinders.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "Fillet"
+     },
+     {
+      "volume": "Fillet",
+      "ge": 89803.0,
+      "le": 93469.0
+     }
+    ]
+   }
+  }
+ ]
+}

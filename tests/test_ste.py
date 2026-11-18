@@ -164,5 +164,66 @@ class Explainers(unittest.TestCase):
             c.act("explain")
 
 
+class EveryLessonWord(unittest.TestCase):
+    """Every word of every lesson (says, why lines, hints, branch words, the
+    agent's longer notes and pictures' words) passes the Tutor's rules and
+    the tool cards' rule (at most 20 words a sentence: Agent Link's
+    scripts/ste_check.py when a checkout is at hand, else the same count
+    here)."""
+
+    @staticmethod
+    def texts(lesson):
+        for s in lesson["steps"]:
+            for key in ("say", "why", "explain"):
+                if isinstance(s.get(key), str):
+                    yield f"{s['id']}.{key}", s[key]
+            for i, h in enumerate(s.get("hints") or []):
+                yield f"{s['id']}.hints[{i}]", h
+            for i, b in enumerate(s.get("branches") or []):
+                if b.get("say"):
+                    yield f"{s['id']}.branches[{i}]", b["say"]
+            if isinstance(s.get("picture"), dict):
+                yield f"{s['id']}.picture", s["picture"]["alt"]
+
+    @staticmethod
+    def card_lint():
+        import importlib.util
+        import sys as _sys
+
+        _sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+        import gen_agentlink_tools
+
+        pkg = gen_agentlink_tools.source()
+        script = os.path.join(os.path.dirname(pkg), "scripts", "ste_check.py") if pkg else None
+        if script and os.path.isfile(script):
+            spec = importlib.util.spec_from_file_location("agentlink_ste_check", script)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return lambda t: [(s, n) for s, n in mod.lint(t)[0]]
+        return lambda t: [(s, len(ste.words(s))) for s in ste.sentences(t) if len(ste.words(s)) > 20]
+
+    def test_tool_card_rule_and_tutor_rules(self):
+        lint = self.card_lint()
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        workshop = os.path.join(here, "docs", "examples", "workshop", "lessons")
+        extra = []
+        for n in sorted(os.listdir(workshop)):
+            with open(os.path.join(workshop, n), encoding="utf-8") as f:
+                extra.append(json.load(f))
+        for lesson in starters() + extra:
+            with self.subTest(lesson=lesson["id"]):
+                self.assertEqual(ste.lesson_problems(lesson), [])
+                long = [(w, got) for w, t in self.texts(lesson) for got in lint(t)]
+                self.assertEqual(long, [])
+
+    def test_explain_and_picture_words_are_checked(self):
+        l = {"steps": [{"id": "a", "say": "Push **Pad**.", "explain": "The face is selected by the tool.",
+                        "picture": {"file": "pictures/x.png", "alt": "Something shown being drawn."}}]}
+        got = " | ".join(ste.lesson_problems(l))
+        self.assertIn("a.explain", got)
+        self.assertIn("passive", got)
+        self.assertIn("a.picture.alt", got)
+
+
 if __name__ == "__main__":
     unittest.main()

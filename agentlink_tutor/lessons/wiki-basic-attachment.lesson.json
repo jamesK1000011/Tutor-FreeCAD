@@ -1,0 +1,686 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.basic-attachment",
+ "version": "1.0.0",
+ "title": "Basic Attachment tutorial",
+ "summary": "Place sketches by their attachment: an offset for the base sketch, a pad from a named constraint, and a triangle sketch hooked onto a corner of the block.",
+ "level": "intermediate",
+ "minutes": 25,
+ "tags": [
+  "partdesign",
+  "attachment",
+  "expression",
+  "sketch",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Basic Attachment Tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Basic_Attachment_Tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The first part of the page: the base sketch and its offset, the pad from width, the isosceles triangle. The triangle goes on the YZ plane with an attachment offset, not normal to an edge of the base sketch."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "Attachment"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {}
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "sketch",
+   "say": "Push **{PartDesign_NewSketch|Create sketch}**. Select the XY plane. Push **OK**.",
+   "why": "The plane you pick is the attachment of the sketch.",
+   "targets": [
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "base": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "Find the sketch button in the Part Design toolbar.",
+    "The Tasks panel lists the planes of the body."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "plane": "XY"
+     }
+    }
+   ]
+  },
+  {
+   "id": "rename",
+   "say": "Select the sketch in the tree. Push **F2**. Type **Base_sketch**.",
+   "why": "Other values find the sketch by this name.",
+   "targets": [
+    {
+     "tree": "$base"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "Sketcher::SketchObject",
+     "label": "Base_sketch"
+    }
+   },
+   "hints": [
+    "The sketch is under Body in the tree.",
+    "**F2** lets you type a new name."
+   ],
+   "do": [
+    {
+     "tool": "object_rename",
+     "args": {
+      "object": "$base",
+      "label": "Base_sketch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "rect",
+   "say": "Draw a rectangle on the origin, 70 mm wide and 40 mm high. Give the two sizes the names **length** and **width**. Push **Close**.",
+   "picture": {
+    "file": "pictures/Sketch1.png",
+    "alt": "A rectangle on the origin with its two sizes, 70 mm and 40 mm."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateRectangle"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$base",
+      "closed": true,
+      "full": true,
+      "dims": [
+       70,
+       40
+      ]
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Use a centred rectangle, or make it symmetric about the origin.",
+    "Give the horizontal and vertical sizes their names in the dialog.",
+    "length = 70 mm, width = 40 mm."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$base",
+      "items": [
+       {
+        "kind": "rectangle",
+        "center": [
+         0,
+         0
+        ],
+        "size": [
+         70,
+         40
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$base",
+      "constraints": [
+       {
+        "type": "distance",
+        "refs": [
+         0
+        ],
+        "value": 70,
+        "name": "length"
+       },
+       {
+        "type": "distance",
+        "refs": [
+         1
+        ],
+        "value": 40,
+        "name": "width"
+       },
+       {
+        "type": "symmetric",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         [
+          2,
+          1
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "offset",
+   "say": "Select **Base_sketch**. Find **Attachment Offset** in the Property view. Set its position to x = 80 mm, y = 90 mm.",
+   "why": "The offset moves the sketch away from its plane's origin.",
+   "targets": [
+    {
+     "tree": "$base"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "$base",
+    "size": [
+     70,
+     40,
+     0
+    ],
+    "min": [
+     45,
+     70,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Look in the Attachment group of the Data tab.",
+    "Open the Position row of Attachment Offset.",
+    "x = 80 mm, y = 90 mm."
+   ],
+   "do": [
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "$base",
+      "values": {
+       "AttachmentOffset": {
+        "at": [
+         80,
+         90,
+         0
+        ]
+       }
+      }
+     },
+     "else": [
+      {
+       "tool": "object_set",
+       "args": {
+        "object": "$base",
+        "values": {
+         "AttachmentOffset": {
+          "Base": [
+           80,
+           90,
+           0
+          ]
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Push **{PartDesign_Pad|Pad}**. Type **=Base_sketch.Constraints.width** in **Length**. Make the pad symmetric to the plane. Push **OK**.",
+   "why": "The pad's height now follows the width of the sketch.",
+   "picture": {
+    "file": "pictures/BasePad2.png",
+    "alt": "The padded block, as high as the sketch is wide."
+   },
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pad"
+     },
+     {
+      "bbox": "$body",
+      "size": [
+       70,
+       40,
+       40
+      ],
+      "min": [
+       45,
+       70,
+       -20
+      ],
+      "tol": 0.01
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "pad": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find Pad in the Part Design toolbar.",
+    "Type an equals sign in the Length box to start an expression.",
+    "Length = Base_sketch.Constraints.width, symmetric to the plane."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$base",
+      "length": 40,
+      "sides": "symmetric"
+     }
+    },
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Pad.Length",
+      "expression": "Base_sketch.Constraints.width"
+     }
+    }
+   ]
+  },
+  {
+   "id": "follows",
+   "say": "Examine the pad's **Length** in the Property view. Look for the expression mark beside it.",
+   "targets": [
+    {
+     "tree": "$pad"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "expr": "$pad",
+    "uses": "width"
+   },
+   "hints": [
+    "Select the pad in the tree.",
+    "The Length row shows an expression mark when an expression sets it."
+   ],
+   "do": [
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Pad.Length",
+      "expression": "Base_sketch.Constraints.width"
+     }
+    }
+   ]
+  },
+  {
+   "id": "tri",
+   "say": "Push **{PartDesign_NewSketch|Create sketch}**. Select the XY plane. Push **OK**. Push **F2** on the new sketch. Type **Isosceles_sketch**.",
+   "targets": [
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "Sketcher::SketchObject",
+     "label": "Isosceles_sketch"
+    }
+   },
+   "bind": {
+    "tri": {
+     "exists": {
+      "type": "Sketcher::SketchObject",
+      "label": "Isosceles_sketch"
+     }
+    }
+   },
+   "hints": [
+    "Any plane is good: the attachment changes later.",
+    "Rename the new sketch in the tree with **F2**."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "plane": "XY",
+      "name": "Isosceles_sketch"
+     }
+    }
+   ]
+  },
+  {
+   "id": "triangle",
+   "say": "Draw a triangle with its right angle on the origin. Make the two short sides equal. Type **=Base_sketch.Constraints.width / 2** as the length of one. Push **Close**.",
+   "why": "The origin of a sketch is its hook: the attachment puts it on a place.",
+   "picture": {
+    "file": "pictures/IsoscelesSketch.png",
+    "alt": "A right triangle with two equal short sides of 20 mm."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_CreatePolyline"
+    },
+    {
+     "cmd": "Sketcher_ConstrainEqual"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$tri",
+      "closed": true,
+      "full": true,
+      "count": 3
+     },
+     {
+      "expr": "$tri",
+      "uses": "width"
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Use the polyline for three lines that close.",
+    "The length box takes an expression after an equals sign.",
+    "Short sides equal, one = **Base_sketch.Constraints.width / 2**, right angle on the origin."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$tri",
+      "items": [
+       {
+        "kind": "polyline",
+        "points": [
+         [
+          0,
+          0
+         ],
+         [
+          -20,
+          0
+         ],
+         [
+          0,
+          -20
+         ]
+        ],
+        "closed": true
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$tri",
+      "constraints": [
+       {
+        "type": "equal",
+        "refs": [
+         0,
+         2
+        ]
+       },
+       {
+        "type": "distance",
+        "refs": [
+         0
+        ],
+        "value": 20,
+        "name": "leg"
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Isosceles_sketch.leg",
+      "expression": "Base_sketch.Constraints.width / 2"
+     }
+    }
+   ]
+  },
+  {
+   "id": "attach",
+   "say": "Select **Isosceles_sketch**. Push **{Part_EditAttachment|Attachment…}**. Select the YZ plane as the reference. Push **OK**.",
+   "why": "The attachment decides where a sketch is, not the sketch itself.",
+   "targets": [
+    {
+     "tree": "$tri"
+    },
+    {
+     "cmd": "Part_EditAttachment"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": "$tri",
+      "size": [
+       0,
+       20,
+       20
+      ],
+      "min": [
+       0,
+       -20,
+       -20
+      ],
+      "tol": 0.01
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find the attachment command in the Sketch menu.",
+    "Pick the YZ plane in the tree.",
+    "**Reference 1** = the YZ plane, mode **Plane face**."
+   ],
+   "do": [
+    {
+     "tool": "sketch_attach",
+     "args": {
+      "sketch": "$tri",
+      "plane": "YZ"
+     }
+    }
+   ]
+  },
+  {
+   "id": "hook",
+   "say": "Set the **Attachment Offset** of **Isosceles_sketch** to x = 110 mm, y = 20 mm, z = 45 mm.",
+   "why": "The offset hooks the triangle's corner onto the top corner of the block.",
+   "targets": [
+    {
+     "tree": "$tri"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "bbox": "$tri",
+    "size": [
+     0,
+     20,
+     20
+    ],
+    "min": [
+     45,
+     90,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Look in the Attachment group of the Data tab.",
+    "The offset is in the sketch's own axes.",
+    "x = 110 mm, y = 20 mm, z = 45 mm."
+   ],
+   "do": [
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "$tri",
+      "values": {
+       "AttachmentOffset": {
+        "at": [
+         110,
+         20,
+         45
+        ]
+       }
+      }
+     },
+     "else": [
+      {
+       "tool": "object_set",
+       "args": {
+        "object": "$tri",
+        "values": {
+         "AttachmentOffset": {
+          "Base": [
+           110,
+           20,
+           45
+          ]
+         }
+        }
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "pocket",
+   "say": "Push **{PartDesign_Pocket|Pocket}**. Set **Type** to **Through all**. Select **Reversed** if it cuts nothing. Push **OK**.",
+   "picture": {
+    "file": "pictures/Pocket.png",
+    "alt": "The block with one long corner cut away."
+   },
+   "targets": [
+    {
+     "cmd": "PartDesign_Pocket"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pocket"
+     },
+     {
+      "volume": "$body",
+      "eq": 98000,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find Pocket in the Part Design toolbar.",
+    "The pocket goes the wrong way when it cuts nothing.",
+    "Type = Through all, Reversed on."
+   ],
+   "do": [
+    {
+     "tool": "pd_pocket",
+     "args": {
+      "sketch": "$tri",
+      "type": "through_all",
+      "reversed": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a block with one corner cut along its length.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "volume": "$body",
+      "eq": 98000,
+      "tol": 0.5
+     },
+     {
+      "valid": "$body"
+     }
+    ]
+   }
+  }
+ ]
+}

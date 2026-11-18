@@ -159,6 +159,57 @@
     }
    },
    "description": "A chapter of a course: the course's id and title, and this chapter's number."
+  },
+  "credit": {
+   "type": "object",
+   "required": [
+    "source",
+    "authors",
+    "licence",
+    "link",
+    "adapted"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "source": {
+     "type": "string",
+     "minLength": 3,
+     "maxLength": 120,
+     "description": "The page the lesson is adapted from (its title)."
+    },
+    "authors": {
+     "type": "string",
+     "minLength": 3,
+     "maxLength": 120,
+     "description": "Who wrote it: \"FreeCAD wiki contributors\" for a wiki page."
+    },
+    "licence": {
+     "type": "string",
+     "enum": [
+      "CC-BY-3.0",
+      "CC-BY-4.0"
+     ],
+     "description": "The source's licence: CC-BY-3.0 for the FreeCAD wiki, CC-BY-4.0 for the FreeCAD Manual."
+    },
+    "link": {
+     "type": "string",
+     "pattern": "^https://",
+     "maxLength": 200
+    },
+    "adapted": {
+     "type": "boolean",
+     "enum": [
+      true
+     ],
+     "description": "The lesson changes the source (words, sizes, steps); said in the credit."
+    },
+    "changes": {
+     "type": "string",
+     "maxLength": 400,
+     "description": "What the adaptation changed, in short."
+    }
+   },
+   "description": "Where the lesson comes from, shown with it and in the listing: a lesson after another work names it, its authors, its licence and a link, and says it is adapted."
   }
  },
  "definitions": {
@@ -287,6 +338,28 @@
      "minLength": 1,
      "maxLength": 120,
      "description": "The explainer: one short sentence, at most 15 words, shown under the instruction when explanations are on."
+    },
+    "picture": {
+     "type": "object",
+     "required": [
+      "file",
+      "alt"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "file": {
+       "type": "string",
+       "pattern": "^pictures/[A-Za-z0-9_.-]+\\.(png|jpg|svg)$",
+       "description": "A picture beside the lesson, in its folder's pictures/ (the lesson's licence and credit cover it)."
+      },
+      "alt": {
+       "type": "string",
+       "minLength": 3,
+       "maxLength": 160,
+       "description": "What the picture shows, for a screen reader (Simplified Technical English)."
+      }
+     },
+     "description": "A picture of what the step makes, from the lesson's source."
     }
    }
   }
