@@ -1,0 +1,628 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.arch-house",
+ "version": "1.0.0",
+ "title": "Arch tutorial: a small house",
+ "summary": "Build a small house in the BIM workbench with the sizes of the Arch tutorial: walls, doors, windows, a slab, a column, a roof and levels.",
+ "level": "intermediate",
+ "minutes": 40,
+ "tags": [
+  "bim",
+  "arch",
+  "wall",
+  "roof",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "BIMWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Arch tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Arch_tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The page builds a real house from a DWG plan; here a small house uses the sizes the page gives: exterior walls 25 cm, interior walls 15 cm, doors 1 m x 2.45 m and 0.70 m x 2.10 m, a 15 cm slab, a 2.25 m column. Stairs, rendering and drawings are left out."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "ArchHouse"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **BIM** workbench.",
+   "targets": [
+    {
+     "wb": "BIMWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "BIMWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: BIM."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "BIMWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "walls",
+   "say": "Push **{Arch_Wall|Wall}**. Draw the outer walls round a rectangle 8000 mm × 6000 mm from the origin. Set **Width** to 250 mm and **Height** to 2600 mm.",
+   "why": "Exterior walls of the tutorial are 25 cm thick.",
+   "picture": {
+    "file": "pictures/Arch_tutorial_04.jpg",
+    "alt": "Walls of the tutorial's house, on the lines of its floor plan."
+   },
+   "targets": [
+    {
+     "cmd": "Arch_Wall"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Wall"
+     }
+    },
+    "size": [
+     8000,
+     6000,
+     2600
+    ],
+    "min": [
+     0,
+     0,
+     0
+    ],
+    "tol": 1
+   },
+   "hints": [
+    "Click the four corners. Close the wall at the first corner.",
+    "Set Alignment so that the walls are inside the rectangle.",
+    "Corners at 0 mm and 8000 mm × 6000 mm, width 250 mm, height 2600 mm, alignment Right."
+   ],
+   "do": [
+    {
+     "tool": "bim_wall",
+     "args": {
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        8000,
+        0
+       ],
+       [
+        8000,
+        6000
+       ],
+       [
+        0,
+        6000
+       ]
+      ],
+      "closed": true,
+      "width": 250,
+      "height": 2600,
+      "align": "right",
+      "name": "Outer walls"
+     }
+    }
+   ]
+  },
+  {
+   "id": "inner",
+   "say": "Push **{Arch_Wall|Wall}** again. Draw an inner wall across the house at x = 4000 mm. Set **Width** to 150 mm.",
+   "why": "Interior walls of the tutorial are 15 cm thick.",
+   "targets": [
+    {
+     "cmd": "Arch_Wall"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Wall"
+     }
+    },
+    "size": [
+     150,
+     5500,
+     2600
+    ],
+    "min": [
+     3925,
+     250,
+     0
+    ],
+    "tol": 1
+   },
+   "hints": [
+    "Start and stop the wall on the inner faces of the outer walls.",
+    "Use the centre alignment for this wall.",
+    "From x = 4000 mm, y = 250 mm to y = 5750 mm, width 150 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_wall",
+     "args": {
+      "points": [
+       [
+        4000,
+        250
+       ],
+       [
+        4000,
+        5750
+       ]
+      ],
+      "width": 150,
+      "height": 2600,
+      "align": "center",
+      "name": "Inner wall"
+     }
+    }
+   ]
+  },
+  {
+   "id": "door",
+   "say": "Push **{BIM_Door|Door}**. Put a door 1000 mm wide and 2450 mm high in the front wall, 1500 mm from the corner.",
+   "why": "A door in a wall cuts its own hole in the wall.",
+   "picture": {
+    "file": "pictures/Arch_tutorial_23.jpg",
+    "alt": "A door in a brick wall of the tutorial's house."
+   },
+   "targets": [
+    {
+     "cmd": "BIM_Door"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Door"
+       }
+      }
+     },
+     {
+      "volume": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Wall"
+       }
+      },
+      "eq": 16937500000.0,
+      "tol": 1000000.0
+     }
+    ]
+   },
+   "hints": [
+    "Click on the wall to put the door in it.",
+    "Set the width and height of the door in the Tasks panel.",
+    "Door 1000 mm × 2450 mm, 1500 mm along the front wall."
+   ],
+   "do": [
+    {
+     "tool": "bim_opening",
+     "args": {
+      "wall": "Outer walls",
+      "kind": "door",
+      "width": 1000,
+      "height": 2450,
+      "at": 1500,
+      "name": "Front door"
+     }
+    }
+   ]
+  },
+  {
+   "id": "windows",
+   "say": "Push **{Arch_Window|Window}**. Put a window 1200 mm × 1200 mm in the front wall. Put a window 1500 mm × 1200 mm in the right wall. Set both sills to 900 mm.",
+   "targets": [
+    {
+     "cmd": "Arch_Window"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Window"
+       }
+      }
+     },
+     {
+      "volume": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Wall"
+       }
+      },
+      "eq": 16127500000.0,
+      "tol": 1000000.0
+     }
+    ]
+   },
+   "hints": [
+    "Use a window preset in the Tasks panel.",
+    "The sill height is the distance from the floor to the window.",
+    "Front window 1200 × 1200 mm at 5000 mm; side window 1500 × 1200 mm; sills 900 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_opening",
+     "args": {
+      "wall": "Outer walls",
+      "kind": "window",
+      "width": 1200,
+      "height": 1200,
+      "at": 5000,
+      "sill": 900,
+      "name": "Front window"
+     }
+    },
+    {
+     "tool": "bim_opening",
+     "args": {
+      "wall": "Outer walls",
+      "kind": "window",
+      "width": 1500,
+      "height": 1200,
+      "at": 10000,
+      "sill": 900,
+      "name": "Side window"
+     }
+    }
+   ]
+  },
+  {
+   "id": "innerdoor",
+   "say": "Push **{BIM_Door|Door}**. Put a door 700 mm wide and 2100 mm high in the inner wall.",
+   "why": "Interior doors of the tutorial are smaller than the main door.",
+   "targets": [
+    {
+     "cmd": "BIM_Door"
+    }
+   ],
+   "check": {
+    "volume": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Wall"
+     }
+    },
+    "eq": 1924500000.0,
+    "tol": 1000000.0
+   },
+   "hints": [
+    "Click on the inner wall to put the door in it.",
+    "Set the width and height of the door.",
+    "Door 700 mm × 2100 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_opening",
+     "args": {
+      "wall": "Inner wall",
+      "kind": "door",
+      "width": 700,
+      "height": 2100,
+      "at": 2000,
+      "name": "Inner door"
+     }
+    }
+   ]
+  },
+  {
+   "id": "slab",
+   "say": "Push **{BIM_Slab|Slab}**. Draw the floor slab under the house, 8000 mm × 6000 mm and 150 mm thick.",
+   "targets": [
+    {
+     "cmd": "BIM_Slab"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Slab"
+     }
+    },
+    "size": [
+     8000,
+     6000,
+     150
+    ],
+    "min": [
+     0,
+     0,
+     -150
+    ],
+    "tol": 1
+   },
+   "hints": [
+    "Draw the outline of the slab on the outline of the walls.",
+    "Set the thickness of the slab, and put its top at the floor level.",
+    "Slab 8000 × 6000 mm, 150 mm thick, from z = -150 mm to 0 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_structure",
+     "args": {
+      "kind": "slab",
+      "points": [
+       [
+        0,
+        6000,
+        -150
+       ],
+       [
+        8000,
+        6000,
+        -150
+       ],
+       [
+        8000,
+        0,
+        -150
+       ],
+       [
+        0,
+        0,
+        -150
+       ]
+      ],
+      "thickness": 150,
+      "name": "Floor slab"
+     }
+    }
+   ]
+  },
+  {
+   "id": "column",
+   "say": "Push **{BIM_Column|Column}**. Put a column 250 mm × 250 mm and 2250 mm high at x = 9500 mm, y = 1000 mm.",
+   "why": "The tutorial's short columns are 2.25 m high.",
+   "picture": {
+    "file": "pictures/Arch_tutorial_08.jpg",
+    "alt": "Columns of the tutorial's house, made from circles of the plan, beside the walls."
+   },
+   "targets": [
+    {
+     "cmd": "BIM_Column"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Column"
+     }
+    },
+    "size": [
+     250,
+     250,
+     2250
+    ],
+    "tol": 1
+   },
+   "hints": [
+    "Set the size of the column in the Tasks panel before you click.",
+    "Click where the column stands.",
+    "Column 250 × 250 mm, 2250 mm high, at x = 9500 mm, y = 1000 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_structure",
+     "args": {
+      "kind": "column",
+      "at": [
+       9500,
+       1000,
+       0
+      ],
+      "width": 250,
+      "depth": 250,
+      "height": 2250,
+      "name": "Porch column"
+     }
+    }
+   ]
+  },
+  {
+   "id": "roof",
+   "say": "Push **{Arch_Roof|Roof}** on the outline of the walls at 2600 mm. Set 30 deg on the long sides and 90 deg on the short sides.",
+   "why": "An angle of 90 deg gives a gable end.",
+   "targets": [
+    {
+     "cmd": "Arch_Roof"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "Part::FeaturePython",
+     "where": {
+      "IfcType": "Roof"
+     }
+    }
+   },
+   "hints": [
+    "Make a closed outline at the top of the walls. Select it before you push Roof.",
+    "Set the angle of each edge in the Tasks panel.",
+    "Angles 30 deg, 90 deg, 30 deg, 90 deg, overhang 300 mm, thickness 150 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_roof",
+     "args": {
+      "points": [
+       [
+        0,
+        0,
+        2600
+       ],
+       [
+        8000,
+        0,
+        2600
+       ],
+       [
+        8000,
+        6000,
+        2600
+       ],
+       [
+        0,
+        6000,
+        2600
+       ]
+      ],
+      "angle": [
+       30,
+       90,
+       30,
+       90
+      ],
+      "thickness": 150,
+      "overhang": 300,
+      "name": "Roof"
+     }
+    }
+   ]
+  },
+  {
+   "id": "levels",
+   "say": "Push **{Arch_Level|Level}** for the ground floor and for the roof. Push **{Arch_Building|Building}** to put both levels in one **Building** object.",
+   "why": "Levels put the model in order for IFC export.",
+   "targets": [
+    {
+     "cmd": "Arch_Level"
+    },
+    {
+     "cmd": "Arch_Building"
+    }
+   ],
+   "check": {
+    "exists": {
+     "where": {
+      "IfcType": "Building"
+     }
+    }
+   },
+   "hints": [
+    "Select the objects of each level before you push Level.",
+    "Select the two levels before you push **Building**.",
+    "Ground floor at 0 mm with the walls, doors, windows, slab and column. Roof level at 2600 mm."
+   ],
+   "do": [
+    {
+     "tool": "bim_level",
+     "args": {
+      "objects": [
+       "Outer walls",
+       "Inner wall",
+       "Floor slab",
+       "Porch column",
+       "Front door",
+       "Front window",
+       "Side window",
+       "Inner door"
+      ],
+      "elevation": 0,
+      "height": 2600,
+      "name": "Ground floor"
+     }
+    },
+    {
+     "tool": "bim_level",
+     "args": {
+      "objects": [
+       "Roof"
+      ],
+      "elevation": 2600,
+      "height": 2000,
+      "name": "Roof level"
+     }
+    },
+    {
+     "tool": "bim_building",
+     "args": {
+      "levels": [
+       "Ground floor",
+       "Roof level"
+      ],
+      "name": "House",
+      "siteName": "Plot"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a small house with walls, doors, windows, a slab, a column and a roof, in two levels.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Roof"
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Slab"
+       }
+      }
+     },
+     {
+      "volume": {
+       "type": "Part::FeaturePython",
+       "where": {
+        "IfcType": "Wall"
+       }
+      },
+      "eq": 16127500000.0,
+      "tol": 1000000.0
+     }
+    ]
+   }
+  }
+ ]
+}

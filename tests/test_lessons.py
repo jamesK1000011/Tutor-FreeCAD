@@ -49,7 +49,8 @@ class CoreLessons(unittest.TestCase):
                                "agentlink_tutor.wiki.film-hinge-sketch", "agentlink_tutor.wiki.basic-attachment",
                                "agentlink_tutor.wiki.whiffle-ball", "agentlink_tutor.wiki.basic-sketcher",
                                "agentlink_tutor.wiki.configuration-tables", "agentlink_tutor.wiki.crank-slider-assembly",
-                               "agentlink_tutor.wiki.crank-slider-parts"})
+                               "agentlink_tutor.wiki.crank-slider-parts", "agentlink_tutor.wiki.arch-house",
+                               "agentlink_tutor.wiki.draft-tutorial", "agentlink_tutor.wiki.fem-cantilever"})
 
     def test_each_fits_the_schema_and_the_rules(self):
         tools = gen_agentlink_tools.vendored()

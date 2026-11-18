@@ -1,0 +1,308 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.fem-cantilever",
+ "version": "1.0.0",
+ "title": "FEM CalculiX cantilever 3D",
+ "summary": "Set up a static analysis of a steel cantilever: material, a fixed end, a force and a mesh. Solve it with CalculiX, then change the load.",
+ "level": "basic",
+ "minutes": 20,
+ "tags": [
+  "fem",
+  "analysis",
+  "calculix",
+  "cantilever",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "FemWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "FEM CalculiX Cantilever 3D",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/FEM_CalculiX_Cantilever_3D",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The page opens an example file; here the lesson makes the 8000 mm x 1000 mm x 1000 mm box and the analysis of that example. The steps that purge results and run the solver by its panel are left out. The checks read the analysis objects and the force."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "FemCantilever"
+    }
+   },
+   {
+    "tool": "part_primitive",
+    "args": {
+     "kind": "box",
+     "size": [
+      8000,
+      1000,
+      1000
+     ],
+     "name": "Box"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **FEM** workbench.",
+   "targets": [
+    {
+     "wb": "FemWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "FemWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: FEM."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "FemWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "analysis",
+   "say": "Select **Box**. Push **{FEM_Analysis|Analysis container}**. Add a steel material, a fixed face at x = 0 mm and a force on the far face. Add a Gmsh mesh.",
+   "why": "A static analysis needs a solver, a material, supports, loads and a mesh.",
+   "explain": "The analysis container comes with a CalculiX solver. Material: CalculiX-Steel, Young modulus 210000 MPa. Fixed: the end face at x 0 mm. Force: 9000000 N on the end face at x 8000 mm, down along -z. Mesh: FEM mesh from shape by Gmsh, with the default sizes.",
+   "targets": [
+    {
+     "cmd": "FEM_Analysis"
+    },
+    {
+     "cmd": "FEM_MaterialSolid"
+    },
+    {
+     "cmd": "FEM_ConstraintFixed"
+    },
+    {
+     "cmd": "FEM_ConstraintForce"
+    },
+    {
+     "cmd": "FEM_MeshGmshFromShape"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "Fem::FemAnalysis"
+     },
+     {
+      "exists": "Fem::ConstraintFixed"
+     },
+     {
+      "exists": "Fem::ConstraintForce"
+     },
+     {
+      "exists": "Fem::FemMeshObject"
+     }
+    ]
+   },
+   "hints": [
+    "Find the tools in the Model menu and the Mesh menu of the FEM workbench.",
+    "Use Material for solid, Fixed boundary condition, Force load and FEM mesh from shape by Gmsh.",
+    "Material: steel. Fixed: the face at x = 0 mm. Force: 9000000 N down along -z on the face at x = 8000 mm."
+   ],
+   "do": [
+    {
+     "tool": "material_set",
+     "args": {
+      "bodies": [
+       "Box"
+      ],
+      "custom": {
+       "name": "CalculiX-Steel",
+       "density": 7.9,
+       "youngsMPa": 210000,
+       "poisson": 0.3,
+       "source": "FreeCAD femexamples ccx_cantilever_base_solid: CalculiX-Steel, 210000 MPa, 0.30"
+      }
+     }
+    },
+    {
+     "tool": "fea_setup",
+     "args": {
+      "body": "Box"
+     }
+    },
+    {
+     "tool": "fea_hold",
+     "args": {
+      "faces": {
+       "normal": [
+        -1,
+        0,
+        0
+       ],
+       "x": 0
+      }
+     }
+    },
+    {
+     "tool": "fea_load",
+     "args": {
+      "force": [
+       0,
+       0,
+       -9000000
+      ],
+      "faces": {
+       "normal": [
+        1,
+        0,
+        0
+       ],
+       "x": 8000
+      }
+     }
+    },
+    {
+     "tool": "fea_native",
+     "args": {
+      "name": "Box native"
+     }
+    }
+   ]
+  },
+  {
+   "id": "solve",
+   "say": "Select the solver in the analysis. Push **{FEM_SolverRun|Run solver calculations}**.",
+   "why": "The solver writes the results into a new result object.",
+   "picture": {
+    "file": "pictures/FEM_example01_pic13.png",
+    "alt": "The Show result panel with Displacement Z selected: the free end goes down about 87 mm."
+   },
+   "targets": [
+    {
+     "cmd": "FEM_SolverRun"
+    }
+   ],
+   "check": {
+    "exists": "Fem::FemResultObject"
+   },
+   "hints": [
+    "The solver is in the analysis, in the tree.",
+    "Use Run solver calculations in the FEM toolbar.",
+    "Run the solver of the analysis. Look for the new result object."
+   ],
+   "do": [
+    {
+     "tool": "fea_solve",
+     "args": {}
+    }
+   ]
+  },
+  {
+   "id": "load",
+   "say": "Double-click the force. Set the load to 500000000 N along +x. Push **OK**. Push **{FEM_SolverRun|Run solver calculations}** again.",
+   "why": "A pull along the beam stretches it a little.",
+   "picture": {
+    "file": "pictures/FEM_example01_pic15.png",
+    "alt": "The force panel with the load set high, its arrows along the length of the beam."
+   },
+   "targets": [
+    {
+     "cmd": "FEM_ConstraintForce"
+    },
+    {
+     "cmd": "FEM_SolverRun"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "any": [
+       {
+        "exists": {
+         "type": "Fem::ConstraintForce",
+         "where": {
+          "Force": {
+           "ge": 490000000000.0
+          }
+         }
+        }
+       },
+       {
+        "exists": {
+         "type": "Fem::ConstraintForce",
+         "where": {
+          "Force": {
+           "ge": 490000000.0,
+           "le": 510000000.0
+          }
+         }
+        }
+       }
+      ]
+     },
+     {
+      "new": "Fem::FemResultObject"
+     }
+    ]
+   },
+   "hints": [
+    "Open the force constraint from the tree.",
+    "Change the load value and its direction. Use Reverse direction if the arrows point in.",
+    "Load = 500000000 N along +x. Run the solver again."
+   ],
+   "do": [
+    {
+     "tool": "fea_load",
+     "args": {
+      "force": [
+       500000000,
+       0,
+       0
+      ],
+      "replace": true,
+      "faces": {
+       "normal": [
+        1,
+        0,
+        0
+       ],
+       "x": 8000
+      }
+     }
+    },
+    {
+     "tool": "fea_solve",
+     "args": {}
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a steel cantilever, solved for a load down and for a pull along its length. The pull stretches it about 18.95 mm.",
+   "picture": {
+    "file": "pictures/FEM_example01_pic16.png",
+    "alt": "The Show result panel with Displacement X selected: the end moves about 19 mm."
+   },
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "exists": "Fem::FemResultObject"
+   }
+  }
+ ]
+}

@@ -1,0 +1,752 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.draft-tutorial",
+ "version": "1.0.0",
+ "title": "Draft tutorial",
+ "summary": "Draw arcs, lines, a rectangle, a circle and a polygon in the Draft workbench. Join a profile into a wire, array it round the centre and add dimensions.",
+ "level": "basic",
+ "minutes": 30,
+ "tags": [
+  "draft",
+  "2d",
+  "array",
+  "dimension",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "DraftWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Draft tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Draft_tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Steps 3 to 13 of the page. The changes to font size and extension lines of the dimensions, the text, the ShapeString and the TechDraw page are left out. Each check reads the size and place of what you drew, or the distance a dimension measures."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "DraftTutorial"
+    }
+   }
+  ]
+ },
+ "view": "top",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Draft** workbench. Push **{Draft_SelectPlane|Select Plane}**. Push **Top (XY)**.",
+   "targets": [
+    {
+     "wb": "DraftWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "DraftWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Draft."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "DraftWorkbench"
+     }
+    },
+    {
+     "tool": "draft_plane",
+     "args": {
+      "at": [
+       0,
+       0,
+       0
+      ],
+      "normal": [
+       0,
+       0,
+       1
+      ],
+      "name": "Top"
+     }
+    }
+   ]
+  },
+  {
+   "id": "arc30",
+   "say": "Push **{Draft_Arc|Arc}**. Set the centre to the origin and the radius to 30 mm. Set the start angle to 60 deg and the aperture to 60 deg.",
+   "targets": [
+    {
+     "cmd": "Draft_Arc"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     30,
+     4.019,
+     0
+    ],
+    "min": [
+     -15,
+     25.981,
+     0
+    ],
+    "tol": 0.05
+   },
+   "bind": {
+    "arc30": {
+     "new": "Part::Part2DObjectPython"
+    }
+   },
+   "hints": [
+    "Type the values in the Tasks panel. Push **Enter** after each.",
+    "Centre, radius, start angle and aperture angle, in this order.",
+    "Centre on the origin, radius 30 mm, start 60 deg, aperture 60 deg."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "arc",
+      "radius": 30,
+      "start": 60,
+      "end": 120,
+      "name": "Arc30"
+     }
+    }
+   ]
+  },
+  {
+   "id": "arc25",
+   "say": "Push **{Draft_Arc|Arc}** again. Make a second arc with the same angles and a radius of 25 mm.",
+   "targets": [
+    {
+     "cmd": "Draft_Arc"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     25,
+     3.349,
+     0
+    ],
+    "min": [
+     -12.5,
+     21.651,
+     0
+    ],
+    "tol": 0.05
+   },
+   "bind": {
+    "arc25": {
+     "new": "Part::Part2DObjectPython"
+    }
+   },
+   "hints": [
+    "Only the radius changes.",
+    "Centre on the origin, start angle and aperture as before.",
+    "Radius 25 mm, start 60 deg, aperture 60 deg."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "arc",
+      "radius": 25,
+      "start": 60,
+      "end": 120,
+      "name": "Arc25"
+     }
+    }
+   ]
+  },
+  {
+   "id": "tie1",
+   "say": "Push **{Draft_Line|Line}**. Click the right end of the outer arc. Click the right end of the inner arc.",
+   "why": "The lines close the gap between the two arcs.",
+   "targets": [
+    {
+     "cmd": "Draft_Line"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     2.5,
+     4.33,
+     0
+    ],
+    "min": [
+     12.5,
+     21.651,
+     0
+    ],
+    "tol": 0.01
+   },
+   "bind": {
+    "tie1": {
+     "new": "Part::Part2DObjectPython"
+    }
+   },
+   "hints": [
+    "Use the Endpoint snap of the Snap toolbar.",
+    "Click the two end points; the line stops after the second.",
+    "From x = 15 mm, y = 25.98 mm to x = 12.5 mm, y = 21.65 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "wire",
+      "points": [
+       [
+        15.0,
+        25.980762,
+        0
+       ],
+       [
+        12.5,
+        21.650635,
+        0
+       ]
+      ],
+      "name": "TieR"
+     }
+    }
+   ]
+  },
+  {
+   "id": "tie2",
+   "say": "Push **{Draft_Line|Line}** again. Draw a line between the left ends of the two arcs.",
+   "picture": {
+    "file": "pictures/01_Dr01_Draft_Arc_profile.png",
+    "alt": "A closed profile: two arcs and two short lines between their ends."
+   },
+   "targets": [
+    {
+     "cmd": "Draft_Line"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     2.5,
+     4.33,
+     0
+    ],
+    "min": [
+     -15,
+     21.651,
+     0
+    ],
+    "tol": 0.01
+   },
+   "bind": {
+    "tie2": {
+     "new": "Part::Part2DObjectPython"
+    }
+   },
+   "hints": [
+    "Snap to the end points again.",
+    "This line closes the profile.",
+    "From x = -15 mm, y = 25.98 mm to x = -12.5 mm, y = 21.65 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "wire",
+      "points": [
+       [
+        -15.0,
+        25.980762,
+        0
+       ],
+       [
+        -12.5,
+        21.650635,
+        0
+       ]
+      ],
+      "name": "TieL"
+     }
+    }
+   ]
+  },
+  {
+   "id": "upgrade",
+   "say": "Select the two arcs and the two lines. Push **{Draft_Upgrade|Upgrade}**.",
+   "why": "Upgrade joins the four edges into one wire; it is no longer parametric.",
+   "targets": [
+    {
+     "cmd": "Draft_Upgrade"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Feature"
+    },
+    "size": [
+     30,
+     8.349,
+     0
+    ],
+    "min": [
+     -15,
+     21.651,
+     0
+    ],
+    "tol": 0.05
+   },
+   "bind": {
+    "wire": {
+     "new": "Part::Feature"
+    }
+   },
+   "hints": [
+    "Hold **Ctrl** to select more than one object.",
+    "Use Upgrade in the Draft modification tools.",
+    "Four objects selected, one Upgrade: a wire."
+   ],
+   "do": [
+    {
+     "tool": "draft_modify",
+     "args": {
+      "op": "upgrade",
+      "objects": [
+       "$arc30",
+       "$arc25",
+       "$tie1",
+       "$tie2"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "frame",
+   "say": "Push **{Draft_Rectangle|Rectangle}**. Set the first corner to x = -100 mm, y = -60 mm. Set the second corner to x = 140 mm, y = 90 mm.",
+   "targets": [
+    {
+     "cmd": "Draft_Rectangle"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     240,
+     150,
+     0
+    ],
+    "min": [
+     -100,
+     -60,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Type the coordinates in the Tasks panel.",
+    "Clear the Relative option: the second corner is absolute.",
+    "Corners at x = -100 mm, y = -60 mm and x = 140 mm, y = 90 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "rectangle",
+      "length": 240,
+      "height": 150,
+      "at": [
+       -100,
+       -60,
+       0
+      ],
+      "name": "Frame"
+     }
+    }
+   ]
+  },
+  {
+   "id": "hub",
+   "say": "Push **{Draft_Circle|Circle}**. Set the centre to the origin and the radius to 15 mm.",
+   "targets": [
+    {
+     "cmd": "Draft_Circle"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     30,
+     30,
+     0
+    ],
+    "min": [
+     -15,
+     -15,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Type the centre in the Tasks panel.",
+    "Type the radius after the centre.",
+    "Centre on the origin, radius 15 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "circle",
+      "radius": 15,
+      "name": "Hub"
+     }
+    }
+   ]
+  },
+  {
+   "id": "hex",
+   "say": "Push **{Draft_Polygon|Polygon}**. Set the centre to the origin. Give it six sides and a radius of 50 mm.",
+   "picture": {
+    "file": "pictures/02_Dr01_Draft_Rectangle_circle_polygon.png",
+    "alt": "A rectangle frame round a hexagon, with a circle and the small profile inside it."
+   },
+   "targets": [
+    {
+     "cmd": "Draft_Polygon"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::Part2DObjectPython"
+    },
+    "size": [
+     100,
+     86.603,
+     0
+    ],
+    "min": [
+     -50,
+     -43.301,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Type the centre in the Tasks panel.",
+    "Set the number of sides before the radius.",
+    "Centre on the origin, six sides, radius 50 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_shape",
+     "args": {
+      "kind": "polygon",
+      "sides": 6,
+      "radius": 50,
+      "name": "Hex"
+     }
+    }
+   ]
+  },
+  {
+   "id": "array",
+   "say": "Select the wire. Push **{Draft_PolarArray|Polar array}**. Set the polar angle to 360 deg and the number of elements to four. Set the centre to the origin.",
+   "why": "The array puts copies of the wire round the centre.",
+   "picture": {
+    "file": "pictures/03_Dr01_Draft_PolarArray.png",
+    "alt": "Four copies of the profile round the circle, inside the hexagon."
+   },
+   "targets": [
+    {
+     "cmd": "Draft_PolarArray"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "type": "Part::FeaturePython"
+    },
+    "size": [
+     60,
+     60,
+     0
+    ],
+    "min": [
+     -30,
+     -30,
+     0
+    ],
+    "tol": 0.05
+   },
+   "hints": [
+    "Find Polar array in the array tools of the Draft workbench.",
+    "Set the polar angle, the number and the centre in the Tasks panel.",
+    "Polar angle 360 deg, four elements, centre on the origin."
+   ],
+   "do": [
+    {
+     "tool": "draft_link_array",
+     "args": {
+      "object": "$wire",
+      "kind": "polar",
+      "count": 4,
+      "angle": 360,
+      "center": [
+       0,
+       0,
+       0
+      ],
+      "name": "Ring"
+     }
+    }
+   ]
+  },
+  {
+   "id": "dimhex",
+   "say": "Push **{Draft_Dimension|Dimension}**. Click the origin. Click the middle of the top edge of the hexagon. Put the dimension to the right.",
+   "targets": [
+    {
+     "cmd": "Draft_Dimension"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "App::FeaturePython",
+     "where": {
+      "Distance": {
+       "eq": 43.301,
+       "tol": 0.01
+      }
+     }
+    }
+   },
+   "hints": [
+    "Use the Midpoint snap for the second point.",
+    "The dimension measures from the origin to the top edge.",
+    "From the origin to y = 43.3 mm, with the text near x = 100 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_dimension",
+     "args": {
+      "kind": "linear",
+      "from": [
+       0,
+       0,
+       0
+      ],
+      "to": [
+       0,
+       43.30127,
+       0
+      ],
+      "at": [
+       100,
+       20,
+       0
+      ],
+      "name": "ToHexTop"
+     }
+    }
+   ]
+  },
+  {
+   "id": "dims",
+   "say": "Make three more dimensions from the origin: to the top of each arc and to the top of the circle.",
+   "picture": {
+    "file": "pictures/04_Dr01_Draft_Dimension.png",
+    "alt": "Four vertical dimensions from the origin to the circle, the two arcs and the hexagon."
+   },
+   "targets": [
+    {
+     "cmd": "Draft_Dimension"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "Distance": {
+         "eq": 30,
+         "tol": 0.01
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "Distance": {
+         "eq": 25,
+         "tol": 0.01
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "Distance": {
+         "eq": 15,
+         "tol": 0.01
+        }
+       }
+      }
+     }
+    ]
+   },
+   "hints": [
+    "Start each dimension at the origin.",
+    "Use the Midpoint snap on the arcs, and the Quadrant snap on the circle.",
+    "Dimensions of 30 mm, 25 mm and 15 mm."
+   ],
+   "do": [
+    {
+     "tool": "draft_dimension",
+     "args": {
+      "kind": "linear",
+      "from": [
+       0,
+       0,
+       0
+      ],
+      "to": [
+       0,
+       30,
+       0
+      ],
+      "at": [
+       -40,
+       15,
+       0
+      ],
+      "name": "ToArc30"
+     }
+    },
+    {
+     "tool": "draft_dimension",
+     "args": {
+      "kind": "linear",
+      "from": [
+       0,
+       0,
+       0
+      ],
+      "to": [
+       0,
+       25,
+       0
+      ],
+      "at": [
+       -60,
+       12,
+       0
+      ],
+      "name": "ToArc25"
+     }
+    },
+    {
+     "tool": "draft_dimension",
+     "args": {
+      "kind": "linear",
+      "from": [
+       0,
+       0,
+       0
+      ],
+      "to": [
+       0,
+       15,
+       0
+      ],
+      "at": [
+       -20,
+       7,
+       0
+      ],
+      "name": "ToHubTop"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a frame, a hexagon, a circle, a polar array of the profile and four dimensions.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "Distance": {
+         "eq": 43.301,
+         "tol": 0.01
+        }
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "Distance": {
+         "eq": 15,
+         "tol": 0.01
+        }
+       }
+      }
+     },
+     {
+      "bbox": {
+       "type": "Part::Part2DObjectPython"
+      },
+      "size": [
+       240,
+       150,
+       0
+      ],
+      "min": [
+       -100,
+       -60,
+       0
+      ],
+      "tol": 0.01
+     }
+    ]
+   }
+  }
+ ]
+}
