@@ -259,6 +259,26 @@ class Demo(unittest.TestCase):
         self.assertEqual(st["done_for"], ["bench", "length", "pad", "pick"])
         self.assertIn("Pad pushes a closed sketch", "\n".join(x or "" for x in calls))  # demo says why
 
+    def test_next_after_a_failed_do_runs_nothing_again(self):
+        # Finding 76: a demo Next on a step whose check failed after its do
+        # answered the fail again by running the calls again (the crank of
+        # crank-slider-parts grew on each Next).
+        lesson = pad_lesson()
+        st = next(s for s in lesson["steps"] if s["id"] == "length")
+        st["check"] = {"prop": "$pad", "name": "Length", "eq": 99, "tol": 0.01}
+        w = World()
+        w.gui = GuiState("StartWorkbench")
+        c = run.Controller(Engine(lesson, call=w, doc=lambda: w.doc, gui=lambda: w.gui))
+        c.start("demo")
+        while c.e.step["id"] != "length":
+            c.act("next")
+        c.act("next")
+        n = len(w.calls)
+        self.assertGreater(n, 0)
+        for _ in range(3):
+            st = c.act("next")
+            self.assertEqual((st["id"], st["check"], len(w.calls)), ("length", "fail", n))
+
     def test_a_refused_do_stays_with_why(self):
         w, c = make(window=False)
         c.start("demo")

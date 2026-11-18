@@ -7,6 +7,13 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Fixed (18 Nov 2026: live demo replay of the lesson library, finding 76)
+
+- Finding 76: a demo Next on a step whose check failed after its do ran the do again (the crank of crank-slider-parts grew on each Next). Now the check runs again; the calls do not. Test: `test_next_after_a_failed_do_runs_nothing_again`. Fixed on main, not yet seen live.
+- crank-slider-parts 1.0.1: the crank and link-rod boxes have a tolerance of 0.2 mm (FreeCAD read the crank as 44.891 mm, not 45 mm).
+- fem-cantilever 1.0.1: the load step wants a result and the 500 MN force, not a new result object (the second fea_solve made no new one).
+- draft-tutorial 1.0.1 and surface-examples 1.0.1: the line, curve and box checks take any shape object (Part::Feature and types made from it), not only Part::Part2DObjectPython; the circle, wire and array boxes have a tolerance of 0.2 mm.
+
 ### Added (18 Nov 2026: lesson library, one lesson per workbench)
 
 - Basic Sketcher (11 steps: the five-armed star, fully constrained, padded to 24247.5 mm³), the crank and slider of the Assembly workbench page (course `wiki-crank-slider`: chapter 1 makes the four parts in Part, 6 steps; chapter 2 the assembly, grounded, with revolute, slider, revolute and cylindrical joints, 8 steps) and Configuration Tables (8 steps: a hex nut bound to a configuration table, M10 1203.53 mm³, M12 1807.6 mm³). Each step's do is the hardening model's calls that ran live (sketcher-model.json, asmtd-assembly-model.json, sheetfem-sheet-model.json); the wiki's pictures beside them, each listed in REUSE.toml and looked at (images.txt).

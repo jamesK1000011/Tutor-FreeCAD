@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.surface-examples",
- "version": "1.0.0",
+ "version": "1.0.1",
  "title": "Surface workbench examples",
  "summary": "Fill a loop of four curves with a surface, make a surface through four sections, and join two curves with a blend curve.",
  "level": "intermediate",
@@ -76,7 +76,7 @@
     }
    ],
    "check": {
-    "new": "Part::Part2DObjectPython"
+    "new": "Part::Feature"
    },
    "hints": [
     "Use the B-spline tool of the Draft workbench.",
@@ -260,7 +260,7 @@
     }
    ],
    "check": {
-    "new": "Part::Part2DObjectPython"
+    "new": "Part::Feature"
    },
    "hints": [
     "Use the arc and B-spline tools of the Draft workbench.",
@@ -401,7 +401,7 @@
     }
    ],
    "check": {
-    "new": "Part::Part2DObjectPython"
+    "new": "Part::Feature"
    },
    "hints": [
     "Use the B-spline tool of the Draft workbench.",

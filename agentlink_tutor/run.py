@@ -470,6 +470,11 @@ class Controller:
                 return
             if e.index != at:
                 return  # a known wrong turn: its branch step first
+            if e.did == e.step["id"]:
+                # Finding 76: its calls ran and its check still fails. Running
+                # them again adds the same things again (the crank grew on
+                # each Next): the fail is answered, nothing runs.
+                return
             self._do()
             if not e.passed:
                 return  # refused or not done: stays, with why

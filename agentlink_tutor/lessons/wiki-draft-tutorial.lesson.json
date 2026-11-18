@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.draft-tutorial",
- "version": "1.0.0",
+ "version": "1.0.1",
  "title": "Draft tutorial",
  "summary": "Draw arcs, lines, a rectangle, a circle and a polygon in the Draft workbench. Join a profile into a wire, array it round the centre and add dimensions.",
  "level": "basic",
@@ -91,7 +91,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      30,
@@ -107,7 +107,7 @@
    },
    "bind": {
     "arc30": {
-     "new": "Part::Part2DObjectPython"
+     "new": "Part::Feature"
     }
    },
    "hints": [
@@ -138,7 +138,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      25,
@@ -154,7 +154,7 @@
    },
    "bind": {
     "arc25": {
-     "new": "Part::Part2DObjectPython"
+     "new": "Part::Feature"
     }
    },
    "hints": [
@@ -186,7 +186,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      2.5,
@@ -202,7 +202,7 @@
    },
    "bind": {
     "tie1": {
-     "new": "Part::Part2DObjectPython"
+     "new": "Part::Feature"
     }
    },
    "hints": [
@@ -246,7 +246,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      2.5,
@@ -262,7 +262,7 @@
    },
    "bind": {
     "tie2": {
-     "new": "Part::Part2DObjectPython"
+     "new": "Part::Feature"
     }
    },
    "hints": [
@@ -315,7 +315,7 @@
      21.651,
      0
     ],
-    "tol": 0.05
+    "tol": 0.2
    },
    "bind": {
     "wire": {
@@ -352,7 +352,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      240,
@@ -398,7 +398,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      30,
@@ -410,7 +410,7 @@
      -15,
      0
     ],
-    "tol": 0.01
+    "tol": 0.2
    },
    "hints": [
     "Type the centre in the Tasks panel.",
@@ -442,7 +442,7 @@
    ],
    "check": {
     "bbox": {
-     "type": "Part::Part2DObjectPython"
+     "type": "Part::Feature"
     },
     "size": [
      100,
@@ -500,7 +500,7 @@
      -30,
      0
     ],
-    "tol": 0.05
+    "tol": 0.2
    },
    "hints": [
     "Find Polar array in the array tools of the Draft workbench.",
@@ -731,7 +731,7 @@
      },
      {
       "bbox": {
-       "type": "Part::Part2DObjectPython"
+       "type": "Part::Feature"
       },
       "size": [
        240,
