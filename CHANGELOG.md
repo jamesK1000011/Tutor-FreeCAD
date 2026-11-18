@@ -7,6 +7,13 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Fixed (18 Nov 2026: the Draft lessons want real Draft objects, finding 78)
+
+- Checks: a query takes `draft` (the Draft kind its Proxy gives: `Circle`, `Wire`, `BSpline`, `Rectangle`, `Polygon`, `Array`, `LinearDimension`; `false`: a plain shape with no Draft Proxy), `shape` (`{edges, wires, closed}`) and `count` (exists and new: that many or more). `lessons.check` refuses a bad one.
+- draft-tutorial 1.1.0: each step wants Draft's own object with its Draft values: the arcs are `Part::Part2DObjectPython` Circle with radius 30 or 25 mm and angles 60 to 120 deg; the tie lines Draft Wire objects of one edge; the frame a Rectangle; the circle a Circle of radius 15 mm; the hexagon a Polygon of six sides, radius 50 mm; the array a polar Draft Array of 4; the dimensions LinearDimension. Upgrade must give one closed wire of four edges and leave no Draft arc or line. In FreeCAD 1.1 that wire is a plain `Part::Feature` (Draft's `makeWires`, `draftfunctions/upgrade.py`, tag 1.1.3), as the wiki says: no longer parametric. Before, each check took any `Part::Feature`.
+- surface-examples 1.1.0: the curve steps want Draft B-splines (4, then 2 with 2 Draft arcs, then 2), as the pages' scripts make them.
+- Tests: `tests/_draft_standin.py` (the objects FreeCAD 1.1's Draft makes) and `tests/test_draft_lesson.py`: each step passes on them, and fails on a plain shape in place of a Draft object and on an Upgrade that leaves an open wire. Fixed on main, not yet seen live.
+
 ### Fixed (18 Nov 2026: a student agent in the film-hinge lesson, findings 83, 62, 56c)
 
 - Finding 83: film-hinge-sketch 1.0.4. The shape step needs the arc's centre and both ends on one vertical line (sketch check arc_ends_vertical), not only 4 degrees of freedom or fewer.

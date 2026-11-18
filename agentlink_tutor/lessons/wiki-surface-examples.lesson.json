@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.surface-examples",
- "version": "1.0.1",
+ "version": "1.1.0",
  "title": "Surface workbench examples",
  "summary": "Fill a loop of four curves with a surface, make a surface through four sections, and join two curves with a blend curve.",
  "level": "intermediate",
@@ -26,7 +26,7 @@
   "licence": "CC-BY-3.0",
   "link": "https://wiki.freecad.org/Surface_GeomFillSurface",
   "adapted": true,
-  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Made from the examples of three pages: Surface_GeomFillSurface, Surface_Sections and Surface_BlendCurve (https://wiki.freecad.org/Surface_Sections, https://wiki.freecad.org/Surface_BlendCurve), with their curves. The checks read the type of each surface."
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Made from the examples of three pages: Surface_GeomFillSurface, Surface_Sections and Surface_BlendCurve (https://wiki.freecad.org/Surface_Sections, https://wiki.freecad.org/Surface_BlendCurve), with their curves. The curve checks want Draft B-splines and Draft arcs, as the pages' scripts make; the surface checks read each surface's type."
  },
  "setup": {
   "calls": [
@@ -76,7 +76,11 @@
     }
    ],
    "check": {
-    "new": "Part::Feature"
+    "new": {
+     "type": "Part::FeaturePython",
+     "draft": "BSpline",
+     "count": 4
+    }
    },
    "hints": [
     "Use the B-spline tool of the Draft workbench.",
@@ -260,7 +264,22 @@
     }
    ],
    "check": {
-    "new": "Part::Feature"
+    "all": [
+     {
+      "new": {
+       "type": "Part::Part2DObjectPython",
+       "draft": "Circle",
+       "count": 2
+      }
+     },
+     {
+      "new": {
+       "type": "Part::FeaturePython",
+       "draft": "BSpline",
+       "count": 2
+      }
+     }
+    ]
    },
    "hints": [
     "Use the arc and B-spline tools of the Draft workbench.",
@@ -401,7 +420,11 @@
     }
    ],
    "check": {
-    "new": "Part::Feature"
+    "new": {
+     "type": "Part::FeaturePython",
+     "draft": "BSpline",
+     "count": 2
+    }
    },
    "hints": [
     "Use the B-spline tool of the Draft workbench.",

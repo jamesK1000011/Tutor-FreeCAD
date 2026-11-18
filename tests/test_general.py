@@ -14,6 +14,7 @@ import os
 import types
 import unittest
 
+import _draft_standin
 from fakes import Doc, Quantity, Shape
 from test_point import Hooks, Overlay, Ann, Win
 from test_engine import World as PadWorld
@@ -42,7 +43,8 @@ MAKES = {"pd_fillet": ("Fillet", "PartDesign::Fillet"), "pd_chamfer": ("Chamfer"
          "pd_hole": ("Hole", "PartDesign::Hole"), "hw_hole": ("Hole", "PartDesign::Hole"),
          "td_view": ("View", "TechDraw::DrawViewPart"), "asm_new": ("Assembly", "Assembly::AssemblyObject"),
          "param_set": ("Params", "Spreadsheet::Sheet"),
-         # The wiki library's other workbenches: what each tool makes.
+         # The wiki library's other workbenches: what each tool makes (the Draft
+         # tools' real objects: _draft_standin; these answer the kinds it leaves out).
          "draft_shape": ("Draft", "Part::Part2DObjectPython"), "draft_modify": ("Wire", "Part::Feature"),
          "meshobj_from_shape": ("Mesh", "Mesh::Feature"), "import_file": ("Mesh", "Mesh::Feature"),
          "part_from_mesh": ("Solid", "Part::Feature"), "points_sample": ("Points", "Points::Feature"),
@@ -156,6 +158,9 @@ class World(PadWorld):
     def generic(self, name, args):
         """Any other tool: it goes through, making what it makes."""
         self.calls.append((name, args))
+        o = _draft_standin.make(self, name, args)
+        if o is not None:
+            return False, {"made": o.Name}
         made = MAKES.get(name)
         if made and not (name == "param_set" and self.doc.getObject("Params")):
             o = self.doc.add(made[0], made[1], shape=Shape(1, (1, 1, 1)))
