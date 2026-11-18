@@ -119,6 +119,7 @@ tests/test_lessons.py
 tests/test_observe.py
 tests/test_point.py
 tests/test_r4_review.py
+tests/test_red_team.py
 tests/test_replay_fc.py
 tests/test_replay_t3_fc.py
 tests/test_run.py
