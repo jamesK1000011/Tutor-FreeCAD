@@ -228,3 +228,34 @@ def watch_mode(on):
         except Exception:  # noqa: BLE001
             pass
     return on
+
+
+def document_closing(session, name):
+    """Agent Link's hook (hooks.emit "document_closing") before doc_close
+    closes a document: when it is the running lesson's document, the lesson
+    is stopped first, so its rings, timers and task hold let go of it (live
+    62: doc_close discard on a lesson document raised FreeCAD's save dialog
+    only while the lesson ran). Never raises."""
+    c = NOW["ctl"]
+    if c is None:
+        return False
+    try:
+        e = getattr(c, "e", None)
+        mine = getattr(e, "doc_name", None)
+        if mine is None:
+            d = e._doc() if e is not None and callable(getattr(e, "_doc", None)) else None
+            mine = getattr(d, "Name", None)
+        if not mine or mine != name:
+            return False
+        try:
+            if getattr(e, "state", None) in ("step", "done"):
+                c.act("stop")
+        finally:
+            set_controller(None)
+        return True
+    except Exception:  # noqa: BLE001
+        try:
+            set_controller(None)
+        except Exception:  # noqa: BLE001
+            pass
+        return True

@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.film-hinge-sketch",
- "version": "1.0.3",
+ "version": "1.0.4",
  "title": "Sketcher example: the basic sketch of a film hinge",
  "summary": "Draw the master sketch of a film hinge: an arc for the closed lid, a line for the open one, its length an expression of the arc's radius.",
  "level": "intermediate",
@@ -156,7 +156,8 @@
    ],
    "check": {
     "sketch": "$sketch",
-    "dof_max": 4
+    "dof_max": 4,
+    "arc_ends_vertical": true
    },
    "hints": [
     "Select two points. Push **{Sketcher_ConstrainVertical|Vertical}**.",
