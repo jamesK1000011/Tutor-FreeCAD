@@ -286,7 +286,12 @@ class Engine:
         if self.call is None:
             raise TutorError("no tools to call: the engine was given no call")
         answers = []
+        from .lessons import never_called
+
         for c in calls:
+            if never_called(c.get("tool")):
+                # Checked when the lesson loads too; here for a lesson that was not.
+                raise TutorError(f"{where}: a lesson never calls {c.get('tool')} (red team rule). Nothing more was run.")
             if c["tool"] not in DOC_TOOLS:
                 self.hold_doc()
             args = resolve(c.get("args") or {}, self.bindings)

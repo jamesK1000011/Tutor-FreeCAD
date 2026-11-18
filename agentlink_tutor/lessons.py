@@ -269,6 +269,29 @@ def _calls(lesson):
                 yield from each(f"steps.{s.get('id')}.do[{i}]", c)
 
 
+# Tools a lesson never calls (red team, 2026-11-18): a lesson is data from
+# an add-on or an agent, and "Do it for me" runs its calls as the person's
+# click. What runs code, installs code, changes settings, holds the person's
+# OK or drives the window's input stays out of every lesson.
+NEVER_CALLED = {"batch", "job_start", "live_run", "gui_input", "dialog_answer", "gui_unstick", "addon", "addon_test", "app_extensions",
+                "agentlink_update", "app_restart", "app_force_restart", "pref_set", "pref_reset", "pref_import", "pref_pack",
+                "port_scaffold", "outputs_clean", "doc_revert", "doc_close", "crash_collect"}
+
+
+def never_called(tool):
+    """True for a tool no lesson calls."""
+    t = str(tool or "")
+    return t in NEVER_CALLED or t.startswith(("cookbook_", "macro_")) or "approve" in t
+
+
+def _never_problems(lesson):
+    out = []
+    for where, c in _calls(lesson):
+        if isinstance(c, dict) and never_called(c.get("tool")):
+            out.append(f"{where}: a lesson never calls {c['tool']} (it runs or installs code, changes settings, or holds the person's OK)")
+    return out
+
+
 def _else_problems(lesson):
     """A call's else: calls ({tool, args}), none with an else of its own."""
     out = []
@@ -461,6 +484,7 @@ def check(lesson, tools=None, extra_kinds=(), inline=False):
     for m in sorted(missing):
         out.append(f"${m} is used but never defined (vars, setup.bind or a step's bind)")
     out += _else_problems(lesson)
+    out += _never_problems(lesson)
     if tools is not None:
         for where, c in _calls(lesson):
             if not isinstance(c, dict) or not isinstance(c.get("tool"), str) or c["tool"] in tools:
@@ -725,7 +749,9 @@ def inline(lesson, tools=None, extra_kinds=(), lookup=None):
     the lessons its setup.after may name (stored ones, and this session's
     inline ones)."""
     if isinstance(lesson, dict):
-        lesson = {"schema": SCHEMA_VERSION, "version": "0.0.0", **lesson}
+        # Keys with _ in front are the loader's own (its folder, owner):
+        # never the agent's to set (red team, 2026-11-18).
+        lesson = {"schema": SCHEMA_VERSION, "version": "0.0.0", **{k: v for k, v in lesson.items() if not str(k).startswith("_")}}
     problems = check(lesson, tools, extra_kinds, inline=True)
     if problems:
         raise LessonError("; ".join(problems[:5]))
