@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "id": "agentlink_tutor.wiki.fem-cantilever",
- "version": "1.0.0",
+ "version": "1.0.1",
  "title": "FEM CalculiX cantilever 3D",
  "summary": "Set up a static analysis of a steel cantilever: material, a fixed end, a force and a mesh. Solve it with CalculiX, then change the load.",
  "level": "basic",
@@ -253,7 +253,7 @@
       ]
      },
      {
-      "new": "Fem::FemResultObject"
+      "exists": "Fem::FemResultObject"
      }
     ]
    },
