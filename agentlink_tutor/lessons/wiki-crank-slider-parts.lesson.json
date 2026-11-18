@@ -1,0 +1,834 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.crank-slider-parts",
+ "version": "1.0.0",
+ "title": "Crank and slider: the parts",
+ "summary": "Make the four parts of the crank and slider example in the Part workbench: base, slider rod, crank and link rod.",
+ "level": "intermediate",
+ "minutes": 30,
+ "tags": [
+  "part",
+  "primitive",
+  "boolean",
+  "assembly",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Assembly Workbench: Example crank and slider",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Assembly_Workbench",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The page gives the parts as Python; here each part is made with Part tools from the same sizes. The colours and the step that drives the crank with Python are left out."
+ },
+ "course": {
+  "id": "wiki-crank-slider",
+  "title": "Crank and slider (FreeCAD wiki)",
+  "chapter": 1
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "CrankSlider"
+    }
+   }
+  ]
+ },
+ "result": {
+  "all": [
+   {
+    "bbox": {
+     "label": "Base"
+    },
+    "size": [
+     140,
+     40,
+     23
+    ],
+    "min": [
+     0,
+     -20,
+     0
+    ],
+    "tol": 0.01
+   },
+   {
+    "bbox": {
+     "label": "Rod"
+    },
+    "size": [
+     106,
+     12,
+     12
+    ],
+    "min": [
+     0,
+     -46,
+     0
+    ],
+    "tol": 0.01
+   },
+   {
+    "all": [
+     {
+      "bbox": {
+       "label": "Crank"
+      },
+      "size": [
+       15,
+       45,
+       10
+      ],
+      "min": [
+       117.5,
+       -77.5,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "volume": {
+       "label": "Crank"
+      },
+      "eq": 2607.39,
+      "tol": 0.5
+     }
+    ]
+   },
+   {
+    "all": [
+     {
+      "bbox": {
+       "label": "Conrod"
+      },
+      "size": [
+       62,
+       12,
+       4
+      ],
+      "min": [
+       19,
+       -76,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "volume": {
+       "label": "Conrod"
+      },
+      "eq": 2450.27,
+      "tol": 0.5
+     }
+    ]
+   }
+  ]
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Part** workbench.",
+   "targets": [
+    {
+     "wb": "PartWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "PartWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Part."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "PartWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "base",
+   "say": "Make a plate 140 mm × 40 mm × 7 mm with a pin, a block and a boss. Use **{Part_Fuse|Union}** to join them. Use **{Part_Cut|Cut}** to remove an 8 mm bore from the boss. Give the result the label **Base**.",
+   "why": "The base holds the crank pin and the bore for the slider rod.",
+   "explain": "Plate: box 140 x 40 x 7 mm, corner at x 0 mm, y -20 mm, z 0 mm. Pin: cylinder r 4 mm, h 8 mm at x 120 mm, z 7 mm. Block: box 20 x 12 x 10 mm at x 5 mm, y -6 mm, z 7 mm. Boss: cylinder r 6 mm, h 20 mm at x 25 mm, z 17 mm, along -x. Bore: cylinder r 4 mm, h 20 mm, at the same place.",
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "cmd": "Part_Fuse"
+    },
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "label": "Base"
+    },
+    "size": [
+     140,
+     40,
+     23
+    ],
+    "min": [
+     0,
+     -20,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Use Cube and Cylinder in the Part workbench. Use Union and Cut on them.",
+    "Set the sizes and the Placement of each primitive in the Property view.",
+    "Plate 140 × 40 × 7 mm at y = -20 mm. Pin r 4 mm at x = 120 mm. Boss r 6 mm along -x at z = 17 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       140,
+       40,
+       7
+      ],
+      "at": [
+       0,
+       -20,
+       0
+      ],
+      "name": "Base"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 8,
+      "at": [
+       120,
+       0,
+       7
+      ],
+      "name": "BasePin"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       20,
+       12,
+       10
+      ],
+      "at": [
+       5,
+       -6,
+       7
+      ],
+      "name": "BaseBlock"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 6,
+      "height": 20,
+      "at": [
+       25,
+       0,
+       17
+      ],
+      "direction": [
+       -1,
+       0,
+       0
+      ],
+      "name": "BaseBoss"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "fuse",
+      "base": "Base",
+      "tools": [
+       "BasePin",
+       "BaseBlock",
+       "BaseBoss"
+      ]
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 20,
+      "at": [
+       25,
+       0,
+       17
+      ],
+      "direction": [
+       -1,
+       0,
+       0
+      ],
+      "name": "BaseBore"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Base",
+      "tools": "BaseBore"
+     }
+    }
+   ]
+  },
+  {
+   "id": "rod",
+   "say": "Make the slider rod from two small boxes, a pin and an 88 mm shaft. Use **{Part_Fuse|Union}** to join them. Move it 100 mm on x and -40 mm on y. Give it the label **Rod**.",
+   "explain": "Box 4 x 12 x 12 mm at x -12 mm, y -6 mm. Box 14 x 12 x 4 mm at x -8 mm, y -6 mm. Pin: r 4 mm, h 8 mm at z 4 mm. Shaft: r 4 mm, h 88 mm at x -12 mm, z 6 mm, along -x. Placement of the result: x 100 mm, y -40 mm.",
+   "targets": [
+    {
+     "cmd": "Part_Box"
+    },
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "cmd": "Part_Fuse"
+    }
+   ],
+   "check": {
+    "bbox": {
+     "label": "Rod"
+    },
+    "size": [
+     106,
+     12,
+     12
+    ],
+    "min": [
+     0,
+     -46,
+     0
+    ],
+    "tol": 0.01
+   },
+   "hints": [
+    "Make the four primitives first. Fuse them into one solid.",
+    "Set the Placement of the fused part.",
+    "Shaft r 4 mm × 88 mm along -x; Placement x = 100 mm, y = -40 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       4,
+       12,
+       12
+      ],
+      "at": [
+       -12,
+       -6,
+       0
+      ],
+      "name": "Rod"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       14,
+       12,
+       4
+      ],
+      "at": [
+       -8,
+       -6,
+       0
+      ],
+      "name": "RodFoot"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 8,
+      "at": [
+       0,
+       0,
+       4
+      ],
+      "name": "RodPin"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 88,
+      "at": [
+       -12,
+       0,
+       6
+      ],
+      "direction": [
+       -1,
+       0,
+       0
+      ],
+      "name": "RodShaft"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "fuse",
+      "base": "Rod",
+      "tools": [
+       "RodFoot",
+       "RodPin",
+       "RodShaft"
+      ]
+     }
+    },
+    {
+     "tool": "part_transform",
+     "args": {
+      "op": "move",
+      "body": "Rod",
+      "by": [
+       100,
+       -40,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "crank",
+   "say": "Make the crank from two discs, a 30 mm arm and a pin. Use **{Part_Cut|Cut}** to remove a hole of 8 mm diameter. Move it to x = 125 mm, y = -70 mm. Give it the label **Crank**.",
+   "explain": "Discs: r 7.5 mm, h 4 mm at the origin and at y 30 mm. Arm: box 15 x 30 x 4 mm at x -7.5 mm. Pin: r 4 mm, h 6 mm at y 30 mm, z 4 mm. Hole: r 4 mm, h 4 mm at the origin. Placement: x 125 mm, y -70 mm.",
+   "targets": [
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "cmd": "Part_Fuse"
+    },
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": {
+       "label": "Crank"
+      },
+      "size": [
+       15,
+       45,
+       10
+      ],
+      "min": [
+       117.5,
+       -77.5,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "volume": {
+       "label": "Crank"
+      },
+      "eq": 2607.39,
+      "tol": 0.5
+     }
+    ]
+   },
+   "hints": [
+    "Fuse the discs, the arm and the pin. Cut the hole after the fuse.",
+    "Set the Placement of the result.",
+    "Discs r 7.5 mm, arm 15 × 30 × 4 mm, pin r 4 mm; Placement x = 125 mm, y = -70 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 7.5,
+      "height": 4,
+      "name": "Crank"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       15,
+       30,
+       4
+      ],
+      "at": [
+       -7.5,
+       0,
+       0
+      ],
+      "name": "CrankArm"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 7.5,
+      "height": 4,
+      "at": [
+       0,
+       30,
+       0
+      ],
+      "name": "CrankEnd"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 6,
+      "at": [
+       0,
+       30,
+       4
+      ],
+      "name": "CrankPin"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "fuse",
+      "base": "Crank",
+      "tools": [
+       "CrankArm",
+       "CrankEnd",
+       "CrankPin"
+      ]
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 4,
+      "name": "CrankHole"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Crank",
+      "tools": "CrankHole"
+     }
+    },
+    {
+     "tool": "part_transform",
+     "args": {
+      "op": "move",
+      "body": "Crank",
+      "by": [
+       125,
+       -70,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "conrod",
+   "say": "Make the link rod from two discs and a 50 mm bar. Use **{Part_Cut|Cut}** to remove a hole of 8 mm diameter from each disc. Move it to x = 25 mm, y = -70 mm. Give it the label **Conrod**.",
+   "explain": "Discs: r 6 mm, h 4 mm at the origin and at x 50 mm. Bar: box 50 x 12 x 4 mm at y -6 mm. Holes: r 4 mm, h 4 mm at both disc centres. Placement: x 25 mm, y -70 mm.",
+   "targets": [
+    {
+     "cmd": "Part_Cylinder"
+    },
+    {
+     "cmd": "Part_Fuse"
+    },
+    {
+     "cmd": "Part_Cut"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": {
+       "label": "Conrod"
+      },
+      "size": [
+       62,
+       12,
+       4
+      ],
+      "min": [
+       19,
+       -76,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "volume": {
+       "label": "Conrod"
+      },
+      "eq": 2450.27,
+      "tol": 0.5
+     }
+    ]
+   },
+   "hints": [
+    "Fuse the discs and the bar. Cut the two holes after the fuse.",
+    "Set the Placement of the result.",
+    "Discs r 6 mm, bar 50 × 12 × 4 mm, holes r 4 mm; Placement x = 25 mm, y = -70 mm."
+   ],
+   "do": [
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 6,
+      "height": 4,
+      "name": "Conrod"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "box",
+      "size": [
+       50,
+       12,
+       4
+      ],
+      "at": [
+       0,
+       -6,
+       0
+      ],
+      "name": "ConRodBar"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 6,
+      "height": 4,
+      "at": [
+       50,
+       0,
+       0
+      ],
+      "name": "ConRodEnd"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "fuse",
+      "base": "Conrod",
+      "tools": [
+       "ConRodBar",
+       "ConRodEnd"
+      ]
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 4,
+      "name": "ConRodHoleA"
+     }
+    },
+    {
+     "tool": "part_primitive",
+     "args": {
+      "kind": "cylinder",
+      "radius": 4,
+      "height": 4,
+      "at": [
+       50,
+       0,
+       0
+      ],
+      "name": "ConRodHoleB"
+     }
+    },
+    {
+     "tool": "part_boolean",
+     "args": {
+      "op": "cut",
+      "base": "Conrod",
+      "tools": [
+       "ConRodHoleA",
+       "ConRodHoleB"
+      ]
+     }
+    },
+    {
+     "tool": "part_transform",
+     "args": {
+      "op": "move",
+      "body": "Conrod",
+      "by": [
+       25,
+       -70,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the four parts of the crank and slider, each where the assembly needs it.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "bbox": {
+       "label": "Base"
+      },
+      "size": [
+       140,
+       40,
+       23
+      ],
+      "min": [
+       0,
+       -20,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "bbox": {
+       "label": "Rod"
+      },
+      "size": [
+       106,
+       12,
+       12
+      ],
+      "min": [
+       0,
+       -46,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "all": [
+       {
+        "bbox": {
+         "label": "Crank"
+        },
+        "size": [
+         15,
+         45,
+         10
+        ],
+        "min": [
+         117.5,
+         -77.5,
+         0
+        ],
+        "tol": 0.01
+       },
+       {
+        "volume": {
+         "label": "Crank"
+        },
+        "eq": 2607.39,
+        "tol": 0.5
+       }
+      ]
+     },
+     {
+      "all": [
+       {
+        "bbox": {
+         "label": "Conrod"
+        },
+        "size": [
+         62,
+         12,
+         4
+        ],
+        "min": [
+         19,
+         -76,
+         0
+        ],
+        "tol": 0.01
+       },
+       {
+        "volume": {
+         "label": "Conrod"
+        },
+        "eq": 2450.27,
+        "tol": 0.5
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

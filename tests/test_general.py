@@ -41,7 +41,14 @@ def starters():
 MAKES = {"pd_fillet": ("Fillet", "PartDesign::Fillet"), "pd_chamfer": ("Chamfer", "PartDesign::Chamfer"),
          "pd_hole": ("Hole", "PartDesign::Hole"), "hw_hole": ("Hole", "PartDesign::Hole"),
          "td_view": ("View", "TechDraw::DrawViewPart"), "asm_new": ("Assembly", "Assembly::AssemblyObject"),
-         "param_set": ("Params", "Spreadsheet::Sheet")}
+         "param_set": ("Params", "Spreadsheet::Sheet"),
+         # The wiki library's other workbenches: what each tool makes.
+         "draft_shape": ("Draft", "Part::Part2DObjectPython"), "draft_modify": ("Wire", "Part::Feature"),
+         "meshobj_from_shape": ("Mesh", "Mesh::Feature"), "import_file": ("Mesh", "Mesh::Feature"),
+         "part_from_mesh": ("Solid", "Part::Feature"), "points_sample": ("Points", "Points::Feature"),
+         "points_import": ("Points", "Points::Feature"), "points_merge": ("Points", "Points::Feature"),
+         "points_structure": ("Structured", "Points::Structured"), "surface_boundary": ("Patch", "Surface::GeomFillSurface"),
+         "surface_sections": ("Sections", "Surface::Sections"), "surface_blend": ("Blend", "Surface::FeatureBlendCurve")}
 
 
 PART_BOX = {

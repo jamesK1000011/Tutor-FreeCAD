@@ -1,0 +1,408 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.crank-slider-assembly",
+ "version": "1.0.0",
+ "title": "Crank and slider: the assembly",
+ "summary": "Put the four parts in an assembly, ground the base and join the parts with revolute, slider and cylindrical joints.",
+ "level": "intermediate",
+ "minutes": 25,
+ "tags": [
+  "assembly",
+  "joint",
+  "kinematic",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "AssemblyWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Assembly Workbench: Example crank and slider",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Assembly_Workbench",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The parts come from the chapter before. The step that drives the crank with Python is left out. Each check reads the assembly's objects and joint types."
+ },
+ "course": {
+  "id": "wiki-crank-slider",
+  "title": "Crank and slider (FreeCAD wiki)",
+  "chapter": 2
+ },
+ "setup": {
+  "after": "agentlink_tutor.wiki.crank-slider-parts"
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Assembly** workbench.",
+   "targets": [
+    {
+     "wb": "AssemblyWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "AssemblyWorkbench"
+   },
+   "hints": [
+    "Find the workbench selector in the toolbar.",
+    "Open the list of workbenches.",
+    "Workbench: Assembly."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "AssemblyWorkbench"
+     }
+    }
+   ]
+  },
+  {
+   "id": "assembly",
+   "say": "Push **{Assembly_CreateAssembly|Create Assembly}**. Drag the four parts onto the new assembly in the tree.",
+   "why": "The solver moves only the parts inside the assembly.",
+   "targets": [
+    {
+     "cmd": "Assembly_CreateAssembly"
+    }
+   ],
+   "check": {
+    "exists": "Assembly::AssemblyObject"
+   },
+   "hints": [
+    "Find Create Assembly in the Assembly toolbar.",
+    "Drop Base, Rod, Crank and Conrod on the assembly.",
+    "Four parts in the assembly: Base, Rod, Crank, Conrod."
+   ],
+   "do": [
+    {
+     "tool": "asm_new",
+     "args": {
+      "parts": [
+       "Base",
+       "Rod",
+       "Crank",
+       "Conrod"
+      ],
+      "name": "CrankSlider"
+     }
+    }
+   ]
+  },
+  {
+   "id": "ground",
+   "say": "Select **Base**. Push **{Assembly_ToggleGrounded|Toggle grounded}**.",
+   "why": "A grounded part keeps its position; the other parts move to it.",
+   "targets": [
+    {
+     "cmd": "Assembly_ToggleGrounded"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "App::FeaturePython",
+     "where": {
+      "ObjectToGround": {
+       "set": true
+      }
+     }
+    }
+   },
+   "hints": [
+    "Select the base in the tree or in the view.",
+    "Expand Joints in the tree to find the grounded joint.",
+    "Grounded part: Base."
+   ],
+   "do": [
+    {
+     "tool": "asm_ground",
+     "args": {
+      "part": "Base"
+     }
+    }
+   ]
+  },
+  {
+   "id": "revolute",
+   "say": "Select the round edge of the pin on **Base**. Hold **Ctrl**. Select the round edge of the hole in **Crank**. Push **{Assembly_CreateJointRevolute|Create Revolute Joint}**.",
+   "why": "A revolute joint lets the crank turn round the pin only.",
+   "picture": {
+    "file": "pictures/Assembly_KinematicExample-06.png",
+    "alt": "The crank moves onto the pin of the base; the joint's axes show at the hole."
+   },
+   "targets": [
+    {
+     "cmd": "Assembly_CreateJointRevolute"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "App::FeaturePython",
+     "where": {
+      "JointType": "Revolute"
+     }
+    }
+   },
+   "hints": [
+    "Select two circular edges, one on each part.",
+    "Use Create Revolute Joint. Push OK in the Tasks panel.",
+    "Base pin edge and Crank hole edge, revolute joint."
+   ],
+   "do": [
+    {
+     "tool": "asm_joint",
+     "args": {
+      "kind": "revolute",
+      "name": "CrankPivot",
+      "a": {
+       "part": "Base",
+       "element": {
+        "kind": "edge",
+        "type": "circle",
+        "radius": 4,
+        "near": [
+         120,
+         0,
+         7
+        ]
+       }
+      },
+      "b": {
+       "part": "Crank",
+       "element": {
+        "kind": "edge",
+        "type": "circle",
+        "radius": 4,
+        "near": [
+         125,
+         -70,
+         0
+        ]
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "slider",
+   "say": "Select the bore face of **Base**. Hold **Ctrl**. Select the shaft face of **Rod**. Push **{Assembly_CreateJointSlider|Create Slider Joint}**.",
+   "why": "A slider joint lets the rod move along its centre line only.",
+   "picture": {
+    "file": "pictures/Assembly_KinematicExample-08.png",
+    "alt": "The slider rod moves into the bore of the base."
+   },
+   "targets": [
+    {
+     "cmd": "Assembly_CreateJointSlider"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "App::FeaturePython",
+     "where": {
+      "JointType": "Slider"
+     }
+    }
+   },
+   "hints": [
+    "Select two cylindrical faces, one on each part.",
+    "Use Create Slider Joint. Push OK in the Tasks panel.",
+    "Base bore face and Rod shaft face, slider joint."
+   ],
+   "do": [
+    {
+     "tool": "asm_joint",
+     "args": {
+      "kind": "slider",
+      "name": "RodSlide",
+      "a": {
+       "part": "Base",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "near": [
+         15,
+         0,
+         17
+        ]
+       }
+      },
+      "b": {
+       "part": "Rod",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "near": [
+         44,
+         -40,
+         6
+        ]
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "crankrod",
+   "say": "Select the pin face of **Crank**. Hold **Ctrl**. Select a hole face of **Conrod**. Push **{Assembly_CreateJointRevolute|Create Revolute Joint}**.",
+   "targets": [
+    {
+     "cmd": "Assembly_CreateJointRevolute"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "App::FeaturePython",
+     "where": {
+      "JointType": "Revolute"
+     }
+    }
+   },
+   "hints": [
+    "Select the pin on top of the crank, and one of the two holes of the rod.",
+    "Use Create Revolute Joint again. Drag a part if the solver needs help.",
+    "Crank pin face and Conrod hole face, revolute joint."
+   ],
+   "do": [
+    {
+     "tool": "asm_joint",
+     "args": {
+      "kind": "revolute",
+      "name": "CrankRod",
+      "a": {
+       "part": "Crank",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "area": [
+         140,
+         160
+        ]
+       }
+      },
+      "b": {
+       "part": "Conrod",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "near": [
+         25,
+         -70,
+         2
+        ]
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "cylindrical",
+   "say": "Select the pin face of **Rod**. Hold **Ctrl**. Select the free hole face of **Conrod**. Push **{Assembly_CreateJointCylindrical|Create Cylindrical Joint}**.",
+   "why": "The last joint closes the loop: the crank now drives the rod.",
+   "picture": {
+    "file": "pictures/Assembly_KinematicExample-14.png",
+    "alt": "The link rod joins the pin of the slider rod; the loop of parts closes."
+   },
+   "targets": [
+    {
+     "cmd": "Assembly_CreateJointCylindrical"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "App::FeaturePython",
+     "where": {
+      "JointType": "Cylindrical"
+     }
+    }
+   },
+   "hints": [
+    "Select the short pin of the slider rod and the other hole of the link rod.",
+    "Use Create Cylindrical Joint. Push OK in the Tasks panel.",
+    "Rod pin face and Conrod free hole face, cylindrical joint."
+   ],
+   "do": [
+    {
+     "tool": "asm_joint",
+     "args": {
+      "kind": "cylindrical",
+      "name": "RodPinJoint",
+      "a": {
+       "part": "Rod",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "area": [
+         150,
+         250
+        ]
+       }
+      },
+      "b": {
+       "part": "Conrod",
+       "element": {
+        "kind": "face",
+        "type": "cylinder",
+        "radius": 4,
+        "near": [
+         170,
+         30,
+         14
+        ]
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a crank and slider with four joints. Drag the crank to move the slider rod.",
+   "picture": {
+    "file": "pictures/Assembly3_KinematicExample-01.png",
+    "alt": "The finished crank and slider: base, slider rod, crank and link rod, joined."
+   },
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "Assembly::AssemblyObject"
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "JointType": "Slider"
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "App::FeaturePython",
+       "where": {
+        "JointType": "Cylindrical"
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,439 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.configuration-tables",
+ "version": "1.0.0",
+ "title": "Configuration tables",
+ "summary": "Drive a hex nut from a spreadsheet's configuration table, and switch it from M10 to M12.",
+ "level": "intermediate",
+ "minutes": 30,
+ "tags": [
+  "spreadsheet",
+  "configuration",
+  "expression",
+  "partdesign",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "SpreadsheetWorkbench",
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Configuration Tables",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Configuration_Tables",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The body comes first, the spreadsheet after the pad. The steps with a SubShapeBinder or a Link (variant links) are left out: the configuration changes on the body itself. The column WidthAcrossCorners has the name Width. Each check reads the expressions and the volume of the nut."
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "ConfigurationTables"
+    }
+   },
+   {
+    "tool": "pd_body_new",
+    "args": {
+     "name": "Nut"
+    }
+   }
+  ],
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "view": "isometric",
+ "steps": [
+  {
+   "id": "sketch",
+   "say": "Push **{PartDesign_NewSketch|Create sketch}**. Select the XY plane. Push **OK**. Give the sketch the label **Profile**.",
+   "why": "The expressions later find the sketch by this label.",
+   "targets": [
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "exists": {
+     "type": "Sketcher::SketchObject",
+     "label": "Profile"
+    }
+   },
+   "bind": {
+    "sketch": {
+     "exists": {
+      "type": "Sketcher::SketchObject",
+      "label": "Profile"
+     }
+    }
+   },
+   "hints": [
+    "Find the sketch button in the Part Design toolbar.",
+    "Push **F2** on the sketch in the tree to change its label.",
+    "Plane: XY, label: Profile."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "body": "$body",
+      "plane": "XY",
+      "name": "Profile"
+     }
+    }
+   ]
+  },
+  {
+   "id": "profile",
+   "say": "Draw a hexagon on the origin. Draw a circle on the origin, inside the hexagon. Push **Close**.",
+   "why": "The hexagon is the outside of the nut; the circle is its hole.",
+   "picture": {
+    "file": "pictures/Variant-link-example-hex-nut-sketch-unconstrained.png",
+    "alt": "A hexagon and a circle, both on the origin, with no dimensions yet."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateHexagon"
+    },
+    {
+     "cmd": "Sketcher_CreateCircle"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$sketch",
+      "closed": true,
+      "count": 7
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Put the centre of each on the origin point.",
+    "Use the hexagon tool and the circle tool of the Sketcher.",
+    "A hexagon of six lines and one circle, both centred on the origin."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$sketch",
+      "items": [
+       {
+        "kind": "polygon",
+        "center": [
+         0,
+         0
+        ],
+        "radius": 9.24,
+        "sides": 6,
+        "dims": true,
+        "name": "hex"
+       },
+       {
+        "kind": "circle",
+        "center": [
+         0,
+         0
+        ],
+        "diameter": 10,
+        "dims": true,
+        "name": "hole"
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$sketch",
+      "constraints": [
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          6,
+          3
+         ],
+         "origin"
+        ]
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          7,
+          3
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Push **{PartDesign_Pad|Pad}**. Keep the default length. Push **OK**.",
+   "why": "The spreadsheet sets the thickness later.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pad"
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "pad": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find Pad in the Part Design toolbar.",
+    "Any length is good for now.",
+    "Pad with its default length, OK."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$sketch",
+      "length": 8.4
+     }
+    }
+   ]
+  },
+  {
+   "id": "table",
+   "say": "Push **{Spreadsheet_CreateSheet|Create spreadsheet}**. Type the table of the picture. Open the context menu of cell **A2**. Select **Configuration table…**. Push **OK**.",
+   "why": "The second row shows the values of the configuration in use.",
+   "explain": "The first row holds the titles: Variant, Diameter, Width, Thickness. Keep the second row empty. The third row holds **M10**: 10 mm, 18.48 mm, 8.4 mm. The fourth row holds **M12**: 12 mm, 20.78 mm, 10.8 mm. Width is the width across the corners. In the Setup Configuration Table dialog, set the cell range **A2** to **D4** and the property **Nut.Configuration**. Give each cell of the second row the alias of its column title.",
+   "picture": {
+    "file": "pictures/Variant-link-spreadsheet-table-example.png",
+    "alt": "A spreadsheet: titles in the first row, the values in use below them, and a row for each nut size."
+   },
+   "targets": [
+    {
+     "cmd": "Spreadsheet_CreateSheet"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": "Spreadsheet::Sheet"
+     },
+     {
+      "exists": {
+       "type": "PartDesign::Body",
+       "where": {
+        "Configuration": {
+         "set": true
+        }
+       }
+      }
+     }
+    ]
+   },
+   "hints": [
+    "Leave the second row empty: the configuration table fills it.",
+    "In the dialog, set the cell range and the property of the body.",
+    "Range **A2** to **D4**, property **Nut.Configuration**. Aliases on the second row: **Diameter**, **Width** and **Thickness**."
+   ],
+   "do": [
+    {
+     "tool": "sheet_table",
+     "args": {
+      "action": "make",
+      "name": "NutTable",
+      "params": [
+       "Diameter",
+       "Width",
+       "Thickness"
+      ],
+      "configs": [
+       {
+        "name": "M10",
+        "values": [
+         10,
+         18.48,
+         8.4
+        ]
+       },
+       {
+        "name": "M12",
+        "values": [
+         12,
+         20.78,
+         10.8
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "dims",
+   "say": "Open **Profile**. Give the circle a diameter. Type **=Spreadsheet.Diameter** as its value. Give the corners of the hexagon a diameter from **Width**.",
+   "why": "The sketch now takes its sizes from the spreadsheet.",
+   "picture": {
+    "file": "pictures/Variant-link-example-hex-nut-sketch.png",
+    "alt": "The nut sketch with two diameters: the hole and the corners of the hexagon."
+   },
+   "targets": [
+    {
+     "tree": "$sketch"
+    },
+    {
+     "cmd": "Sketcher_ConstrainDiameter"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "expr": "$sketch",
+      "uses": "Diameter"
+     },
+     {
+      "expr": "$sketch",
+      "uses": "Width"
+     }
+    ]
+   },
+   "hints": [
+    "Type an equals sign in the value box to start an expression.",
+    "Bind the circle and the construction circle of the hexagon.",
+    "**=Spreadsheet.Diameter** and **=Spreadsheet.Width**."
+   ],
+   "do": [
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Profile.hole_d",
+      "expression": "<<NutTable>>.Diameter"
+     }
+    },
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Profile.hex_d",
+      "expression": "<<NutTable>>.Width"
+     }
+    }
+   ]
+  },
+  {
+   "id": "length",
+   "say": "Select **Pad**. Type **=Spreadsheet.Thickness** in its **Length**.",
+   "targets": [
+    {
+     "tree": "$pad"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "expr": "$pad",
+      "uses": "Thickness"
+     },
+     {
+      "volume": "$body",
+      "eq": 1203.53,
+      "tol": 0.5
+     }
+    ]
+   },
+   "hints": [
+    "Find Length in the Property view of the pad.",
+    "Type an equals sign to start an expression.",
+    "Length = **=Spreadsheet.Thickness**."
+   ],
+   "do": [
+    {
+     "tool": "param_bind",
+     "args": {
+      "target": "Pad.Length",
+      "expression": "<<NutTable>>.Thickness"
+     }
+    }
+   ]
+  },
+  {
+   "id": "switch",
+   "say": "Select **Nut** in the tree. Set its **Configuration** to **M12**.",
+   "why": "One switch changes all three sizes of the nut.",
+   "targets": [
+    {
+     "tree": "$body"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "volume": "$body",
+    "eq": 1807.6,
+    "tol": 0.5
+   },
+   "hints": [
+    "Configuration is a property of the body.",
+    "Open the list of the Configuration property.",
+    "Configuration = **M12**."
+   ],
+   "do": [
+    {
+     "tool": "sheet_table",
+     "args": {
+      "action": "use",
+      "sheet": "NutTable",
+      "config": "M12"
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: a hex nut that changes size through its configuration table.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "valid": "$body"
+     },
+     {
+      "volume": "$body",
+      "eq": 1807.6,
+      "tol": 0.5
+     }
+    ]
+   }
+  }
+ ]
+}

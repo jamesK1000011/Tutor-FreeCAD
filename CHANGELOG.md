@@ -7,6 +7,11 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Added (18 Nov 2026: lesson library, one lesson per workbench)
+
+- Basic Sketcher (11 steps: the five-armed star, fully constrained, padded to 24247.5 mm³), the crank and slider of the Assembly workbench page (course `wiki-crank-slider`: chapter 1 makes the four parts in Part, 6 steps; chapter 2 the assembly, grounded, with revolute, slider, revolute and cylindrical joints, 8 steps) and Configuration Tables (8 steps: a hex nut bound to a configuration table, M10 1203.53 mm³, M12 1807.6 mm³). Each step's do is the hardening model's calls that ran live (sketcher-model.json, asmtd-assembly-model.json, sheetfem-sheet-model.json); the wiki's pictures beside them, each listed in REUSE.toml and looked at (images.txt).
+- Test stand-in: what the Draft, Mesh, Points and Surface tools make (`MAKES`), so a do's bindings are tested for every lesson.
+
 ### Fixed (18 Nov 2026: finding 63)
 
 - Guided mode: a pass waits 0.6 s before the lesson goes on. A batch holds the window thread, so that timer did not fire between its calls: do, do, do answered step 1/8 each time. Now the next tutor call (next, skip, hint or do) does a waiting advance first; next and skip after a pass go on once, not twice; back and stop drop it. A do on a passed step never runs its calls again (guided: it goes on to the next step and does that one; demo: nothing). Fixed on main, not yet seen live.
