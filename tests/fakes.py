@@ -54,6 +54,10 @@ class Obj:
     def isValid(self):
         return self.valid
 
+    def isDerivedFrom(self, t):
+        # As FreeCAD's: every Part:: shape type is made from Part::Feature.
+        return self.TypeId == t or (t == "Part::Feature" and self.TypeId.startswith("Part::"))
+
     def hasObject(self, o):
         return o in self.Group
 

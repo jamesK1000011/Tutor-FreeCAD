@@ -92,6 +92,13 @@ cmd_list
 cmd_run
 compound_explode
 compound_filter
+cookbook_approve
+cookbook_export
+cookbook_import
+cookbook_list
+cookbook_run
+cookbook_show
+cookbook_unapprove
 crash_collect
 dialog_answer
 doc_close
@@ -289,6 +296,7 @@ points_merge
 points_mesh
 points_sample
 points_structure
+port_scaffold
 pref_get
 pref_import
 pref_pack
