@@ -400,6 +400,30 @@ class PartialDo(unittest.TestCase):
         self.assertEqual([n for n, _a in calls][-2:], ["sketch_constrain", "sketch_edit"])
         self.assertEqual(calls[-1][1]["rename"], {"constraint": 4, "name": "neutral_radius"})
 
+    def test_constraints_the_person_made_are_left_out(self):
+        """Live 18 Nov (97): film-hinge step 3's do was refused "redundant"
+        because the person had made the coincident and the horizontal."""
+        args = {"sketch": "Basic_sketch", "constraints": [{"type": "coincident", "refs": [[1, 1], [0, 1]]}, {"type": "horizontal", "refs": [1]},
+                                                            {"type": "vertical", "refs": [[0, 3], [0, 1]]}]}
+        l = self.lesson()
+        l["steps"][0]["do"] = [{"tool": "sketch_constrain", "args": args}]
+        l["steps"][0]["check"] = {"exists": "PartDesign::Body"}
+        calls = []
+        red = {"error": {"code": "invalid_state", "message": "These constraints over-constrain Basic_sketch (redundant constraints): new ['#3 coincident'] …"}}
+
+        def call(name, a):
+            calls.append((name, a))
+            if name == "sketch_constrain":
+                cs = a["constraints"]
+                if len(cs) > 1 or cs[0]["type"] in ("coincident", "horizontal"):
+                    return True, red
+            return False, {"done": True}
+        e = Engine(l, call=call, doc=lambda: World().doc)
+        e.start("demo")
+        e.do()
+        singles = [a["constraints"][0]["type"] for n, a in calls if n == "sketch_constrain" and len(a["constraints"]) == 1]
+        self.assertEqual(singles, ["coincident", "horizontal", "vertical"])
+
     def test_remaining_is_cut_not_emptied(self):
         """Live 54: status {detail} answered remaining: [] at step 1 of 8."""
         from agentlink_tutor import engine as eng

@@ -4,6 +4,7 @@ addon_test
 app_extensions
 app_force_restart
 app_install
+app_open
 app_restart
 asm_add
 asm_bom
@@ -96,6 +97,7 @@ cookbook_approve
 cookbook_export
 cookbook_import
 cookbook_list
+cookbook_probe
 cookbook_run
 cookbook_show
 cookbook_unapprove

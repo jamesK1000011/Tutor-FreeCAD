@@ -307,6 +307,24 @@ class Engine:
                         answers.append({"tool": "sketch_edit", "refused": False, "answer": o2, "instead_of": c["tool"]})
                         self._ran += 1
                         continue
+                if c["tool"] == "sketch_constrain" and "redundant" in _reason(out).lower() and len(args.get("constraints") or []) > 1:
+                    # The person made some of these already (live 18 Nov, 97):
+                    # each one is added on its own, and one that is already
+                    # there (redundant) is left out, not refused.
+                    done, skipped, why = [], [], None
+                    for one in args["constraints"]:
+                        r1, o1 = self.call("sketch_constrain", dict(args, constraints=[one]))
+                        if not r1:
+                            done.append(o1)
+                        elif "redundant" in _reason(o1).lower():
+                            skipped.append(one)
+                        else:
+                            why = _reason(o1)
+                            break
+                    if why is None:
+                        answers.append({"tool": c["tool"], "refused": False, "answer": {"added": len(done), "alreadyThere": skipped}})
+                        self._ran += 1
+                        continue
             answers.append({"tool": c["tool"], "refused": bool(refused), "answer": out})
             if refused and c.get("else"):
                 # Refused (no such tool in this Agent Link, or the document
