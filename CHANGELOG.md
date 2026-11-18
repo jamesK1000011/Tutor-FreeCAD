@@ -7,6 +7,8 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+- Live 97: Do it for me adds a step's constraints one by one when the person made some already (redundant): those are left out, not refused.
+
 ### Fixed (18 Nov 2026: the Draft lessons want real Draft objects, finding 78)
 
 - Checks: a query takes `draft` (the Draft kind its Proxy gives: `Circle`, `Wire`, `BSpline`, `Rectangle`, `Polygon`, `Array`, `LinearDimension`; `false`: a plain shape with no Draft Proxy), `shape` (`{edges, wires, closed}`) and `count` (exists and new: that many or more). `lessons.check` refuses a bad one.
