@@ -23,7 +23,9 @@ A check is a one-key object, the key its kind:
                      whatever the order), "count": n (lines and curves),
                      "dims": [47] (each a driving dimension's value, mm),
                      "external": n (at least n outside edges brought in),
-                     "radii": [14.5] (each a circle's or arc's radius in it)}
+                     "radii": [14.5] (each a circle's or arc's radius in it),
+                     "arc_ends_vertical": true (each arc's two ends on the
+                     vertical line through its centre: a half circle)}
     expr             {"expr": "$sketch", "uses": "size", "count": 2, "path"?}: at
                      least count of the object's values bound to an expression
                      naming the parameter (VarSet.size, <<Params>>.size)
@@ -468,7 +470,31 @@ def _sketch(spec, ctx):
         have = radii(o)
         if not any(abs(h - float(r)) <= float(spec.get("tol", 0.01)) for h in have):
             return fail(f"{o.Label} has no circle or arc of radius {_fmt(float(r), 'mm')}")
+    if spec.get("arc_ends_vertical"):
+        bad = arc_off_vertical(o, float(spec.get("tol", 0.01)))
+        if bad is not None:
+            return fail(bad)
     return PASS
+
+
+def arc_off_vertical(o, tol):
+    """None when the sketch has arcs and each arc's two ends lie on the
+    vertical line through its centre (x of each end = x of the centre),
+    else why not. A low degrees-of-freedom count alone passed an arc whose
+    ends the person never made vertical (live 83)."""
+    seen = 0
+    for g in own_geometry(o):
+        c, a, b = (getattr(g, k, None) for k in ("Center", "StartPoint", "EndPoint"))
+        if c is None or a is None or b is None:
+            continue
+        seen += 1
+        for what, p in (("start", a), ("end", b)):
+            if abs(float(p.x) - float(c.x)) > tol:
+                return (f"The {what} of the arc in {o.Label} is not above or below its centre "
+                        f"(it is at ({float(p.x):.2f}, {float(p.y):.2f}), the centre at ({float(c.x):.2f}, {float(c.y):.2f})): make them vertical")
+    if not seen:
+        return f"{o.Label} has no arc yet"
+    return None
 
 
 def external_count(o):
@@ -950,7 +976,7 @@ def problems(check, where, extra_kinds=()):
     v = check[kind]
     opts = {k for k in check if k != kind}
     allowed = {"prop": {"name", "unit", "tol", *CMP}, "volume": {"tol", *CMP}, "bbox": {"size", "min", "tol"},
-               "sketch": {"closed", "dof", "full", "external", "radii", "tol", "dof_max", "count", "dims"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
+               "sketch": {"closed", "dof", "full", "external", "radii", "tol", "dof_max", "count", "dims", "arc_ends_vertical"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
                "expr": {"uses", "count", "path"}, "follows": {"object", "by", "axis", "change", "tol"}}.get(kind, set())
     if opts - allowed:
         out.append(f"{where}: {kind} takes no {', '.join(sorted(opts - allowed))}")
@@ -1044,6 +1070,8 @@ def problems(check, where, extra_kinds=()):
         r = check["dims"]
         if not (isinstance(r, list) and r and all(_is_var(x) or (number(x) is not None and number(x) > 0) for x in r)):
             out.append(f"{where}: dims is a list of dimensions (mm)")
+    if kind == "sketch" and "arc_ends_vertical" in check and check["arc_ends_vertical"] is not True:
+        out.append(f"{where}: arc_ends_vertical is true, or left out")
     for k in ("dof_max", "count"):
         if kind == "sketch" and k in check and not (isinstance(check[k], int) and not isinstance(check[k], bool) and check[k] >= 0):
             out.append(f"{where}: {k} is a whole number")

@@ -112,6 +112,7 @@ tests/test_callout.py
 tests/test_chapters.py
 tests/test_checks.py
 tests/test_course.py
+tests/test_doc_closing.py
 tests/test_engine.py
 tests/test_files.py
 tests/test_general.py

@@ -60,6 +60,8 @@ if hasattr(hooks, "provide"):
 # An older Agent Link without these hooks: the lesson is checked on Next.
 def follow():
     hooks.on("call_done", live.call_done)
+    # Before doc_close closes the lesson's document: the lesson stops (62).
+    hooks.on("document_closing", live.document_closing)
     if hasattr(hooks, "register_rider"):
         hooks.register_rider("tutor", live.rider)
     if hasattr(hooks, "register_thread_tool"):

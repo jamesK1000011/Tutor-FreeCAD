@@ -336,6 +336,27 @@ class Parameters(unittest.TestCase):
         self.assertTrue(checks.problems({"sketch": "S", "dof_max": -1}, "c"))
         self.assertTrue(checks.problems({"sketch": "S", "dims": ["a"]}, "c"))
 
+    def test_sketch_arc_ends_vertical(self):
+        """Live 83: dof_max alone passed an arc whose ends were never made
+        vertical to its centre."""
+        doc = Doc()
+        P = lambda x, y: type("V", (), {"x": x, "y": y})()  # noqa: E731
+        arc = type("ArcOfCircle", (), {"Radius": 5.0, "Center": P(-7.854, 0), "StartPoint": P(3.42 - 7.854 + 7.854, -3.64), "EndPoint": P(-7.854, 5)})()
+        line = type("LineSegment", (), {"StartPoint": P(0, 0), "EndPoint": P(5, 0)})()
+        sk = doc.add("Basic_sketch", "Sketcher::SketchObject", DoF=2, Geometry=[arc, line])
+        sk.solve = lambda: 0
+        sk.getConstruction = lambda i: False
+        st = lambda c: self.st(c, doc)  # noqa: E731
+        r = st({"sketch": "Basic_sketch", "dof_max": 4, "arc_ends_vertical": True})
+        self.assertEqual(r.status, "fail")
+        self.assertIn("start of the arc", r.why)
+        arc.StartPoint = P(-7.854, -5)
+        self.assertEqual(st({"sketch": "Basic_sketch", "dof_max": 4, "arc_ends_vertical": True}).status, "pass")
+        sk.Geometry = [line]
+        self.assertIn("no arc", st({"sketch": "Basic_sketch", "arc_ends_vertical": True}).why)
+        self.assertTrue(checks.problems({"sketch": "S", "arc_ends_vertical": 1}, "c"))
+        self.assertEqual(checks.problems({"sketch": "S", "arc_ends_vertical": True}, "c"), [])
+
     def test_where_set(self):
         doc = Doc()
         doc.add("GroundedJoint", "App::FeaturePython", ObjectToGround=object())

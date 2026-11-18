@@ -7,6 +7,12 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+### Fixed (18 Nov 2026: a student agent in the film-hinge lesson, findings 83, 62, 56c)
+
+- Finding 83: film-hinge-sketch 1.0.4. The shape step needs the arc's centre and both ends on one vertical line (sketch check arc_ends_vertical), not only 4 degrees of freedom or fewer.
+- Finding 62: before doc_close closes the running lesson's document (Agent Link's document_closing hook), the lesson stops.
+- Finding 56c: tutor status and list are declared front reads (frontReads), so they run beside gui_input while a dialog or menu is open. Needs an Agent Link that reads frontReads.
+
 ### Fixed (18 Nov 2026: live demo replay of the lesson library, finding 76)
 
 - Finding 76: a demo Next on a step whose check failed after its do ran the do again (the crank of crank-slider-parts grew on each Next). Now the check runs again; the calls do not. Test: `test_next_after_a_failed_do_runs_nothing_again`. Fixed on main, not yet seen live.
