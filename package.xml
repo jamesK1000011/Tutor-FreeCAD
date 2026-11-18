@@ -5,7 +5,8 @@
   <version>0.2.0</version>
   <date>2026-11-16</date>
   <maintainer email="jamesK1000011@users.noreply.github.com">jamesK1000011</maintainer>
-  <license file="LICENSE">LGPL-2.1-or-later</license>
+  <license file="LICENSE-Code">LGPL-2.1-or-later</license>
+  <license file="LICENSE-Assets">CC-BY-3.0</license>
   <url type="repository" branch="main">https://github.com/jamesK1000011/tutor-freecad</url>
   <url type="bugtracker">https://github.com/jamesK1000011/tutor-freecad/issues</url>
   <url type="readme">https://github.com/jamesK1000011/tutor-freecad/blob/main/README.md</url>

@@ -13,8 +13,11 @@ A check is a one-key object, the key its kind:
                      "tol": mm or deg, "unit": "mm"}
     valid            "$pad" or {"object": "$pad", "solid": true}: recomputed, no
                      error, a shape (one solid or more for PartDesign features)
-    volume           {"volume": "$body", "eq"|…: mm³, "tol"}
-    bbox             {"bbox": "$body", "size": [x, y, z], "tol"}
+    volume           {"volume": "$body", "eq"|…: mm³, "tol"}; the object may be a
+                     query ({type, label, where}): one object it finds passes
+    bbox             {"bbox": "$body", "size": [x, y, z], "min"?: [x, y, z],
+                     "tol"}: the box's size and, with min, its lowest corner
+                     (where it is); the object may be a query too
     sketch           {"sketch": "$s", "closed": true, "dof": 0, "full": true,
                      "dof_max": n (n degrees of freedom or fewer: progress,
                      whatever the order), "count": n (lines and curves),
@@ -241,7 +244,8 @@ def _where_words(where):
             word = {"eq": "", "lt": "under ", "gt": "over ", "le": "at most ", "ge": "at least "}[op]
             out.append(f"{words.prop_words(name)} {word}{_fmt(number(want[op]) if number(want[op]) is not None else want[op])}")
         else:
-            out.append(f"{words.prop_words(name)} {_fmt(number(want)) if number(want) is not None else want}")
+            shown = _fmt(number(want)) if number(want) is not None else words.split_camel(want) if isinstance(want, str) else want
+            out.append(f"{words.prop_words(name)} {shown}")
     return (" with " + " and ".join(out)) if out else ""
 
 
@@ -363,30 +367,57 @@ def _valid(spec, ctx):
     return PASS
 
 
+def _each(spec, ctx, kind, one):
+    """one(o) for the object a check names, or for each object its query
+    finds (a pass when one of them passes; else the first one's why)."""
+    ref = spec.get(kind)
+    q = query(ref) if isinstance(ref, dict) else None
+    if q is None:
+        o, bad = _one(ctx, ref)
+        return bad or one(o)
+    found = find(ctx, q)
+    if not found:
+        return fail(f"there is no {describe(ref, ctx.doc)} yet")
+    first = None
+    for o in found:
+        r = one(o)
+        if r.status == "pass":
+            return r
+        first = first or r
+    return first
+
+
 def _volume(spec, ctx):
-    o, bad = _one(ctx, spec.get("volume"))
-    if bad:
-        return bad
-    sh = _shape(o)
-    if sh is None:
-        return fail(f"{o.Label} has no shape yet")
-    return compare(f"{o.Label}'s volume", float(sh.Volume), spec, "mm³")
+    def one(o):
+        sh = _shape(o)
+        if sh is None:
+            return fail(f"{o.Label} has no shape yet")
+        return compare(f"{o.Label}'s volume", float(sh.Volume), spec, "mm³")
+
+    return _each(spec, ctx, "volume", one)
 
 
 def _bbox(spec, ctx):
-    o, bad = _one(ctx, spec.get("bbox"))
-    if bad:
-        return bad
-    sh = _shape(o)
-    if sh is None:
-        return fail(f"{o.Label} has no shape yet")
-    bb = sh.BoundBox
-    have = [bb.XLength, bb.YLength, bb.ZLength]
     tol = float(spec.get("tol", 0.01))
-    want = spec.get("size") or []
-    if any(abs(h - w) > tol for h, w in zip(have, want)):
-        return fail(f"{o.Label} is {' × '.join(_fmt(float(h)) for h in have)} mm; the step wants {' × '.join(_fmt(float(w)) for w in want)}")
-    return PASS
+
+    def one(o):
+        sh = _shape(o)
+        if sh is None:
+            return fail(f"{o.Label} has no shape yet")
+        bb = sh.BoundBox
+        have = [bb.XLength, bb.YLength, bb.ZLength]
+        want = spec.get("size") or []
+        if any(abs(h - w) > tol for h, w in zip(have, want)):
+            return fail(f"{o.Label} is {' × '.join(_fmt(float(h)) for h in have)} mm; the step wants {' × '.join(_fmt(float(w)) for w in want)}")
+        if spec.get("min") is not None:
+            low = [bb.XMin, bb.YMin, bb.ZMin]
+            at = [float(w) for w in spec["min"]]
+            if any(abs(h - w) > tol for h, w in zip(low, at)):
+                return fail(f"{o.Label}'s lowest corner is at {', '.join(_fmt(float(h)) for h in low)} mm; "
+                            f"the step wants {', '.join(_fmt(w) for w in at)} (Placement)")
+        return PASS
+
+    return _each(spec, ctx, "bbox", one)
 
 
 def _sketch(spec, ctx):
@@ -918,7 +949,7 @@ def problems(check, where, extra_kinds=()):
         return [f"{where}: unknown check kind {kind!r}"]
     v = check[kind]
     opts = {k for k in check if k != kind}
-    allowed = {"prop": {"name", "unit", "tol", *CMP}, "volume": {"tol", *CMP}, "bbox": {"size", "tol"},
+    allowed = {"prop": {"name", "unit", "tol", *CMP}, "volume": {"tol", *CMP}, "bbox": {"size", "min", "tol"},
                "sketch": {"closed", "dof", "full", "external", "radii", "tol", "dof_max", "count", "dims"}, "file": {"min_bytes"}, "selected": {"sub"}, "valid": {"solid"},
                "expr": {"uses", "count", "path"}, "follows": {"object", "by", "axis", "change", "tol"}}.get(kind, set())
     if opts - allowed:
@@ -959,6 +990,9 @@ def problems(check, where, extra_kinds=()):
         size = check.get("size")
         if not (isinstance(size, list) and len(size) == 3):
             out.append(f"{where}: bbox needs size [x, y, z] (mm)")
+        low = check.get("min")
+        if low is not None and not (isinstance(low, list) and len(low) == 3 and all(number(x) is not None for x in low)):
+            out.append(f"{where}: min is the box's lowest corner [x, y, z] (mm)")
     elif kind == "expr":
         if not isinstance(v, str):
             out.append(f"{where}.expr: an object")
@@ -998,6 +1032,10 @@ def problems(check, where, extra_kinds=()):
     elif kind in ("selected", "valid", "sketch"):
         if not isinstance(v, str):
             out.append(f"{where}.{kind}: an object")
+    if kind in ("volume", "bbox"):
+        v = check[kind]
+        if not ((isinstance(v, str) and v) or (isinstance(v, dict) and v and set(v) <= {"type", "in", "label", "where"})):
+            out.append(f"{where}.{kind}: an object, or a query {{type, in, label, where}}")
     if kind == "sketch" and "radii" in check:
         r = check["radii"]
         if not (isinstance(r, list) and r and all(_is_var(x) or (number(x) is not None and number(x) > 0) for x in r)):

@@ -1,0 +1,425 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.basic-techdraw",
+ "version": "1.0.0",
+ "title": "Basic TechDraw tutorial",
+ "summary": "Put the part of the Basic Part Design tutorial on TechDraw pages: a view, its scale, two dimensions, a note and a projection group.",
+ "level": "basic",
+ "minutes": 20,
+ "tags": [
+  "techdraw",
+  "drawing",
+  "dimension",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "TechDrawWorkbench",
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Basic TechDraw Tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Basic_TechDraw_Tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. The part comes from the chapter before (the Basic Part Design lesson), built through the tools, not from the page's example file. The step that links a dimension to the 3D model is left out."
+ },
+ "course": {
+  "id": "wiki-part-to-drawing",
+  "title": "From part to drawing (FreeCAD wiki)",
+  "chapter": 2
+ },
+ "setup": {
+  "after": "agentlink_tutor.wiki.basic-part-design",
+  "bind": {
+   "body": {
+    "exists": "PartDesign::Body"
+   }
+  }
+ },
+ "view": "keep",
+ "vars": {
+  "scale": 2
+ },
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **TechDraw** workbench.",
+   "targets": [
+    {
+     "wb": "TechDrawWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "TechDrawWorkbench"
+   },
+   "hints": [
+    "Find the workbench list in the toolbar at the top.",
+    "The ring shows the list. Select TechDraw in it."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "TechDraw"
+     }
+    }
+   ]
+  },
+  {
+   "id": "page",
+   "say": "Push **{TechDraw_PageDefault|Insert Default Page}**.",
+   "why": "Every view and dimension goes on a page.",
+   "targets": [
+    {
+     "cmd": "TechDraw_PageDefault"
+    },
+    {
+     "menu": "TechDraw_PageDefault"
+    }
+   ],
+   "check": {
+    "new": "TechDraw::DrawPage"
+   },
+   "bind": {
+    "page": {
+     "new": "TechDraw::DrawPage"
+    }
+   },
+   "hints": [
+    "Look at the first buttons of the TechDraw toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "td_page",
+     "args": {
+      "action": "new"
+     }
+    }
+   ]
+  },
+  {
+   "id": "view",
+   "say": "Select **Body** in the tree. Push **{TechDraw_View|Insert View}**. Push **OK**.",
+   "view": "top",
+   "why": "The new view looks at the part as the camera does.",
+   "targets": [
+    {
+     "tree": "$body"
+    },
+    {
+     "cmd": "TechDraw_View"
+    }
+   ],
+   "check": {
+    "new": "TechDraw::DrawViewPart"
+   },
+   "bind": {
+    "view": {
+     "new": "TechDraw::DrawViewPart"
+    }
+   },
+   "hints": [
+    "Select the body first. Find the view button in the TechDraw toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "td_view",
+     "args": {
+      "page": "$page",
+      "bodies": [
+       "$body"
+      ],
+      "direction": "top"
+     }
+    }
+   ]
+  },
+  {
+   "id": "scale",
+   "say": "Select the page in the tree. Set **Scale** to **2** in the Property view.",
+   "why": "The view takes the page's scale, so the view gets bigger.",
+   "picture": {
+    "file": "pictures/TDTut_TopView2Dims.png",
+    "alt": "A top view of the part on a page, with a width and a depth dimension."
+   },
+   "targets": [
+    {
+     "tree": "$page"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "prop": "$page",
+    "name": "Scale",
+    "eq": "$scale",
+    "tol": 0.001
+   },
+   "hints": [
+    "Look in the Data tab of the Property view.",
+    "Find the Scale row of the page.",
+    "Scale = **2**."
+   ],
+   "do": [
+    {
+     "tool": "object_set",
+     "args": {
+      "object": "$page",
+      "values": {
+       "Scale": 2
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "vertical",
+   "say": "Select the top left point of the view. Hold **Ctrl**. Select the bottom left point. Push **{TechDraw_VerticalDimension|Insert Vertical Dimension}**.",
+   "targets": [
+    {
+     "cmd": "TechDraw_VerticalDimension"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "TechDraw::DrawViewDimension",
+     "where": {
+      "Type": "DistanceY"
+     }
+    }
+   },
+   "hints": [
+    "The points are the small dots at the corners of the view.",
+    "Find the vertical dimension button in the TechDraw toolbar."
+   ],
+   "do": [
+    {
+     "tool": "td_dim",
+     "args": {
+      "view": "$view",
+      "type": "vertical",
+      "refs": [
+       {
+        "point": [
+         -26.5,
+         0,
+         0
+        ]
+       },
+       {
+        "point": [
+         -26.5,
+         -26,
+         0
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "horizontal",
+   "say": "Select the top left point. Hold **Ctrl**. Select the top right point. Push **{TechDraw_HorizontalDimension|Insert Horizontal Dimension}**.",
+   "targets": [
+    {
+     "cmd": "TechDraw_HorizontalDimension"
+    }
+   ],
+   "check": {
+    "new": {
+     "type": "TechDraw::DrawViewDimension",
+     "where": {
+      "Type": "DistanceX"
+     }
+    }
+   },
+   "hints": [
+    "Pick the two top corners of the view.",
+    "Find the horizontal dimension button in the TechDraw toolbar."
+   ],
+   "do": [
+    {
+     "tool": "td_dim",
+     "args": {
+      "view": "$view",
+      "type": "horizontal",
+      "refs": [
+       {
+        "point": [
+         -26.5,
+         0,
+         0
+        ]
+       },
+       {
+        "point": [
+         26.5,
+         0,
+         0
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "note",
+   "say": "Push **{TechDraw_Annotation|Insert Annotation}**. Drag the text away from the view.",
+   "why": "A note tells the reader what the part is.",
+   "targets": [
+    {
+     "cmd": "TechDraw_Annotation"
+    }
+   ],
+   "check": {
+    "new": "TechDraw::DrawViewAnnotation"
+   },
+   "hints": [
+    "Find the annotation button in the TechDraw toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "td_note",
+     "args": {
+      "page": "$page",
+      "text": "Part of the Basic Part Design tutorial",
+      "at": [
+       70,
+       60
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "page2",
+   "say": "Push **{TechDraw_PageTemplate|Insert Page using Template}**. Select an **ANSI B** template. Push **Open**.",
+   "targets": [
+    {
+     "cmd": "TechDraw_PageTemplate"
+    }
+   ],
+   "check": {
+    "new": "TechDraw::DrawPage"
+   },
+   "bind": {
+    "page2": {
+     "new": "TechDraw::DrawPage"
+    }
+   },
+   "hints": [
+    "Find the page with template button in the TechDraw toolbar.",
+    "The file list shows the templates of FreeCAD."
+   ],
+   "do": [
+    {
+     "tool": "td_page",
+     "args": {
+      "action": "new",
+      "paper": "ANSIB"
+     }
+    }
+   ]
+  },
+  {
+   "id": "group",
+   "say": "Select **Body** and the new page in the tree. Push **{TechDraw_ProjectionGroup|Insert Projection Group}**. Select the top and right views. Set the scale to **2**. Push **OK**.",
+   "why": "A projection group keeps its views lined up with the front view.",
+   "picture": {
+    "file": "pictures/TDTut_ProjGroup21.png",
+    "alt": "A page with a front, a left, a top and an isometric view of the part."
+   },
+   "targets": [
+    {
+     "tree": "$page2"
+    },
+    {
+     "cmd": "TechDraw_ProjectionGroup"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": {
+       "type": "TechDraw::DrawProjGroup",
+       "where": {
+        "Scale": {
+         "eq": 2,
+         "tol": 0.001
+        }
+       }
+      }
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find the projection group button in the TechDraw toolbar.",
+    "The Tasks panel has the views and the scale.",
+    "Top and right views, scale = **2**."
+   ],
+   "do": [
+    {
+     "tool": "td_projection",
+     "args": {
+      "page": "$page2",
+      "bodies": [
+       "$body"
+      ],
+      "views": [
+       "front",
+       "top",
+       "right"
+      ],
+      "scale": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: two pages with views and dimensions of the part.",
+   "targets": [
+    {
+     "tree": "$page2"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "exists": {
+       "type": "TechDraw::DrawViewDimension",
+       "where": {
+        "Type": "DistanceX"
+       }
+      }
+     },
+     {
+      "exists": {
+       "type": "TechDraw::DrawViewDimension",
+       "where": {
+        "Type": "DistanceY"
+       }
+      }
+     },
+     {
+      "exists": "TechDraw::DrawProjGroup"
+     }
+    ]
+   }
+  }
+ ]
+}

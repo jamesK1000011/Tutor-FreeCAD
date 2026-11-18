@@ -201,7 +201,8 @@ class Engine:
         in front when it passes that chapter's result; else the first
         chapter's setup, then every chapter's main-path steps done through
         the tools (each step's do, its bindings as that chapter makes
-        them), up to this one."""
+        them; not a step only the window tells, such as a workbench
+        switch), up to this one."""
         prev = self.lesson.get("_after") or []
         if not prev or prev[-1].get("id") != after:
             raise TutorError(f"setup.after: the chapter before ({after}) is not installed")
@@ -226,6 +227,10 @@ class Engine:
                 detours = lessons.detours(p)
                 for st in p["steps"]:
                     if st["id"] in detours or not st.get("do"):
+                        continue
+                    if checks.needs_window(st.get("check") or {}):
+                        # A step only the window tells (a workbench switch)
+                        # changes no document: nothing to do again.
                         continue
                     self.before = self._names()
                     self._run(st["do"], f"{p['id']} step {st['id']}")
@@ -429,6 +434,11 @@ class Engine:
         self._run(self.step["do"], f"step {self.step['id']}")
         self.did = self.step["id"]
         self.done_for.add(self.step["id"])
+        if not self.passed:
+            # What the step's own calls made is the step's object, even when
+            # its check cannot pass just now (a value the window must tell):
+            # later steps' calls name it.
+            self._bind(self.step.get("bind"), only_new=True)
         return self.check()
 
     # ---- hints --------------------------------------------------------------
@@ -506,6 +516,10 @@ class Engine:
         out.update(step=self.position(), id=s["id"], say=self.say())
         if self.doc_note and not self.history and self.index == self._main[0]:
             out["document"] = self.doc_note
+        if not self.history and self.index == self._main[0] and self.lesson.get("credit"):
+            out["credit"] = credit_line(self.lesson)
+        if isinstance(s.get("picture"), dict):
+            out["picture"] = s["picture"].get("alt", "")[:80]
         if s.get("why") and (self.explain or detail):
             out["because"] = words.ui_text(s["why"])
         out["check"] = r.status if r is not None else "pending"
@@ -526,11 +540,21 @@ class Engine:
         return _fit(out)
 
 
+def credit_line(lesson):
+    """One line of a lesson's credit: "Adapted from Basic Part Design
+    Tutorial (FreeCAD wiki contributors, CC-BY-3.0)", or "" without one."""
+    c = lesson.get("credit") or {}
+    if not c.get("source"):
+        return ""
+    word = "Adapted from" if c.get("adapted") else "From"
+    return f"{word} {c['source']} ({c.get('authors', '?')}, {c.get('licence', '?')})"
+
+
 def _fit(out):
     """Text fields cut so the answer stays under STATE_MAX characters."""
     import json
 
-    for key in ("remaining", "missing", "because", "hint_text", "why", "say"):
+    for key in ("remaining", "picture", "missing", "credit", "because", "hint_text", "why", "say"):
         if len(json.dumps(out, ensure_ascii=False)) <= STATE_MAX:
             break
         v = out.get(key) if key != "missing" else (out.get("targets") or {}).get("missing") if isinstance(out.get("targets"), dict) else None

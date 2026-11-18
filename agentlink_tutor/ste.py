@@ -108,8 +108,8 @@ def problems(text, kind="instruction", where="text", may_describe=False):
 
 
 def lesson_problems(lesson):
-    """Every word of a lesson against the rules: says, hints, explainers and
-    branch words."""
+    """Every word of a lesson against the rules: says, hints, explainers,
+    branch words, the agent's longer notes (explain) and pictures' words."""
     out = []
     for s in lesson.get("steps") or []:
         if not isinstance(s, dict):
@@ -126,4 +126,9 @@ def lesson_problems(lesson):
         for i, b in enumerate(s.get("branches") or []):
             if isinstance(b, dict) and isinstance(b.get("say"), str):
                 out += problems(b["say"], "hint", f"{w}.branches[{i}].say")
+        if isinstance(s.get("explain"), str):
+            out += problems(s["explain"], "hint", f"{w}.explain")
+        pic = s.get("picture")
+        if isinstance(pic, dict) and isinstance(pic.get("alt"), str):
+            out += problems(pic["alt"], "hint", f"{w}.picture.alt")
     return out

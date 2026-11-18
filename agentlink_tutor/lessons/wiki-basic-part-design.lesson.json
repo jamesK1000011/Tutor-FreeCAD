@@ -1,0 +1,1154 @@
+{
+ "schema": 1,
+ "id": "agentlink_tutor.wiki.basic-part-design",
+ "version": "1.0.0",
+ "title": "Basic Part Design tutorial",
+ "summary": "Model the part of the FreeCAD wiki's Basic Part Design tutorial: a profile, pads, pockets, mirrors and a hole through a sloped face.",
+ "level": "basic",
+ "minutes": 40,
+ "tags": [
+  "partdesign",
+  "sketch",
+  "pad",
+  "pocket",
+  "mirror",
+  "wiki"
+ ],
+ "requires": {
+  "freecad": ">=1.1",
+  "agentlink_api": ">=1,<2",
+  "workbenches": [
+   "PartDesignWorkbench"
+  ]
+ },
+ "credit": {
+  "source": "Basic Part Design Tutorial",
+  "authors": "FreeCAD wiki contributors",
+  "licence": "CC-BY-3.0",
+  "link": "https://wiki.freecad.org/Basic_Part_Design_Tutorial",
+  "adapted": true,
+  "changes": "Words in Simplified Technical English, FreeCAD 1.1 names. Sizes as on the page; the square hole sits 11 mm from each end block and 7 mm up the slope, as on the page's drawing. Sketches on faces lean on the face's corners instead of named vertices."
+ },
+ "course": {
+  "id": "wiki-part-to-drawing",
+  "title": "From part to drawing (FreeCAD wiki)",
+  "chapter": 1
+ },
+ "setup": {
+  "calls": [
+   {
+    "tool": "doc_new",
+    "args": {
+     "name": "PartDesignTutorial"
+    }
+   }
+  ]
+ },
+ "view": "isometric",
+ "vars": {
+  "len": 53,
+  "notch_w": 5,
+  "notch_h": 11,
+  "block_w": 7,
+  "block_h": 16.7,
+  "block_len": 26,
+  "side": 17
+ },
+ "steps": [
+  {
+   "id": "bench",
+   "say": "Select the **Part Design** workbench.",
+   "targets": [
+    {
+     "wb": "PartDesignWorkbench"
+    }
+   ],
+   "check": {
+    "workbench": "PartDesignWorkbench"
+   },
+   "hints": [
+    "Find the workbench list in the toolbar at the top.",
+    "The ring shows the list. Select Part Design in it."
+   ],
+   "do": [
+    {
+     "tool": "workbench",
+     "args": {
+      "activate": "Part Design"
+     }
+    }
+   ]
+  },
+  {
+   "id": "body",
+   "say": "Push **{PartDesign_Body|Create body}**.",
+   "why": "A body holds the features of one solid part.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Body"
+    },
+    {
+     "menu": "PartDesign_Body"
+    }
+   ],
+   "check": {
+    "new": "PartDesign::Body"
+   },
+   "bind": {
+    "body": {
+     "new": "PartDesign::Body"
+    }
+   },
+   "hints": [
+    "Find the body button at the start of the Part Design toolbar.",
+    "The ring shows the button."
+   ],
+   "do": [
+    {
+     "tool": "pd_body_new",
+     "args": {}
+    }
+   ]
+  },
+  {
+   "id": "sketch",
+   "say": "Push **{PartDesign_NewSketch|Create sketch}**. Select the YZ plane in the list. Push **OK**.",
+   "why": "The profile stands on the YZ plane, so the pad grows along x.",
+   "targets": [
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "profile": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "Find the sketch button in the Part Design toolbar.",
+    "The Tasks panel lists the planes of the body."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "plane": "YZ"
+     }
+    }
+   ]
+  },
+  {
+   "id": "polyline",
+   "say": "Push **{Sketcher_CreatePolyline|Polyline}**. Draw four lines that close, as in the picture. Push **Esc** two times.",
+   "why": "A rough shape is enough: constraints give it its sizes.",
+   "picture": {
+    "file": "pictures/Tut17B_profile.png",
+    "alt": "The profile: a bottom line, a right line, a short top line and a slope on the left."
+   },
+   "targets": [
+    {
+     "cmd": "Sketcher_CreatePolyline"
+    }
+   ],
+   "check": {
+    "sketch": "$profile",
+    "closed": true,
+    "count": 4
+   },
+   "hints": [
+    "Find the polyline button in the Sketcher toolbar.",
+    "Click four corners. Click the first corner again to close the shape."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$profile",
+      "items": [
+       {
+        "kind": "polyline",
+        "points": [
+         [
+          0,
+          0
+         ],
+         [
+          -26,
+          0
+         ],
+         [
+          -5,
+          26
+         ],
+         [
+          0,
+          26
+         ]
+        ],
+        "closed": true
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "constrain",
+   "say": "Make the bottom line and the right line equal. Set the bottom line to 26 mm. Set the top line to 5 mm. Put the lower right corner on the origin. Push **Close**.",
+   "why": "With no degrees of freedom left, the sketch cannot move by accident.",
+   "targets": [
+    {
+     "cmd": "Sketcher_ConstrainEqual"
+    },
+    {
+     "cmd": "Sketcher_ConstrainDistanceX"
+    },
+    {
+     "cmd": "Sketcher_ConstrainCoincidentUnified"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$profile",
+      "closed": true,
+      "full": true,
+      "dims": [
+       26,
+       5
+      ]
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Use the constraint buttons in the Sketcher toolbar.",
+    "The sketch turns green when nothing can move.",
+    "Bottom line = right line = 26 mm. Top line = 5 mm. Lower right corner on the origin."
+   ],
+   "do": [
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$profile",
+      "constraints": [
+       {
+        "type": "equal",
+        "refs": [
+         0,
+         3
+        ]
+       },
+       {
+        "type": "distance",
+        "refs": [
+         0
+        ],
+        "value": 26
+       },
+       {
+        "type": "distance",
+        "refs": [
+         2
+        ],
+        "value": 5
+       },
+       {
+        "type": "coincident",
+        "refs": [
+         [
+          0,
+          1
+         ],
+         "origin"
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "pad",
+   "say": "Select the sketch. Push **{PartDesign_Pad|Pad}**. Set **Length** to 53 mm. Make the pad symmetric to the plane. Push **OK**.",
+   "why": "A symmetric pad puts the sketch plane in the middle of the part.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pad"
+     },
+     {
+      "bbox": "$body",
+      "size": [
+       53,
+       26,
+       26
+      ],
+      "min": [
+       -26.5,
+       -26,
+       0
+      ],
+      "tol": 0.01
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "pad": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find Pad in the Part Design toolbar.",
+    "Find the Length box and the symmetric choice in the Tasks panel.",
+    "Length = 53 mm, symmetric to the plane."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$profile",
+      "length": 53,
+      "sides": "symmetric"
+     }
+    }
+   ]
+  },
+  {
+   "id": "back",
+   "say": "Turn the part to see its back. Select the flat back face. Push **{PartDesign_NewSketch|Create sketch}**.",
+   "view": "rear",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       1,
+       0
+      ],
+      "largest": true
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "slot": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "The back is the tall flat face, opposite the slope.",
+    "The rings show the face and the sketch button."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "face": {
+       "at": [
+        0,
+        0,
+        5
+       ],
+       "normal": [
+        0,
+        1,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "slot",
+   "say": "Draw a rectangle 5 mm wide and 11 mm high. Put its outer corner on a top corner of the face. Push **Close**.",
+   "why": "Each corner of the face gives the rectangle a fixed place.",
+   "explain": "The wiki page brings in the corner of the face with external geometry. FreeCAD now calls that command External Projection.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateRectangle"
+    },
+    {
+     "cmd": "Sketcher_Projection"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$slot",
+      "closed": true,
+      "full": true,
+      "dims": [
+       "$notch_w",
+       "$notch_h"
+      ]
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Use **{Sketcher_Projection|External Projection}** to bring in the corner of the face.",
+    "Pick the corner of the face. Make it coincident with a corner of the rectangle.",
+    "Width = 5 mm, height = 11 mm, at a top corner of the face."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$slot",
+      "items": [
+       {
+        "kind": "rectangle",
+        "center": [
+         -24,
+         -20.5
+        ],
+        "size": [
+         5,
+         11
+        ],
+        "dims": true
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$slot",
+      "constraints": [
+       {
+        "type": "fix",
+        "refs": [
+         [
+          0,
+          1
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "pocket",
+   "say": "Push **{PartDesign_Pocket|Pocket}**. Set **Type** to **Through all**. Push **OK**.",
+   "why": "Pocket removes material, here through the whole part.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pocket"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pocket"
+     },
+     {
+      "volume": "$body",
+      "eq": 20839.673,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "notch": {
+     "new": "PartDesign::Pocket"
+    }
+   },
+   "hints": [
+    "Find Pocket in the Part Design toolbar, near Pad.",
+    "Find the Type list in the Tasks panel.",
+    "Type = Through all."
+   ],
+   "do": [
+    {
+     "tool": "pd_pocket",
+     "args": {
+      "sketch": "$slot",
+      "type": "through_all"
+     }
+    }
+   ],
+   "branches": [
+    {
+     "when": {
+      "new": "PartDesign::Pad"
+     },
+     "goto": "undo-pad",
+     "say": "That was Pad, which adds material. Undo it."
+    }
+   ]
+  },
+  {
+   "id": "mirror",
+   "say": "Select the pocket in the tree. Push **{PartDesign_Mirrored|Mirror}**. Select the YZ plane as the mirror plane. Push **OK**.",
+   "why": "The part is symmetric, so one pocket and its mirror copy are enough.",
+   "targets": [
+    {
+     "tree": "$notch"
+    },
+    {
+     "cmd": "PartDesign_Mirrored"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Mirrored"
+     },
+     {
+      "volume": "$body",
+      "eq": 20320.346,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find Mirror in the Part Design toolbar.",
+    "Find the plane list in the Tasks panel.",
+    "Plane = the YZ plane of the body."
+   ],
+   "do": [
+    {
+     "tool": "pd_mirrored",
+     "args": {
+      "features": [
+       "$notch"
+      ],
+      "plane": "YZ"
+     }
+    }
+   ]
+  },
+  {
+   "id": "back2",
+   "say": "Select the back face again. Push **{PartDesign_NewSketch|Create sketch}**.",
+   "view": "rear",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       1,
+       0
+      ],
+      "largest": true
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "side": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "The back is the tall flat face, opposite the slope.",
+    "The rings show the face and the sketch button."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "face": {
+       "at": [
+        0,
+        0,
+        5
+       ],
+       "normal": [
+        0,
+        1,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "block",
+   "say": "Draw a rectangle 7 mm wide and 16.7 mm high. Put it in a bottom corner of the face. Push **Close**.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateRectangle"
+    },
+    {
+     "cmd": "Sketcher_Projection"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$side",
+      "closed": true,
+      "full": true,
+      "dims": [
+       "$block_w",
+       "$block_h"
+      ]
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Use **{Sketcher_Projection|External Projection}** to bring in the bottom corner of the face.",
+    "Make one corner of the rectangle coincident with that corner.",
+    "Width = 7 mm, height = 16.7 mm, at a bottom corner of the face."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$side",
+      "items": [
+       {
+        "kind": "rectangle",
+        "center": [
+         23,
+         -8.35
+        ],
+        "size": [
+         7,
+         16.7
+        ],
+        "dims": true
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$side",
+      "constraints": [
+       {
+        "type": "fix",
+        "refs": [
+         [
+          0,
+          1
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "block-pad",
+   "say": "Push **{PartDesign_Pad|Pad}**. Set **Length** to 26 mm. Select **Reversed**. Push **OK**.",
+   "why": "Reversed sends the pad into the part, not away from it.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pad"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pad"
+     },
+     {
+      "volume": "$body",
+      "eq": 21220.93,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "block": {
+     "new": "PartDesign::Pad"
+    }
+   },
+   "hints": [
+    "Find Pad in the Part Design toolbar.",
+    "Find Length and Reversed in the Tasks panel.",
+    "Length = 26 mm, Reversed on."
+   ],
+   "do": [
+    {
+     "tool": "pd_pad",
+     "args": {
+      "sketch": "$side",
+      "length": 26,
+      "reversed": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "block-mirror",
+   "say": "Select the new pad in the tree. Push **{PartDesign_Mirrored|Mirror}**. Select the YZ plane. Push **OK**.",
+   "picture": {
+    "file": "pictures/Tut17_profilewithsideblocks.png",
+    "alt": "The part with a block at each end and a notch at each top corner."
+   },
+   "targets": [
+    {
+     "tree": "$block"
+    },
+    {
+     "cmd": "PartDesign_Mirrored"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Mirrored"
+     },
+     {
+      "volume": "$body",
+      "eq": 22121.515,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "hints": [
+    "Find Mirror in the Part Design toolbar.",
+    "Find the plane list in the Tasks panel.",
+    "Plane = the YZ plane of the body."
+   ],
+   "do": [
+    {
+     "tool": "pd_mirrored",
+     "args": {
+      "features": [
+       "$block"
+      ],
+      "plane": "YZ"
+     }
+    }
+   ]
+  },
+  {
+   "id": "slope",
+   "say": "Turn the part to see its front. Select the sloped face. Push **{PartDesign_NewSketch|Create sketch}**.",
+   "view": "front",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       -0.7779,
+       0.6283
+      ],
+      "largest": true
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "square": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "The sloped face is between the two end blocks.",
+    "The rings show the face and the sketch button."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "face": {
+       "at": [
+        0,
+        -15.5,
+        13
+       ],
+       "normal": [
+        0,
+        -0.7779,
+        0.6283
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "square",
+   "say": "Draw a square with sides of 17 mm. Put it 11 mm from each end block. Put its bottom edge 7 mm up the slope. Push **Close**.",
+   "why": "The square marks where the hole comes out of the slope.",
+   "targets": [
+    {
+     "cmd": "Sketcher_CreateRectangle"
+    },
+    {
+     "cmd": "Sketcher_ConstrainEqual"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$square",
+      "closed": true,
+      "full": true,
+      "dims": [
+       "$side"
+      ]
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Make the sides equal with **{Sketcher_ConstrainEqual|Equal}**.",
+    "Use External Projection for the edges of the slope.",
+    "Sides = 17 mm, 11 mm from each block, 7 mm up from the bottom edge."
+   ],
+   "do": [
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$square",
+      "items": [
+       {
+        "kind": "rectangle",
+        "center": [
+         0,
+         -0.8368
+        ],
+        "size": [
+         17,
+         17
+        ],
+        "dims": true
+       }
+      ]
+     }
+    },
+    {
+     "tool": "sketch_constrain",
+     "args": {
+      "sketch": "$square",
+      "constraints": [
+       {
+        "type": "fix",
+        "refs": [
+         [
+          0,
+          1
+         ]
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "back3",
+   "say": "Turn the part to see its back. Select the back face. Push **{PartDesign_NewSketch|Create sketch}**.",
+   "view": "rear",
+   "targets": [
+    {
+     "face": {
+      "normal": [
+       0,
+       1,
+       0
+      ],
+      "largest": true
+     },
+     "of": "$body"
+    },
+    {
+     "cmd": "PartDesign_NewSketch"
+    }
+   ],
+   "check": {
+    "new": "Sketcher::SketchObject"
+   },
+   "bind": {
+    "hole_sk": {
+     "new": "Sketcher::SketchObject"
+    }
+   },
+   "hints": [
+    "The back is the tall flat face, opposite the slope.",
+    "The rings show the face and the sketch button."
+   ],
+   "do": [
+    {
+     "tool": "sketch_new",
+     "args": {
+      "face": {
+       "at": [
+        0,
+        0,
+        5
+       ],
+       "normal": [
+        0,
+        1,
+        0
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "project",
+   "say": "Select the square sketch in the tree. Push **Space** to show it. Push **{Sketcher_Projection|External Projection}**. Pick the top and bottom edges of the square. Draw a rectangle on their ends. Push **Close**.",
+   "why": "The projection gives the hole its true size seen from the back.",
+   "explain": "A pocket from the sloped sketch goes square to the slope. The hole must go square to the back face. The back sketch copies the square as the back face sees it.",
+   "targets": [
+    {
+     "tree": "$square"
+    },
+    {
+     "cmd": "Sketcher_Projection"
+    },
+    {
+     "cmd": "Sketcher_CreateRectangle"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "sketch": "$hole_sk",
+      "closed": true,
+      "external": 2
+     },
+     {
+      "editing": null
+     }
+    ]
+   },
+   "hints": [
+    "Show the square sketch first: select its row, push Space.",
+    "Use External Projection on the edges of the square.",
+    "Two edges of the square in, a rectangle on their four ends."
+   ],
+   "do": [
+    {
+     "tool": "sketch_project",
+     "args": {
+      "sketch": "$hole_sk",
+      "from": "$square"
+     }
+    },
+    {
+     "tool": "sketch_add",
+     "args": {
+      "sketch": "$hole_sk",
+      "items": [
+       {
+        "kind": "rectangle",
+        "center": [
+         0,
+         -12.0581
+        ],
+        "size": [
+         17,
+         13.225
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "hole",
+   "say": "Push **{PartDesign_Pocket|Pocket}**. Set **Type** to **Through all**. Push **OK**.",
+   "targets": [
+    {
+     "cmd": "PartDesign_Pocket"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "new": "PartDesign::Pocket"
+     },
+     {
+      "volume": "$body",
+      "eq": 18465.686,
+      "tol": 0.5
+     },
+     {
+      "task_open": null
+     }
+    ]
+   },
+   "bind": {
+    "hole": {
+     "new": "PartDesign::Pocket"
+    }
+   },
+   "hints": [
+    "Find Pocket in the Part Design toolbar.",
+    "Find the Type list in the Tasks panel.",
+    "Type = Through all."
+   ],
+   "do": [
+    {
+     "tool": "pd_pocket",
+     "args": {
+      "sketch": "$hole_sk",
+      "type": "through_all"
+     }
+    }
+   ]
+  },
+  {
+   "id": "refine",
+   "say": "Select the last pocket in the tree. Set **Refine** to **true** in the Property view.",
+   "why": "Refine removes the lines where two features meet on one flat face.",
+   "picture": {
+    "file": "pictures/Tut17_final_refined.png",
+    "alt": "The finished part: end blocks, notches and a square hole through the slope."
+   },
+   "targets": [
+    {
+     "tree": "$hole"
+    },
+    {
+     "dock": "Property view"
+    }
+   ],
+   "check": {
+    "prop": "$hole",
+    "name": "Refine",
+    "eq": true
+   },
+   "hints": [
+    "Look in the Data tab of the Property view.",
+    "Find the Refine row of the pocket.",
+    "Refine = true."
+   ],
+   "do": [
+    {
+     "tool": "feature_edit",
+     "args": {
+      "feature": "$hole",
+      "set": {
+       "Refine": true
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "see",
+   "say": "Done: the part of the Basic Part Design tutorial.",
+   "targets": [
+    {
+     "view": "3d"
+    }
+   ],
+   "check": {
+    "all": [
+     {
+      "volume": "$body",
+      "eq": 18465.686,
+      "tol": 0.5
+     },
+     {
+      "bbox": "$body",
+      "size": [
+       53,
+       26,
+       26
+      ],
+      "tol": 0.01
+     },
+     {
+      "valid": "$body"
+     }
+    ]
+   }
+  },
+  {
+   "id": "undo-pad",
+   "say": "Push **{Std_Undo|Undo}** (⌘Z).",
+   "targets": [
+    {
+     "cmd": "Std_Undo"
+    }
+   ],
+   "check": {
+    "volume": "$body",
+    "eq": 21359.0,
+    "tol": 0.5
+   },
+   "do": [
+    {
+     "tool": "history_undo",
+     "args": {}
+    }
+   ],
+   "next": "pocket"
+  }
+ ],
+ "result": {
+  "all": [
+   {
+    "exists": "PartDesign::Body"
+   },
+   {
+    "volume": {
+     "type": "PartDesign::Body"
+    },
+    "eq": 18465.686,
+    "tol": 1
+   }
+  ]
+ }
+}

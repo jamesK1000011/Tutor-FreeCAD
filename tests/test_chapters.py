@@ -209,5 +209,38 @@ class AddonLessons(unittest.TestCase):
             lessons.register_folder(self.root, "not a name")
 
 
+class NoCostUntilInstalled(unittest.TestCase):
+    """Lessons are data: an add-on's lessons cost the agent nothing until the
+    add-on is installed and the agent asks for the list (tutor list). The
+    tool descriptions name no lesson, and an add-on that is not installed
+    adds no row (T5's exit: Workshop's lesson is listed only with Workshop)."""
+
+    WORKSHOP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "examples", "workshop")
+
+    def setUp(self):
+        self.addCleanup(lessons._INSTALLED.clear)
+        self.addCleanup(lessons._REGISTERED.clear)
+
+    def test_listed_only_with_workshop_installed(self):
+        lib = lessons.installed_library(refresh=True, modules={})
+        self.assertEqual([i for i in lib.lessons() if not i.startswith(lessons.PACKAGE + ".")], [])
+        without = json.dumps(lib.listing())
+        mods = {"workshop.agentlink_families": types.SimpleNamespace(__file__=os.path.join(self.WORKSHOP, "agentlink_families.py"))}
+        lib = lessons.installed_library(refresh=True, modules=mods)
+        row = next(r for r in lib.listing() if r["id"] == "workshop.make.hole-for-hardware")
+        self.assertEqual(row["from"], "workshop")
+        self.assertNotIn("workshop", without)
+
+    def test_tool_descriptions_name_no_lesson(self):
+        with open(os.path.join(lessons.HERE, "data", "tools.json"), encoding="utf-8") as f:
+            cards = json.dumps(json.load(f)).lower()
+        lib = lessons.core_library()
+        for lid, l in lib.lessons().items():
+            with self.subTest(lesson=lid):
+                self.assertNotIn(lid.lower(), cards)
+                self.assertNotIn(l["title"].lower(), cards)
+        self.assertNotIn("hole-for-hardware", cards)
+
+
 if __name__ == "__main__":
     unittest.main()

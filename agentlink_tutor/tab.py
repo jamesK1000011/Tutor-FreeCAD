@@ -27,15 +27,21 @@ here); the callout over the 3D view keeps 4.5:1 (bubble.colours).
 
 from . import live
 
+PICTURE_WIDTH = 260  # px: a step's picture fits a narrow dock
+
 DO_TIP = "Do this step for me: the tools do it while you watch (one undo step per call)."
 NEXT_TIP = {"guided": "Check this step, then go on.", "demo": "Do this step, then wait at the next one."}
 MODES = (("guided", "Guided: I do it"), ("demo", "Demo: show me"))
 
 # Keys for the lesson's buttons, anywhere in the tab (not in the question
 # box, where typing wins). Alt is Option on macOS.
+# Alt+Shift with a key: FreeCAD 1.1 takes Alt+Return (Properties), Alt
+# with a menu's letter (Alt+H opens Help, Alt+E Edit …) and a few Alt keys
+# of its own; with Shift, none of these (data/freecad_keys.json, checked by
+# tests/test_access.py).
 SHORTCUTS = {
-    "start": "Alt+Return", "back": "Alt+Left", "next": "Alt+Right", "hint": "Alt+H",
-    "skip": "Alt+K", "do": "Alt+D", "stop": "Alt+Q", "question": "Alt+A",
+    "start": "Alt+Shift+Return", "back": "Alt+Shift+Left", "next": "Alt+Shift+Right", "hint": "Alt+Shift+H",
+    "skip": "Alt+Shift+K", "do": "Alt+Shift+D", "stop": "Alt+Shift+Q", "question": "Alt+Shift+A",
 }
 
 # Every control's screen-reader name and description, in Tab order.
@@ -232,6 +238,13 @@ def _make():
             fi.setItalic(True)
             self.hint.setFont(fi)
             self.hint.setAccessibleName("Tutor hint")
+            self.pic = QtW.QLabel()
+            self.pic.setAccessibleName("Picture of this step")
+            self.pic.setVisible(False)
+            self.credit = QtW.QLabel()
+            self.credit.setWordWrap(True)
+            self.credit.setAccessibleName("Lesson credit")
+            self.credit.setVisible(False)
             self.check = QtW.QLabel()
             self.check.setWordWrap(True)
             self.check.setAccessibleName("Tutor check")
@@ -243,7 +256,7 @@ def _make():
                 fw.setPointSizeF(fw.pointSizeF() * 0.9)
             self.why.setFont(fw)
             self.why.setAccessibleName("Why this step")
-            for w in (self.head, self.say, self.why, self.check, self.hint):
+            for w in (self.head, self.say, self.why, self.check, self.hint, self.pic, self.credit):
                 lay.addWidget(w)
             from . import prefs
 
@@ -261,6 +274,7 @@ def _make():
             lay.addWidget(self.motion)
             size_row = QtW.QHBoxLayout()
             size_label = QtW.QLabel("Text size")
+            size_label.setAccessibleName("Text size")
             self.scale = QtW.QComboBox()
             for pc in prefs.SCALES:
                 self.scale.addItem(f"{pc} %", pc)
@@ -335,7 +349,7 @@ def _make():
                 QtW.QWidget.setTabOrder(a, b)
 
         def _key(self, key):
-            """A control's key: a button acts as clicked (when on); Alt+A
+            """A control's key: a button acts as clicked (when on); Alt+Shift+A
             puts the cursor in the question box."""
             if key == "question":
                 self.question.setFocus()
@@ -457,6 +471,7 @@ def _make():
             self.check.setVisible(bool(line))
             self.hint.setText(hint)
             self.hint.setVisible(bool(hint))
+            self._picture(c)
             if c is not None and c.mode in ("demo", "guided"):
                 i = self.mode.findData(c.mode)
                 if i >= 0 and i != self.mode.currentIndex():
@@ -464,6 +479,30 @@ def _make():
                     self.mode.setCurrentIndex(i)
                     self.mode.blockSignals(False)
             self._buttons()
+
+        def _picture(self, c):
+            """The step's picture (from the lesson's folder) and the lesson's
+            credit line, when it has them; hidden otherwise."""
+            from . import engine, lessons
+
+            e = getattr(c, "e", None)
+            path = alt = None
+            credit = ""
+            if e is not None and getattr(e, "lesson", None) and getattr(e, "state", None) == "step":
+                path = lessons.picture_path(e.lesson, e.step)
+                alt = (e.step.get("picture") or {}).get("alt")
+                credit = engine.credit_line(e.lesson)
+            self.credit.setText(credit)
+            self.credit.setVisible(bool(credit))
+            Pixmap = getattr(QtGui, "QPixmap", None)
+            pm = Pixmap(path) if (path and Pixmap is not None) else None
+            if pm is None or pm.isNull():
+                self.pic.setVisible(False)
+                return
+            self.pic.setPixmap(pm.scaledToWidth(PICTURE_WIDTH) if pm.width() > PICTURE_WIDTH else pm)
+            self.pic.setAccessibleDescription(alt or "")
+            self.pic.setToolTip(alt or "")
+            self.pic.setVisible(True)
 
         def _changed(self, _c=None):
             """The lesson moved (the agent's call, a check that passed, a

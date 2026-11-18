@@ -103,6 +103,22 @@ class World(PadWorld):
         self.gui = GuiState("StartWorkbench")
 
     def __call__(self, name, args):
+        if name in ("pd_pad", "pd_pocket") and "length" not in args:
+            args = dict(args, length=0)  # through all: no length (the stand-in's volume ignores it)
+        if name == "object_rename":
+            self.calls.append((name, args))
+            o = self.doc.getObject(args["object"])
+            if o is None:
+                return True, {"error": {"code": "not_found", "message": f"no object {args['object']}"}}
+            o.Label = args["label"]
+            return False, {}
+        if name == "sketch_new" and args.get("name"):
+            refused, out = self(name, {k: v for k, v in args.items() if k != "name"})
+            self.calls[-1] = (name, args)
+            if not refused:
+                o = [x for x in self.doc.Objects if x.TypeId == "Sketcher::SketchObject"][-1]
+                o.Label = args["name"]
+            return refused, out
         mine = ("workbench", "part_box", "obj_set", "td_page", "sketch_constrain")
         if name not in mine and not (name == "sketch_new" and not any(o.TypeId == "PartDesign::Body" for o in self.doc.Objects)):
             refused, out = super().__call__(name, args)

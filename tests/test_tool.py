@@ -213,8 +213,8 @@ class ToolCase(unittest.TestCase):
     def test_list_and_refusals(self):
         got = self.tutor(action="list", query="pad a sketch")
         self.assertEqual([r["id"] for r in got["lessons"]], ["agentlink_tutor.pd.pad-sketch"])
-        got = self.tutor(action="list", query="bike-stem")  # a course's chapters, by its tag, in order
-        self.assertEqual([r["course"] for r in got["lessons"]], ["bike-stem 1", "bike-stem 2", "bike-stem 3"])
+        got = self.tutor(action="list", query="wiki-part-to-drawing")  # a course's chapters, by its id, in order
+        self.assertEqual([r["course"] for r in got["lessons"]], ["wiki-part-to-drawing 1", "wiki-part-to-drawing 2"])
         refused, body = self.call("tutor", action="next")
         self.assertEqual((refused, body["error"]["code"]), (True, "invalid_state"))
         refused, body = self.call("tutor", action="start", lesson="no-such")
