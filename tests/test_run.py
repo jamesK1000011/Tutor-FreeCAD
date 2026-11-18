@@ -37,7 +37,7 @@ class FakeUI:
         self.w = world
         self.log = []
 
-    def settle(self):
+    def settle(self, doc=None):
         self.log.append("settle")
         g = self.w.gui
         if g is not None:
@@ -364,6 +364,37 @@ class State(unittest.TestCase):
         st = c.start("guided")
         self.assertEqual(st["targets"]["missing"], ["not drawn: no overlay"])
         self.assertEqual(c.act("next")["id"], "pick")
+
+
+class DemoClosesTheSketch(unittest.TestCase):
+    """Live, 18 Nov 2026: the window's echo opened each new sketch, so a
+    demo step whose check wants it closed ({editing: null}) failed with
+    "still open for editing", and Next did the step again (refused as
+    redundant). The do now ends with the Close the step asks for."""
+
+    def test_close_after_do(self):
+        lesson = {"schema": 1, "id": "inline.close", "version": "0.0.0", "title": "Close it",
+                  "setup": {"calls": [{"tool": "pd_body_new", "args": {}}]},
+                  "steps": [{"id": "s", "say": "Make a sketch. Push **Close**.",
+                             "check": {"all": [{"new": "Sketcher::SketchObject"}, {"editing": None}]},
+                             "do": [{"tool": "sketch_new", "args": {}}]},
+                            {"id": "end", "say": "Done.", "check": {"exists": "Sketcher::SketchObject"}}]}
+        w = World()
+        w.gui = GuiState("PartDesignWorkbench")
+        w.opens_sketch = True
+        e = Engine(lesson, call=w, doc=lambda: w.doc, gui=lambda: w.gui)
+        c = run.Controller(e, ui=FakeUI(w))
+        c.start("demo")
+        c.act("next")
+        self.assertEqual(c.e.step["id"], "end")
+        self.assertIsNone(w.gui.editing)
+        self.assertEqual([n for n, _a in w.calls].count("sketch_new"), 1)  # done once
+
+    def test_wants_quiet(self):
+        self.assertTrue(run.wants_quiet({"all": [{"new": "X::Y"}, {"editing": None}]}))
+        self.assertTrue(run.wants_quiet({"task_open": None}))
+        self.assertFalse(run.wants_quiet({"editing": "Sketch"}))
+        self.assertFalse(run.wants_quiet({"new": "X::Y"}))
 
 
 if __name__ == "__main__":
