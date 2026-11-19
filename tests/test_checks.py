@@ -75,6 +75,16 @@ class Vocabulary(unittest.TestCase):
         self.assertEqual(self.st({"bbox": "Body", "size": [40, 20, 15]}).status, "pass")
         self.assertIn("40 × 20 × 15 mm", self.st({"bbox": "Body", "size": [40, 20, 10]}).why)
 
+    def test_bbox_reads_the_exact_box(self):
+        # Live 104: once drawn, BoundBox comes from the display mesh (a
+        # 55 mm cylinder read 54.81 mm); the exact box is read instead.
+        from fakes import BoundBox
+
+        sh = self.body.Shape
+        sh.BoundBox = BoundBox(39.8, 19.9, 15)
+        sh.optimalBoundingBox = lambda use_triangulation=True: BoundBox(40, 20, 15)
+        self.assertEqual(self.st({"bbox": "Body", "size": [40, 20, 15]}).status, "pass")
+
     def test_sketch(self):
         self.assertEqual(self.st({"sketch": "Sketch", "closed": True, "full": True}).status, "pass")
         self.sk.Shape = Shape(0, solids=0, wires=[Wire(False)])
