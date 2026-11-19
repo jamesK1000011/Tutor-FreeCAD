@@ -212,6 +212,10 @@ class FakeTab(unittest.TestCase):
         self.assertTrue(self.t.question.calls.get("setFocus"))
 
     def test_text_size_and_reduce_motion_kept(self):
+        # Put back after: with FreeCAD here they are its own parameters,
+        # which the later tests read (a step's own view, reduced motion off).
+        self.addCleanup(prefs.set_reduce_motion, prefs.reduce_motion())
+        self.addCleanup(prefs.set_text_scale, prefs.text_scale())
         self.assertEqual(self.t.font().size, 13.0)
         self.t.scale.setCurrentIndex(self.t.scale.findData(150))
         self.t.scale.currentIndexChanged.emit(2)

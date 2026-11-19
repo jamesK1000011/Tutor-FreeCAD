@@ -103,8 +103,9 @@ class Replay(unittest.TestCase):
                 self.assertIn(said, st["why"])
 
     def test_calls_use_the_tools_own_argument_names(self):
-        listed = self.srv.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})["result"]["tools"]
-        props = {t["name"]: set((t.get("inputSchema") or {}).get("properties", {})) for t in listed}
+        # Every tool the server has, listed or not (Agent Link's default
+        # tools/list holds only its base tools; the rest are found by name).
+        props = {n: set((t.schema or {}).get("properties", {})) for n, t in self.srv.tools.items()}
         for lesson in core():
             for where, c in lessons._calls(lesson):
                 self.assertIn(c["tool"], props, f"{lesson['id']} {where}")

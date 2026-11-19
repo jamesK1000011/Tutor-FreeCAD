@@ -785,11 +785,16 @@ def alive(obj):
     for mod in ("shiboken6", "shiboken2", "PySide6.shiboken6", "PySide2.shiboken2"):
         try:
             sb = __import__(mod, fromlist=["isValid"])
-            return bool(sb.isValid(obj))
         except ImportError:
             continue
+        try:
+            # shiboken says True for anything that is not one of its own
+            # wrappers: only its False is final; the probe below asks the rest.
+            if not sb.isValid(obj):
+                return False
         except Exception:  # noqa: BLE001  (not a Qt object: a stand-in)
-            break
+            pass
+        break
     try:
         if hasattr(obj, "objectName"):
             obj.objectName()
