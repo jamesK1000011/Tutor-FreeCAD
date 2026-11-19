@@ -121,6 +121,7 @@ tests/test_files.py
 tests/test_general.py
 tests/test_lessons.py
 tests/test_observe.py
+tests/test_panel_polish.py
 tests/test_point.py
 tests/test_r4_review.py
 tests/test_red_team.py
