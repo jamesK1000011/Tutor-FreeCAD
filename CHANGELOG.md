@@ -14,6 +14,7 @@ Each step tells you what to do, points at the control and checks your result. "D
 The lesson library has one lesson or more for each main workbench. Some lessons are adapted from FreeCAD wiki tutorials (CC-BY-3.0, LICENSE-Assets).
 Tutor needs Agent Link for FreeCAD. A lesson calls only Agent Link's CAD, view, sketch and read tools.
 
+- The Tutor tab's lesson list shows the lesson that runs, also one the agent started (live 106: it showed another lesson's title).
 - Release (V1): version 1.0.0. REUSE.toml covers docs/hardening and docs/examples. package.xml names the repository as Tutor-FreeCAD.
 - Panel polish (V1): the Tutor tab's tooltips are short STE sentences that say what to do (10 rewritten: Lessons, Start, Lesson mode, Back, Hint, Stop, Show explanations, Let Claude watch, Text size, Ask Claude). A new test (tests/test_panel_polish.py) checks that each control of the tab is in CONTROLS (its tooltip, name and description), that each tooltip is short, and that the tab and window code have no fixed "#rrggbb" colour.
 - Fixed-joint lesson: the insert check takes the parts as links or as bodies in the assembly (asm_new and asm_add put the bodies in; the Component dialog makes links), not a link labelled Body001 (the label is Body 2).

@@ -211,6 +211,24 @@ class FakeTab(unittest.TestCase):
         made["Alt+Shift+A"].activated.emit()
         self.assertTrue(self.t.question.calls.get("setFocus"))
 
+    def test_the_list_shows_the_lesson_that_runs(self):
+        # Live 106: the agent started pad-sketch, and the list still showed
+        # the fixed-joint lesson.
+        from agentlink_tutor import live
+        for lid in ("a.fixed-joint", "a.pad-sketch"):
+            self.t.pick.addItem(lid, lid)
+        self.t.pick.setCurrentIndex(0)
+        st = {"lesson": "a.pad-sketch", "mode": "guided", "step": "2/5", "say": "Click the sketch."}
+        c = types.SimpleNamespace(mode="guided", e=types.SimpleNamespace(explain=True), person_state=lambda: st)
+        was = live.controller
+        live.controller = lambda: c
+        self.addCleanup(setattr, live, "controller", was)
+        try:
+            self.t._show(st)
+        except Exception:  # noqa: BLE001 - parts of _show this stand-in lacks
+            pass
+        self.assertEqual(self.t.pick.currentData(), "a.pad-sketch")
+
     def test_text_size_and_reduce_motion_kept(self):
         # Put back after: with FreeCAD here they are its own parameters,
         # which the later tests read (a step's own view, reduced motion off).
