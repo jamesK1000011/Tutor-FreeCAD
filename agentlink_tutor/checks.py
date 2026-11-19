@@ -478,6 +478,16 @@ def _volume(spec, ctx):
     return _each(spec, ctx, "volume", one)
 
 
+def _box(sh):
+    """The shape's exact box. BoundBox comes from the display mesh once the
+    window has drawn the shape, a little small on a curved face (live 104:
+    a 55 mm cylinder read 54.81 mm)."""
+    try:
+        return sh.optimalBoundingBox(False)
+    except Exception:  # noqa: BLE001 - an older FreeCAD, or no exact box
+        return sh.BoundBox
+
+
 def _bbox(spec, ctx):
     tol = float(spec.get("tol", 0.01))
 
@@ -485,7 +495,7 @@ def _bbox(spec, ctx):
         sh = _shape(o)
         if sh is None:
             return fail(f"{o.Label} has no shape yet")
-        bb = sh.BoundBox
+        bb = _box(sh)
         have = [bb.XLength, bb.YLength, bb.ZLength]
         want = spec.get("size") or []
         if any(abs(h - w) > tol for h, w in zip(have, want)):
@@ -715,7 +725,7 @@ def _sizes(o):
     sh = _shape(o)
     if sh is None:
         return None
-    bb = sh.BoundBox
+    bb = _box(sh)
     return {"x": float(bb.XLength), "y": float(bb.YLength), "z": float(bb.ZLength)}
 
 
