@@ -2,7 +2,7 @@
 version = 1
 
 [[annotations]]
-path = ["FILES", "package.xml", "CHANGELOG.md", ".gitignore", ".github/**", "agentlink_tutor/data/*.json", "agentlink_tutor/lessons/*.json", "tests/data/**"]
+path = ["FILES", "package.xml", "CHANGELOG.md", ".gitignore", ".github/**", "agentlink_tutor/data/*.json", "agentlink_tutor/lessons/*.json", "tests/data/**", "docs/hardening/**", "docs/examples/**"]
 SPDX-FileCopyrightText = "Tutor contributors"
 SPDX-License-Identifier = "LGPL-2.1-or-later"
 
