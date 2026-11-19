@@ -286,15 +286,20 @@ class Engine:
         if self.call is None:
             raise TutorError("no tools to call: the engine was given no call")
         answers = []
-        from .lessons import never_called
+        from .lessons import call_problems
 
         for c in calls:
-            if never_called(c.get("tool")):
-                # Checked when the lesson loads too; here for a lesson that was not.
-                raise TutorError(f"{where}: a lesson never calls {c.get('tool')} (red team rule). Nothing more was run.")
+            # Checked when the lesson loads too; here for a lesson that was
+            # not, and with the bindings put in (red team 3, R3-5).
+            bad = call_problems(c.get("tool"), c.get("args"), where)
+            if bad:
+                raise TutorError(f"{bad[0]} (red team rule). Nothing more was run.")
             if c["tool"] not in DOC_TOOLS:
                 self.hold_doc()
             args = resolve(c.get("args") or {}, self.bindings)
+            bad = call_problems(c["tool"], args, where)
+            if bad:
+                raise TutorError(f"{bad[0]} (red team rule). Nothing more was run.")
             refused, out = self.call(c["tool"], args)
             if refused:
                 edit = same_dimension_edit(c["tool"], args, _reason(out))

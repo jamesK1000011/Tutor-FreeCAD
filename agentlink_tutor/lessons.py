@@ -278,17 +278,110 @@ NEVER_CALLED = {"batch", "job_start", "live_run", "gui_input", "dialog_answer", 
                 "port_scaffold", "outputs_clean", "doc_revert", "doc_close", "crash_collect"}
 
 
+# The tools a lesson may call (red team 3, R3-5): an allow list of CAD,
+# view, sketch and read tools. Every other tool is refused, so printers
+# (printer_*), slicers (slice*, orca_*), packs (pack_*, library_pack), add-on
+# writers and every tool that comes later stay out of lessons. The set holds
+# every tool the shipped lessons call (tests/test_red_team.py checks it).
+LESSON_TOOLS = frozenset("""
+asm_add asm_bom asm_check asm_explode asm_fits asm_ground asm_joint asm_joint_remove asm_limits asm_list asm_new asm_new_part asm_pose
+asm_rigid_group asm_sub
+bim_building bim_component bim_covering bim_curtain_wall bim_edit bim_equipment bim_fence bim_frame bim_grid bim_level bim_list
+bim_material bim_member bim_opening bim_panel bim_pipe bim_pipe_connector bim_profiles bim_quantities bim_rebar bim_reextrude bim_roof
+bim_section bim_space bim_stairs bim_structural_system bim_structure bim_truss bim_wall
+body_check cam_dressup cam_edit cam_job cam_list cam_op cam_path cam_post cam_setup cam_tool clearance compound_explode compound_filter
+doc_info doc_new draft_2d_view draft_array draft_clone draft_dimension draft_facebinder draft_from_sketch draft_hatch draft_label
+draft_layer draft_link_array draft_modify draft_outline draft_plane draft_shape draft_style draft_text draft_to_sketch
+export fea_buckle fea_clear fea_heat fea_hold fea_load fea_modes fea_native fea_parts fea_probe fea_refine fea_results fea_setup
+fea_shell fea_solve feature_edit feature_list feature_remove feature_suppress fem_add fem_mesh
+dfm_check fit history_undo history_redo hw_hole import_file link_make material_get material_list material_set measure measure_mass
+meshobj_boolean meshobj_boundary meshobj_curvature meshobj_decimate meshobj_export meshobj_from_shape meshobj_info meshobj_merge
+meshobj_offset meshobj_primitive meshobj_refine meshobj_repair meshobj_sections meshobj_segments meshobj_smooth meshobj_split
+meshobj_transform meshobj_trim
+object_align object_appearance object_delete object_duplicate object_get object_group object_list object_rename object_set
+param_bind param_list param_remove param_set part_review
+part_attach part_boolean part_chamfer part_compound part_container part_datum part_defeature part_extract part_extrude part_face
+part_fillet part_fix part_from_mesh part_join part_loft part_offset part_offset2d part_primitive part_project part_refine
+part_revolve part_ruled part_section part_slices part_split part_sweep part_thickness part_transform part_wire
+pd_binder pd_body_new pd_boolean pd_chamfer pd_clone pd_datum pd_datum_plane pd_draft pd_fillet pd_gear pd_groove pd_helix pd_hole
+pd_linear_pattern pd_loft pd_mirrored pd_move_feature pd_multitransform pd_pad pd_pipe pd_pocket pd_polar_pattern pd_primitive
+pd_reorder pd_revolution pd_shaft pd_thickness pd_tip
+points_crop points_export points_fit points_import points_info points_merge points_mesh points_sample points_structure
+recompute section selection session_state shape_query sheet_cells sheet_list sheet_new sheet_read sheet_rows sheet_set sheet_table
+show sketch_add sketch_array sketch_attach sketch_bspline sketch_carbon sketch_constrain sketch_copy sketch_edit sketch_extend
+sketch_external sketch_join sketch_merge sketch_mirror sketch_new sketch_offset sketch_project sketch_state sketch_to_bspline
+sketch_validate surface_blend surface_boundary surface_cut surface_extend surface_fill surface_loft surface_points surface_polynomial
+surface_sections surface_sew surface_thicken
+td_area td_balloon td_centermarks td_cosmetic td_datum td_detail td_dim td_dim_align td_dim_format td_dim_special td_dimset
+td_finish td_gdt td_geometry td_hatch td_leader td_lines td_list td_note td_page td_projection td_section td_section_position
+td_table td_title td_tolerance td_view td_view_more td_weld
+units_convert varset_new varset_set workbench cmd_run
+""".split())
+# Of those, the tools that write or read a file by path: a lesson gives
+# them a plain file name only, in the session's folder.
+FILE_TOOLS = frozenset({"export", "cam_post", "meshobj_export", "points_export", "import_file", "points_import"})
+FILE_KEYS = ("path", "file", "files", "export", "import")
+# cmd_run in a lesson: only these FreeCAD commands, and the view commands.
+LESSON_COMMANDS = frozenset({"Std_Edit", "Sketcher_LeaveSketch", "Std_ToggleVisibility", "Std_ShowSelection", "Std_HideSelection",
+                             "Std_SelectAll", "Std_Undo", "Std_Redo"})
+# Argument names that hold the person's OK or override a guard: never in a lesson.
+GATE_ARGS = ("confirm",)
+
+
 def never_called(tool):
-    """True for a tool no lesson calls."""
+    """True for a tool no lesson calls: any tool not in LESSON_TOOLS."""
     t = str(tool or "")
-    return t in NEVER_CALLED or t.startswith(("cookbook_", "macro_")) or "approve" in t
+    return t not in LESSON_TOOLS or t in NEVER_CALLED or t.startswith(("cookbook_", "macro_")) or "approve" in t
+
+
+def _gates(obj, where):
+    """confirm anywhere in a call's args, or force: true (a gate's
+    override; fea_load's force is a vector and stays)."""
+    out = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k in GATE_ARGS:
+                out.append(f"{where}.{k}: a lesson never gives {k} (it is the person's word)")
+            elif k == "force" and isinstance(v, bool):
+                out.append(f"{where}.force: a lesson never sets force (it overrides a guard)")
+            else:
+                out += _gates(v, f"{where}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            out += _gates(v, f"{where}[{i}]")
+    return out
+
+
+def _plain_name(v):
+    return isinstance(v, str) and v.strip() == v and v not in ("", ".", "..") and not any(c in v for c in "/\\~$") and not v.startswith(".")
+
+
+def call_problems(tool, args, where="call"):
+    """Why a lesson may not make this call: [] when it may."""
+    t = str(tool or "")
+    if never_called(t):
+        return [f"{where}: a lesson never calls {t} (only CAD, view, sketch and read tools; not printers, slicers, packs, code or settings)"]
+    args = args if isinstance(args, dict) else {}
+    out = _gates(args, f"{where}.args")
+    if t in FILE_TOOLS:
+        for k in FILE_KEYS:
+            if k not in args:
+                continue
+            vals = args[k] if isinstance(args[k], list) else [args[k]]
+            if not all(_plain_name(v) for v in vals):
+                out.append(f"{where}.args.{k}: a plain file name in the session's folder (no folder, no ~, no $)")
+    if t == "cmd_run":
+        name = str(args.get("name") or args.get("command") or "")
+        if name not in LESSON_COMMANDS and not name.startswith("Std_View"):
+            out.append(f"{where}.args.name: a lesson runs only {', '.join(sorted(LESSON_COMMANDS))} or a Std_View command")
+    return out
 
 
 def _never_problems(lesson):
     out = []
     for where, c in _calls(lesson):
-        if isinstance(c, dict) and never_called(c.get("tool")):
-            out.append(f"{where}: a lesson never calls {c['tool']} (it runs or installs code, changes settings, or holds the person's OK)")
+        if isinstance(c, dict):
+            out += call_problems(c.get("tool"), c.get("args"), where)
     return out
 
 
