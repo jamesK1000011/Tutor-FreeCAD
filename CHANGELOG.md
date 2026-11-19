@@ -7,6 +7,7 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+- Fixed-joint lesson: the insert check takes the parts as links or as bodies in the assembly (asm_new and asm_add put the bodies in; the Component dialog makes links), not a link labelled Body001 (the label is Body 2).
 - bbox checks read the shape's exact box (optimalBoundingBox), not BoundBox: once the window draws a shape, BoundBox comes from its display mesh and is small on curved faces (live 104: the whiffle-ball cylinder read 54.81 mm, not 55).
 - Fixed-joint lesson (live 103, 19 Nov): its setup names each body and sketch. With two bodies, sketch_new without a body is refused, so the lesson did not start.
 - Security (red team 3, R3-5, R3-11): a lesson calls only the tools in `lessons.LESSON_TOOLS` (CAD, view, sketch and read tools; every shipped lesson passes), never printer, slicer, pack, code or settings tools; `confirm` and `force: true` are refused in lesson args; file tools take a plain file name; `cmd_run` takes a short list of commands; the engine checks each call again before it runs it. Tutor answers drop Unicode Cf and tag characters from lesson text. `tests/data/agentlink_tools.txt` regenerated (approve_code, approve_file). Tests: `tests/test_red_team.py`.
