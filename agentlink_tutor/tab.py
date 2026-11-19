@@ -46,21 +46,21 @@ SHORTCUTS = {
 
 # Every control's screen-reader name and description, in Tab order.
 CONTROLS = (
-    ("pick", "Lessons", "The lessons this FreeCAD can run. Select one, then push Start."),
-    ("start", "Start", "Start the lesson: it sets up a document, then shows each step."),
-    ("mode", "Lesson mode", "Guided: you do each step and it is checked as you go. Demo: each step is done for you while you watch. Switch any time."),
-    ("back", "Back", "The step before."),
+    ("pick", "Lessons", "Select a lesson that this FreeCAD can run, then push Start."),
+    ("start", "Start", "Start the lesson. It sets up a document, then shows each step."),
+    ("mode", "Lesson mode", "Select the lesson mode. Guided: you do each step and the tutor checks it. Demo: the tutor does each step while you watch. You can change it at any time."),
+    ("back", "Back", "Go back to the step before."),
     ("next", "Next", "Check this step, then go on."),
-    ("hint", "Hint", "A hint, then a closer one."),
+    ("hint", "Hint", "Show a hint. Push again for a closer hint."),
     ("skip", "Skip", "Leave this step and go on."),
     ("do", "Do it for me", DO_TIP),
-    ("stop", "Stop", "Stop the lesson; the document stays."),
-    ("explain", "Show explanations", "A short line under each step that says why. Off: only the steps."),
-    ("watch", "Let Claude watch", "Claude follows what you do here (no lesson). A sign shows in the status bar. Off by default."),
+    ("stop", "Stop", "Stop the lesson. The document stays open."),
+    ("explain", "Show explanations", "Show a short line under each step that says why. Off: only the steps show."),
+    ("watch", "Let Claude watch", "Let Claude follow what you do here (no lesson). A sign shows in the status bar. Off by default."),
     ("motion", "Reduce motion", "Keep the 3D view still between steps: the part is framed once, at the start, with no animation."),
-    ("scale", "Text size", "The size of the words in this tab and in the callout."),
+    ("scale", "Text size", "Set the size of the words in this tab and in the callout. Unit: %."),
     ("question", "Question for Claude", "Type a question about this step. Push Ask Claude to leave it as a note."),
-    ("ask", "Ask Claude", "Leave the question as a note: Claude reads it with the notes."),
+    ("ask", "Ask Claude", "Leave the question as a note. Claude reads it with the notes."),
 )
 
 
