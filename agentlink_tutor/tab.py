@@ -472,6 +472,16 @@ def _make():
             self.hint.setText(hint)
             self.hint.setVisible(bool(hint))
             self._picture(c)
+            lid = status.get("lesson") if isinstance(status, dict) else None
+            if c is not None and lid:
+                # The list shows the lesson that runs, also one the agent
+                # started (live 106: it showed another lesson's title).
+                i = self.pick.findData(lid)
+                if i >= 0 and i != self.pick.currentIndex():
+                    self.pick.blockSignals(True)
+                    self.pick.setCurrentIndex(i)
+                    self.pick.blockSignals(False)
+                    self._pick_tip()
             if c is not None and c.mode in ("demo", "guided"):
                 i = self.mode.findData(c.mode)
                 if i >= 0 and i != self.mode.currentIndex():
