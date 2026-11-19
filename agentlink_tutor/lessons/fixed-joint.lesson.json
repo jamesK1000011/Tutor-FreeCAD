@@ -181,18 +181,38 @@
    "check": {
     "all": [
      {
-      "exists": {
-       "type": "App::Link",
-       "in": "$asm",
-       "label": "Body"
-      }
-     },
-     {
-      "exists": {
-       "type": "App::Link",
-       "in": "$asm",
-       "label": "Body001"
-      }
+      "any": [
+       {
+        "exists": {
+         "type": "App::Link",
+         "in": "$asm",
+         "count": 2
+        }
+       },
+       {
+        "exists": {
+         "type": "PartDesign::Body",
+         "in": "$asm",
+         "count": 2
+        }
+       },
+       {
+        "all": [
+         {
+          "exists": {
+           "type": "App::Link",
+           "in": "$asm"
+          }
+         },
+         {
+          "exists": {
+           "type": "PartDesign::Body",
+           "in": "$asm"
+          }
+         }
+        ]
+       }
+      ]
      },
      {
       "task_open": null
