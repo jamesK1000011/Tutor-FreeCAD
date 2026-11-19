@@ -338,3 +338,9 @@ path = "agentlink_tutor/lessons/pictures/Surface_BlendCurve_G3_example.png"
 precedence = "override"
 SPDX-FileCopyrightText = "FreeCAD wiki contributors, Surface BlendCurve (https://wiki.freecad.org/Surface_BlendCurve)"
 SPDX-License-Identifier = "CC-BY-3.0"
+
+[[annotations]]
+# Screenshots of FreeCAD with this add-on, taken by Agent Link on 19 Nov 2026 and looked at (no personal data).
+path = ["docs/images/*.png"]
+SPDX-FileCopyrightText = "Tutor contributors"
+SPDX-License-Identifier = "LGPL-2.1-or-later"
