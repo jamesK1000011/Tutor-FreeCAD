@@ -65,8 +65,11 @@ class Replay(unittest.TestCase):
                 try:
                     st = e.do()
                 except TutorError as x:
-                    # Only a step the window alone can tell may have a do the window alone runs.
-                    self.assertTrue(checks.needs_window(s["check"]), f"{lesson['id']} {s['id']}: {x}")
+                    # Only a step the window alone can tell, or a do that only the
+                    # window runs (cmd_run, menu_run: "This FreeCAD has no window"),
+                    # may be refused here; the step's check is read all the same.
+                    no_window = "has no window" in str(x)
+                    self.assertTrue(checks.needs_window(s["check"]) or no_window, f"{lesson['id']} {s['id']}: {x}")
                     self.assertIn("window", str(x))
                     st = e.check()
             else:
