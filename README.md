@@ -90,7 +90,9 @@ Open FreeCAD, start a new chat, and try these prompts:
 - the Addon Manager preferences with both custom repositories added
 -->
 
-No screenshots yet.
+![A Tutor lesson in guided mode: the callout, the ringed Model tab and the Tutor tab](https://github.com/jamesK1000011/Tutor-FreeCAD/raw/main/docs/images/guided-step.png)
+
+*Pad a sketch into a solid, guided: the callout says what to do, a numbered ring points at the control, and the Tutor tab shows the step and its check.*
 
 ## What it does
 

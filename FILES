@@ -101,6 +101,7 @@ docs/examples/workshop/lessons/hole-for-hardware.lesson.json
 docs/hardening/tutor-findings.md
 docs/hardening/tutor-r4-findings.md
 docs/hooks.md
+docs/images/guided-step.png
 docs/workflow/README.md
 package.xml
 tests/_draft_standin.py
