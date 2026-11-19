@@ -34,12 +34,14 @@
    {
     "tool": "sketch_new",
     "args": {
+     "body": "Body",
      "plane": "XY"
     }
    },
    {
     "tool": "sketch_add",
     "args": {
+     "sketch": "Sketch",
      "items": [
       {
        "kind": "rectangle",
@@ -59,6 +61,8 @@
    {
     "tool": "pd_pad",
     "args": {
+     "body": "Body",
+     "sketch": "Sketch",
      "length": 10
     }
    },
@@ -69,12 +73,14 @@
    {
     "tool": "sketch_new",
     "args": {
+     "body": "Body001",
      "plane": "XY"
     }
    },
    {
     "tool": "sketch_add",
     "args": {
+     "sketch": "Sketch001",
      "items": [
       {
        "kind": "rectangle",
@@ -94,6 +100,8 @@
    {
     "tool": "pd_pad",
     "args": {
+     "body": "Body001",
+     "sketch": "Sketch001",
      "length": 30
     }
    }
