@@ -10,6 +10,8 @@ Tutor is an add-on for [Agent Link for FreeCAD](https://github.com/jamesK1000011
 and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
+How it plugs into Agent Link, with a diagram: [docs/workflow/](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/docs/workflow/README.md).
+
 <!-- screenshot: the pocket lesson's first step, guided: the callout over the 3D view with its arrow to the ringed New Sketch button, the Tutor tab beside the tree -->
 
 ## Install
