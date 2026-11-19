@@ -484,7 +484,7 @@
    "hints": [
     "Fuse the discs, the arm and the pin. Cut the hole after the fuse.",
     "Set the Placement of the result.",
-    "Discs r 7.5 mm, arm 15 × 30 × 4 mm, pin r 4 mm; Placement x = 125 mm, y = -70 mm."
+    "Discs r 7.5 mm, arm 15 × 30 × 4 mm, pin r 4 mm. Placement x = 125 mm, y = -70 mm."
    ],
    "do": [
     {
@@ -629,7 +629,7 @@
    "hints": [
     "Fuse the discs and the bar. Cut the two holes after the fuse.",
     "Set the Placement of the result.",
-    "Discs r 6 mm, bar 50 × 12 × 4 mm, holes r 4 mm; Placement x = 25 mm, y = -70 mm."
+    "Discs r 6 mm, bar 50 × 12 × 4 mm, holes r 4 mm. Placement x = 25 mm, y = -70 mm."
    ],
    "do": [
     {

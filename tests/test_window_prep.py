@@ -219,6 +219,7 @@ class QtCase(unittest.TestCase):
 # ---- T1: dropdowns and short toolbars --------------------------------------------------
 
 class Dropdown(QtCase):
+    @unittest.skipUnless(AL, "needs an Agent Link checkout ($AGENTLINK_SRC): window.py reads its names with agentlink.targets")
     def test_dropdown_member_found_by_its_menu_text_and_its_arrow_ringed(self):
         bar = QToolBar(self.mw)
         menu = QMenu([QAction("Constrain Block"), QAction("Constrain &Symmetric")])
@@ -298,6 +299,7 @@ class ComboView(QtCase):
         tv = QWidget(scroll.inner, cls=window.TASKVIEW)
         return tabs, prop, tv, scroll
 
+    @unittest.skipUnless(AL, "needs an Agent Link checkout ($AGENTLINK_SRC): window.py reads its names with agentlink.targets")
     def test_property_view_inside_the_model_tab(self):
         tabs, prop, _tv, _s = self.combo(current=1)  # the Tasks tab in front
         got = self.win().dock("Property view")
