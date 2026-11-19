@@ -94,13 +94,11 @@ Open FreeCAD, start a new chat, and try these prompts:
 
 ## Screenshots
 
-<!-- screenshots: no screenshots of the add-on are in the repository yet (the pictures under agentlink_tutor/lessons/pictures are the FreeCAD wiki's lesson pictures). Take these and add them under docs/images/:
-- the pocket lesson's first step, guided: the callout over the 3D view with its arrow to the ringed New Sketch button, the Tutor tab beside the tree
-- the Tutor tab with the lesson list
-- a demo lesson step with the why line shown
-- the watch mode sign in the status bar
-- the Addon Manager preferences with both custom repositories added
--->
+<!-- screenshots: still to take: a demo lesson step with the why line; the watch mode sign in the status bar; the Addon Manager preferences with the custom repositories -->
+
+![The Tutor tab with the lesson list, modes and buttons](https://github.com/jamesK1000011/Tutor-FreeCAD/raw/main/docs/images/panel-tutor.png)
+
+*The Tutor tab: pick a lesson and a mode (guided or demo), then Start.*
 
 ![A Tutor lesson in guided mode: the callout, the ringed Model tab and the Tutor tab](https://github.com/jamesK1000011/Tutor-FreeCAD/raw/main/docs/images/guided-step.png)
 
