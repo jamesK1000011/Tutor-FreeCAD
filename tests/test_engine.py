@@ -266,10 +266,10 @@ class StateMachine(unittest.TestCase):
 
     def test_setup_refusal_stops_the_start(self):
         w, e = make()
-        e.lesson["setup"]["calls"].insert(0, {"tool": "nope", "args": {}})
+        e.lesson["setup"]["calls"].insert(0, {"tool": "pd_gear", "args": {}})
         with self.assertRaises(TutorError) as x:
             e.start("demo")
-        self.assertIn("no tool nope", str(x.exception))
+        self.assertIn("no tool pd_gear", str(x.exception))
 
     def test_inline_lesson_runs(self):
         l = lessons.inline({"id": "inline.pad", "title": "Pad it", "setup": {"calls": [{"tool": "pd_body_new"}]},
@@ -313,12 +313,12 @@ class ElseCalls(unittest.TestCase):
 
     def test_else_refused_too_stops(self):
         l = self.lesson()
-        l["setup"]["calls"][0]["else"] = [{"tool": "nope"}]
+        l["setup"]["calls"][0]["else"] = [{"tool": "pd_gear"}]
         w = World()
         with self.assertRaises(TutorError) as x:
             Engine(l, call=w, doc=lambda: w.doc).start("demo")
         self.assertIn("else of varset_new", str(x.exception))
-        self.assertIn("no tool nope", str(x.exception))
+        self.assertIn("no tool pd_gear", str(x.exception))
 
     def test_checked(self):
         l = self.lesson()
@@ -338,7 +338,7 @@ class PartialDo(unittest.TestCase):
     def lesson(self):
         return lessons.inline({"id": "inline.partial", "title": "Partial", "setup": {"doc": "new"}, "vars": {"edge": 17},
                                "steps": [{"id": "s", "say": "Make a body.", "check": {"exists": "PartDesign::Pad"},
-                                          "do": [{"tool": "pd_body_new"}, {"tool": "nope"}]}]})
+                                          "do": [{"tool": "pd_body_new"}, {"tool": "pd_gear"}]}]})
 
     def test_refused_partway_is_not_run_again(self):
         w = World()
@@ -348,7 +348,7 @@ class PartialDo(unittest.TestCase):
         with self.assertRaises(TutorError) as x:
             e.do()
         self.assertIn("ran and stay", str(x.exception))
-        self.assertEqual([c[0] for c in w.calls[n:]], ["pd_body_new", "nope"])
+        self.assertEqual([c[0] for c in w.calls[n:]], ["pd_body_new", "pd_gear"])
         for _ in range(3):
             with self.assertRaises(TutorError) as x:
                 e.do()

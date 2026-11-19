@@ -10,6 +10,7 @@ The lesson in hand is the Tutor tab's too (live.py): the person's buttons
 and the agent's calls move the same lesson.
 """
 import json
+import unicodedata
 
 from . import engine as engine_mod
 from . import lessons, live
@@ -75,7 +76,29 @@ def find(lib, ref):
     raise Refusal("not_found", f"no lesson {ref}; tutor {{action: \"list\"}} lists them" + (f" (several end so: {', '.join(ends)})" if ends else ""))
 
 
+def clean(obj):
+    """Lesson text as it goes to the agent (red team 3, R3-11): no Unicode
+    format characters (Cf: zero-width, direction marks) and no tag
+    characters, in every string of an answer. A lesson is data from an
+    add-on or an agent, never instructions."""
+    if isinstance(obj, str):
+        return "".join(c for c in obj if unicodedata.category(c) != "Cf" and not 0xE0000 <= ord(c) <= 0xE007F)
+    if isinstance(obj, dict):
+        return {clean(k): clean(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [clean(v) for v in obj]
+    return obj
+
+
 def tutor(a, session, lib, progress=None):
+    """The tutor tool: _tutor's answer, its text cleaned (clean)."""
+    try:
+        return clean(_tutor(a, session, lib, progress))
+    except Refusal as e:
+        raise Refusal(e.code, clean(e.message)) from None
+
+
+def _tutor(a, session, lib, progress=None):
     action = a.get("action") or "status"
     mode = a.get("mode")
     c = live.controller()

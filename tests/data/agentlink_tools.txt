@@ -6,6 +6,8 @@ app_force_restart
 app_install
 app_open
 app_restart
+approve_code
+approve_file
 asm_add
 asm_bom
 asm_check
@@ -97,7 +99,6 @@ cookbook_approve
 cookbook_export
 cookbook_import
 cookbook_list
-cookbook_probe
 cookbook_run
 cookbook_show
 cookbook_unapprove

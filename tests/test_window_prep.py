@@ -854,9 +854,9 @@ LESSON = {
     "setup": {"calls": [{"tool": "doc_new", "args": {"name": "Stem"}}]},
     "steps": [
         {"id": "make", "say": "Push **Pad**.", "targets": [{"cmd": "X_Pad"}], "check": {"exists": "Part::Box"},
-         "do": [{"tool": "box", "args": {}}]},
+         "do": [{"tool": "part_primitive", "args": {}}]},
         {"id": "close", "say": "Push **Close**.", "targets": [{"cmd": "X_Close"}], "check": {"exists": "Part::Box"},
-         "do": [{"tool": "noop", "args": {}}]},
+         "do": [{"tool": "recompute", "args": {}}]},
         {"id": "see", "say": "Done.", "check": {"exists": "Part::Box"}},
     ],
 }
@@ -876,7 +876,7 @@ class World:
             self.doc = Doc()
             self.doc.Name = self.doc.Label = args["name"]
             return False, {"document": args["name"]}
-        if name == "box":
+        if name == "part_primitive":
             self.doc.add("Box", "Part::Box")
         return False, {}
 
@@ -945,7 +945,7 @@ class DocumentAndFinish(unittest.TestCase):
         self.assertEqual((st["check"], st["targets"]["note"]), ("pass", "already done: next goes on"))
         self.assertEqual(c.shown(), ([], None))
         self.assertEqual(ui.prepared, ["make"])
-        self.assertNotIn(("noop", {}), w.calls)
+        self.assertNotIn(("recompute", {}), w.calls)
         c.act("next")
         st = c.act("next")
         self.assertEqual(st["step"], "done")

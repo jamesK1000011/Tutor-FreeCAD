@@ -62,12 +62,12 @@ PART_BOX = {
          "check": {"workbench": "PartWorkbench"}, "do": [{"tool": "workbench", "args": {"activate": "Part"}}]},
         {"id": "box", "say": "Push **Cube**.", "targets": [{"cmd": "Part_Box"}, {"menu": "Part_Box"}],
          "check": {"new": "Part::Box"}, "bind": {"box": {"new": "Part::Box"}},
-         "do": [{"tool": "part_box", "args": {}}]},
+         "do": [{"tool": "part_container", "args": {}}]},
         {"id": "size", "say": "Set the **Length** of the box to 30 mm in the Property view.",
          "targets": [{"dock": "Property view"}, {"tree": "$box"}],
          "check": {"prop": "$box", "name": "Length", "eq": "$len", "tol": 0.01, "unit": "mm"},
          "hints": ["Find the Property view below the tree.", "Its Length row sets the size along X.", "Length = 30 mm."],
-         "do": [{"tool": "obj_set", "args": {"object": "$box", "set": {"Length": "$len"}}}]},
+         "do": [{"tool": "varset_set", "args": {"object": "$box", "set": {"Length": "$len"}}}]},
         {"id": "see", "say": "Done: a 30 mm box. Its top face shows in colour.", "targets": [{"face": {"normal": [0, 0, 1]}, "of": "$box"}],
          "check": {"bbox": "$box", "size": [30, 10, 10], "tol": 0.01}},
     ],
@@ -128,7 +128,9 @@ class World(PadWorld):
                 o = [x for x in self.doc.Objects if x.TypeId == "Sketcher::SketchObject"][-1]
                 o.Label = args["name"]
             return refused, out
-        mine = ("workbench", "part_box", "obj_set", "td_page", "sketch_constrain")
+        # part_container and varset_set stand in for a box and a property set: allowed
+        # lesson tools (lessons.LESSON_TOOLS) that no shipped lesson calls.
+        mine = ("workbench", "part_container", "varset_set", "td_page", "sketch_constrain")
         if name not in mine and not (name == "sketch_new" and not any(o.TypeId == "PartDesign::Body" for o in self.doc.Objects)):
             refused, out = super().__call__(name, args)
             if refused and (out.get("error") or {}).get("code") == "not_found":
@@ -138,9 +140,9 @@ class World(PadWorld):
         self.calls.append((name, args))
         if name == "workbench":
             self.gui.workbench = {"Part": "PartWorkbench", "TechDraw": "TechDrawWorkbench"}.get(args.get("activate"), "PartDesignWorkbench")
-        elif name == "part_box":
+        elif name == "part_container":
             self.doc.add("Box", "Part::Box", Length=Quantity(10.0), shape=Shape(1000, (10, 10, 10)))
-        elif name == "obj_set":
+        elif name == "varset_set":
             o = self.doc.getObject(args["object"])
             for k, v in args["set"].items():
                 setattr(o, k, Quantity(float(v)))
