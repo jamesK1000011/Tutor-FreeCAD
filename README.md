@@ -21,12 +21,13 @@ and check each step as you do it. It never moves your cursor, opens menus
 for you or covers the screen: your hands stay on the controls.
 
 Tutor is an add-on for [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD)
-and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
+and needs it installed. Agent Link is the hub: the add-on that connects an AI
+agent (Claude, for example) to FreeCAD through MCP, the Model Context Protocol. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
 ## What you need
 
-- FreeCAD 1.1 or newer.
+- FreeCAD 1.1 or newer. (Agent Link also works on FreeCAD 1.0, but Tutor does not.)
 - [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD), installed in FreeCAD.
 - An MCP client, for example Claude Desktop.
 
@@ -58,6 +59,17 @@ Link's repository is not in the list, the Addon Manager takes that name for
 a Python package, and the install fails.
 
 Then connect your agent: see [Connect your agent](https://github.com/jamesK1000011/AgentLink-FreeCAD#connect-your-agent).
+
+### By hand
+
+1. Install Agent Link first ([Agent Link: Install](https://github.com/jamesK1000011/AgentLink-FreeCAD#install)).
+2. Put this folder in FreeCAD's `Mod` folder as `Tutor`. To find the folder, type `FreeCAD.getUserAppDataDir()` in FreeCAD's Python console (the `Mod` folder is inside it).
+
+   ```
+   git clone https://github.com/jamesK1000011/Tutor-FreeCAD "<FreeCAD user folder>/Mod/Tutor"
+   ```
+
+3. Restart FreeCAD.
 
 ## First steps
 
@@ -99,7 +111,7 @@ Open FreeCAD, start a new chat, and try these prompts:
 Status: early. Eight starter lessons (pad a sketch; cut a pocket and drill
 a hole; export an STL; constrain a sketch fully; a fillet and a chamfer; a
 parameter driving a dimension; a TechDraw page of a body; an assembly with
-one grounded part and a fixed joint) and five lessons adapted from FreeCAD
+one grounded part and a fixed joint) and sixteen lessons adapted from FreeCAD
 wiki tutorials (see [Lesson library](#lesson-library)) run in two modes,
 switchable at any step:
 
