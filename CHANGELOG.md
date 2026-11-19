@@ -7,6 +7,14 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-19
+
+The first tagged release (V1). Tutor teaches FreeCAD in your own FreeCAD window, one lesson step at a time.
+Each step tells you what to do, points at the control and checks your result. "Do it for me" does the step for you.
+The lesson library has one lesson or more for each main workbench. Some lessons are adapted from FreeCAD wiki tutorials (CC-BY-3.0, LICENSE-Assets).
+Tutor needs Agent Link for FreeCAD. A lesson calls only Agent Link's CAD, view, sketch and read tools.
+
+- Release (V1): version 1.0.0. REUSE.toml covers docs/hardening and docs/examples. package.xml names the repository as Tutor-FreeCAD.
 - Panel polish (V1): the Tutor tab's tooltips are short STE sentences that say what to do (10 rewritten: Lessons, Start, Lesson mode, Back, Hint, Stop, Show explanations, Let Claude watch, Text size, Ask Claude). A new test (tests/test_panel_polish.py) checks that each control of the tab is in CONTROLS (its tooltip, name and description), that each tooltip is short, and that the tab and window code have no fixed "#rrggbb" colour.
 - Fixed-joint lesson: the insert check takes the parts as links or as bodies in the assembly (asm_new and asm_add put the bodies in; the Component dialog makes links), not a link labelled Body001 (the label is Body 2).
 - bbox checks read the shape's exact box (optimalBoundingBox), not BoundBox: once the window draws a shape, BoundBox comes from its display mesh and is small on curved faces (live 104: the whiffle-ball cylinder read 54.81 mm, not 55).
