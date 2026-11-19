@@ -1,6 +1,20 @@
 <!-- SPDX-License-Identifier: LGPL-2.1-or-later -->
 # Tutor for FreeCAD
 
+- [What it is](#what-it-is)
+- [What you need](#what-you-need)
+- [Install](#install)
+- [First steps](#first-steps)
+- [Screenshots](#screenshots)
+- [What it does](#what-it-does)
+- [Troubleshooting](#troubleshooting)
+- [Lessons](#lessons), [Accessibility](#accessibility), [Privacy](#privacy)
+- [For the agent](#for-the-agent), [Callout](#callout), [Tests](#tests), [Licence](#licence)
+
+How it plugs into Agent Link, with a diagram: [docs/workflow/](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/docs/workflow/README.md).
+
+## What it is
+
 An agent teaches FreeCAD in your own window. It can explain a control, point
 at it, do a job step by step while saying why, or guide you through the job
 and check each step as you do it. It never moves your cursor, opens menus
@@ -10,11 +24,24 @@ Tutor is an add-on for [Agent Link for FreeCAD](https://github.com/jamesK1000011
 and needs it installed. It is not a workbench: it adds a Tutor tab to Agent
 Link's panel and tutor tools for the agent.
 
-How it plugs into Agent Link, with a diagram: [docs/workflow/](https://github.com/jamesK1000011/Tutor-FreeCAD/blob/main/docs/workflow/README.md).
+## What you need
 
-<!-- screenshot: the pocket lesson's first step, guided: the callout over the 3D view with its arrow to the ringed New Sketch button, the Tutor tab beside the tree -->
+- FreeCAD 1.1 or newer.
+- [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD), installed in FreeCAD.
+- An MCP client, for example Claude Desktop.
 
 ## Install
+
+Pick one.
+
+### With Agent Link's Claude Desktop extension (easiest)
+
+1. Install [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD#install) with its Claude Desktop extension.
+2. Start a new chat.
+
+The extension installs Tutor for you into FreeCAD's `Mod` folder as `Tutor`, and keeps it up to date.
+
+### Addon Manager
 
 Tutor is not in the Addon Manager's own catalog yet. Add it, and Agent
 Link, as custom repositories:
@@ -26,14 +53,44 @@ Link, as custom repositories:
 3. Open **Tools › Addon manager**, install **Agent Link**, then **Tutor**.
 4. Restart FreeCAD. The Tutor tab is in Agent Link's panel.
 
-<!-- screenshot: Addon Manager preferences with both custom repositories added -->
-
 Add both repositories. Tutor depends on the add-on "Agent Link"; when Agent
 Link's repository is not in the list, the Addon Manager takes that name for
 a Python package, and the install fails.
 
-Needs FreeCAD 1.1 or newer and
-[Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD).
+Then connect your agent: see [Connect your agent](https://github.com/jamesK1000011/AgentLink-FreeCAD#connect-your-agent).
+
+## First steps
+
+Open FreeCAD, start a new chat, and try these prompts:
+
+1. "Teach me how to pad a sketch. I want to do the steps myself."
+
+   A guided lesson starts in the Tutor tab. A callout over the 3D view tells you the step,
+   and a numbered ring shows the control to use. When you do the step, the lesson goes on by itself.
+   If you are stuck, click **Hint**, or **Do it for me**.
+
+2. "Show me how to cut a pocket and drill a hole. You do it, I will watch."
+
+   A demo lesson starts. The agent does each step while the callout says what and why.
+   Click **Next** for the next step. Each step is one undo step.
+
+3. "Watch me while I work and help me when I get stuck."
+
+   Watch mode turns on, and a sign shows in the status bar while it is on.
+   The agent sees short events (a command used, an object made) and helps as you work.
+   Say "stop watching" to turn it off.
+
+## Screenshots
+
+<!-- screenshots: no screenshots of the add-on are in the repository yet (the pictures under agentlink_tutor/lessons/pictures are the FreeCAD wiki's lesson pictures). Take these and add them under docs/images/:
+- the pocket lesson's first step, guided: the callout over the 3D view with its arrow to the ringed New Sketch button, the Tutor tab beside the tree
+- the Tutor tab with the lesson list
+- a demo lesson step with the why line shown
+- the watch mode sign in the status bar
+- the Addon Manager preferences with both custom repositories added
+-->
+
+No screenshots yet.
 
 ## What it does
 
@@ -64,79 +121,31 @@ bar while it is on. Claude then sees short events (a command used, an
 object made, a panel closed, your questions from Ask Claude) and can help
 as you work. In a lesson, a step can be checked on the command you used.
 
-## For the agent
+## Troubleshooting
 
-`tool_groups enable: ["tutor"]` lists `tutor`, `tutor_point` and
-`tutor_watch`.
+**The Addon Manager install fails.**
+Add both custom repositories, Agent Link and Tutor. Install Agent Link first, then Tutor.
 
-`tutor_watch`: `{since?, wait?: 0-25 s, until?: any|milestone}` while watch
-mode is on: the person's events after `since` (`{n, k: cmd|wb|sel|clr|new|
-del|rc|edit|done|undo|redo|save|ask, …}`, milestones `m: 1`), waiting up to
-`wait` seconds for one (or for a milestone), and `next` for the following
-call. It is answered on Agent Link's socket thread, so a long wait never
-holds the window. `tutor {action: "watch", on}` turns watch mode on or off
-when the person asks.
+**There is no Tutor tab.**
+Tutor needs FreeCAD 1.1 or newer and Agent Link. Open the Agent Link panel (Agent Link workbench, **Agent Link panel**).
+Restart FreeCAD after an install.
 
-`tutor`: `{action: list|start|next|back|hint|skip|do|stop|status|explain,
-lesson?, mode?: demo|guided, query?, detail?, on?}`. `start` takes a lesson's id (or its
-last part, `pad-sketch`) or an inline lesson of 30 steps or fewer
-(`{id: "inline.x", title, steps}`, schema-checked, its calls checked against
-the tools there are, its words held to the same writing rules as stored
-lessons); a longer job goes in batches, each inline lesson with
-`setup: {after: "<the id before>"}` (a stored chapter may come before one
-too); `list` names an add-on's lessons with `from`, a course chapter with
-`course`, and keeps its answer short (`more`, and a query narrows it); `mode` with another action switches mid-lesson; `do`
-is "show me this one". Each answer is the lesson's compact state, under 600
-characters: `{lesson, mode, step: "3/5", id, say, check: pass|fail|pending,
-why?, hint: 0-3, hint_text?, do_it?, did?, targets: {resolved, missing}}`.
-While a lesson runs, a rider line (`tutor: step 3/5 passed; now step 4/5
-pending`) joins the agent's other answers when the step's state changes; a
-step once passed stays passed when a later re-check cannot be told
-(`pending`), so the rider and `status` agree. At the end the answer is
-`{step: "done", finished: "lesson complete", final: {step, check, why?}}`
-(the last step's check, such as "the part follows size") and the rider says
-`tutor: lesson complete, final check passed`.
+**The agent does not have the tutor tools.**
+- Most clients read the tool list when a chat starts. After an install or an update, **start a new chat**.
+- The agent turns the tools on with `tool_groups` (`enable: ["tutor"]`).
+- In Agent Link, `session_state` shows an add-on that did not load under `leftOut`, with the error.
+  Update it (`agentlink_update` with the Claude extension, or the Addon Manager), then restart FreeCAD.
 
-`start` works in the open document when it is empty; when it holds other
-work, the lesson's `doc_new` makes a new document whose name no open
-document and no recently saved file has (`PartDesignTutorial_2`), and the first step's
-answer says which (`document`). A chapter after another goes on in the open
-document when it passes that chapter's result.
+**A step does not pass.**
+After you act, the callout tells you why the step is not done yet.
+Click **Hint** for more help, or **Do it for me**. A step never times out.
 
-In demo mode, as each step comes up, the Tutor makes the window ready for
-its targets the way a person following the lesson would have it, and the
-answer lists what it did (`prepared`): the command's workbench activated
-(through `workbench`, so the echo shows it) when its button shows nowhere,
-the Tasks panel or a panel inside the Combo View brought to the front and
-scrolled to the field, the object's parents unfolded in the tree. A step
-whose check already holds as it comes up (a "Close" step with no sketch
-open) is passed with nothing ringed (`targets.note: already done`). A last
-check that cannot be told with a panel open gets a quiet window and one more
-try. Guided mode changes nothing in the window: the callout tells the
-person (`Switch to the Part Design workbench ①.` before the step, the
-workbench selector ringed).
+**The callout does not show over the 3D view.**
+The lesson's 3D view is not in front. The words then go to Agent Link's own callout.
+Bring the lesson's document to the front.
 
-`tutor_point`: `{targets: [spec],
-say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: "PartDesign_Pad"}` (its path read from the window; titles in a list also work), `{wb}`,
-`{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
-`{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
-answer lists what is shown and, for the rest, why not. It never switches
-workbench: when a toolbar is hidden it says so, rings the workbench selector
-and puts "Switch to the … workbench." before the instruction, and the agent
-may call `workbench activate` first. A command inside a toolbar dropdown
-(found by its command name, else by its menu text) rings the dropdown's ▾
-arrow, then the item once the menu opens; a button in a short toolbar's
-overflow rings its » button. `{dock: "Property view"}` finds the panel
-inside another dock (FreeCAD 1.1's Combo View, Model tab) and rings that
-tab when it is not in front. A tree row is matched by its label under its
-document's row (which may read the document's Label or Name, with a * or a
-" : 1" at its end); when the Model tab is not in front (during a lesson the
-Agent Link or Tasks tab is) that tab is ringed with "Open the Model tab."
-first, and in demo mode it is brought to the front before the row is
-unfolded or looked for. When FreeCAD has not filled in a folded branch yet,
-the nearest folded parent's row is ringed with "Unfold the ringed row". A
-row not found says which trees were searched, whether each showed and
-whether it held the document's row.
+**The window or FreeCAD is stuck.**
+See the troubleshooting of [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD#troubleshooting) (`job_status`, `dialog_answer`, `app_force_restart`).
 
 ## Lessons
 
@@ -254,6 +263,80 @@ the hole's type and size).
   sent anywhere, except in answers to the agent's own calls.
 - Your lesson progress and your Tutor settings (explanations, text size,
   reduce motion) are kept in FreeCAD's settings on this computer only.
+
+## For the agent
+
+`tool_groups enable: ["tutor"]` lists `tutor`, `tutor_point` and
+`tutor_watch`.
+
+`tutor_watch`: `{since?, wait?: 0-25 s, until?: any|milestone}` while watch
+mode is on: the person's events after `since` (`{n, k: cmd|wb|sel|clr|new|
+del|rc|edit|done|undo|redo|save|ask, …}`, milestones `m: 1`), waiting up to
+`wait` seconds for one (or for a milestone), and `next` for the following
+call. It is answered on Agent Link's socket thread, so a long wait never
+holds the window. `tutor {action: "watch", on}` turns watch mode on or off
+when the person asks.
+
+`tutor`: `{action: list|start|next|back|hint|skip|do|stop|status|explain,
+lesson?, mode?: demo|guided, query?, detail?, on?}`. `start` takes a lesson's id (or its
+last part, `pad-sketch`) or an inline lesson of 30 steps or fewer
+(`{id: "inline.x", title, steps}`, schema-checked, its calls checked against
+the tools there are, its words held to the same writing rules as stored
+lessons); a longer job goes in batches, each inline lesson with
+`setup: {after: "<the id before>"}` (a stored chapter may come before one
+too); `list` names an add-on's lessons with `from`, a course chapter with
+`course`, and keeps its answer short (`more`, and a query narrows it); `mode` with another action switches mid-lesson; `do`
+is "show me this one". Each answer is the lesson's compact state, under 600
+characters: `{lesson, mode, step: "3/5", id, say, check: pass|fail|pending,
+why?, hint: 0-3, hint_text?, do_it?, did?, targets: {resolved, missing}}`.
+While a lesson runs, a rider line (`tutor: step 3/5 passed; now step 4/5
+pending`) joins the agent's other answers when the step's state changes; a
+step once passed stays passed when a later re-check cannot be told
+(`pending`), so the rider and `status` agree. At the end the answer is
+`{step: "done", finished: "lesson complete", final: {step, check, why?}}`
+(the last step's check, such as "the part follows size") and the rider says
+`tutor: lesson complete, final check passed`.
+
+`start` works in the open document when it is empty; when it holds other
+work, the lesson's `doc_new` makes a new document whose name no open
+document and no recently saved file has (`PartDesignTutorial_2`), and the first step's
+answer says which (`document`). A chapter after another goes on in the open
+document when it passes that chapter's result.
+
+In demo mode, as each step comes up, the Tutor makes the window ready for
+its targets the way a person following the lesson would have it, and the
+answer lists what it did (`prepared`): the command's workbench activated
+(through `workbench`, so the echo shows it) when its button shows nowhere,
+the Tasks panel or a panel inside the Combo View brought to the front and
+scrolled to the field, the object's parents unfolded in the tree. A step
+whose check already holds as it comes up (a "Close" step with no sketch
+open) is passed with nothing ringed (`targets.note: already done`). A last
+check that cannot be told with a panel open gets a quiet window and one more
+try. Guided mode changes nothing in the window: the callout tells the
+person (`Switch to the Part Design workbench ①.` before the step, the
+workbench selector ringed).
+
+`tutor_point`: `{targets: [spec],
+say?, ms?, clear?}`. A spec is one of `{cmd}`, `{menu: "PartDesign_Pad"}` (its path read from the window; titles in a list also work), `{wb}`,
+`{task: label | {name, label, button}}`, `{tree}`, `{face: query, of}`,
+`{edge: query, of}`, `{sub, of}`, `{dock}`, `{view: "3d"}` or `{ext}`. The
+answer lists what is shown and, for the rest, why not. It never switches
+workbench: when a toolbar is hidden it says so, rings the workbench selector
+and puts "Switch to the … workbench." before the instruction, and the agent
+may call `workbench activate` first. A command inside a toolbar dropdown
+(found by its command name, else by its menu text) rings the dropdown's ▾
+arrow, then the item once the menu opens; a button in a short toolbar's
+overflow rings its » button. `{dock: "Property view"}` finds the panel
+inside another dock (FreeCAD 1.1's Combo View, Model tab) and rings that
+tab when it is not in front. A tree row is matched by its label under its
+document's row (which may read the document's Label or Name, with a * or a
+" : 1" at its end); when the Model tab is not in front (during a lesson the
+Agent Link or Tasks tab is) that tab is ringed with "Open the Model tab."
+first, and in demo mode it is brought to the front before the row is
+unfolded or looked for. When FreeCAD has not filled in a folded branch yet,
+the nearest folded parent's row is ringed with "Unfold the ringed row". A
+row not found says which trees were searched, whether each showed and
+whether it held the document's row.
 
 ## Callout
 
