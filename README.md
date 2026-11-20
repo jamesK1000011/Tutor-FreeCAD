@@ -27,7 +27,7 @@ Link's panel and tutor tools for the agent.
 
 ## What you need
 
-- FreeCAD 1.1 or newer. (Agent Link also works on FreeCAD 1.0, but Tutor does not.)
+- FreeCAD 1.1 or newer.
 - [Agent Link for FreeCAD](https://github.com/jamesK1000011/AgentLink-FreeCAD), installed in FreeCAD.
 - An MCP client, for example Claude Desktop.
 
