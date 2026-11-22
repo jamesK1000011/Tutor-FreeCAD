@@ -135,6 +135,7 @@ draft_text
 draft_to_sketch
 export
 export_file
+fast
 fea_buckle
 fea_chart
 fea_clear
@@ -158,6 +159,7 @@ feature_suppress
 fem_add
 fem_linearize
 fem_mesh
+get
 gui_input
 gui_unstick
 guide_read
@@ -290,6 +292,7 @@ pd_revolution
 pd_shaft
 pd_thickness
 pd_tip
+pick
 points_crop
 points_export
 points_fit
