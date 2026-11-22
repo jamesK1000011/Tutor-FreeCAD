@@ -16,7 +16,7 @@ Events are plain dicts with short keys, numbered n in order:
     {n, k: "done", o}     the editing closed (OK, Close or Cancel)
     {n, k: "undo"|"redo"} undo, redo
     {n, k: "save", d}     a document saved
-    {n, k: "ask", q}      the person's question (Ask Claude)
+    {n, k: "ask", q}      the person's question (Ask the agent)
 
 A milestone (m: 1) is a point where the person has finished something:
 new, done, rc, undo, redo, save, ask. Only the person's events are kept:

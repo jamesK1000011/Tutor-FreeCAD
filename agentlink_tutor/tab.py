@@ -2,7 +2,7 @@
 """The Tutor tab in Agent Link's panel (order 15, between Notes and Steps):
 the lessons installed, Guided or Demo, the step in front with what it says
 and whether its check passed, Back, Next, Hint, Skip, Do it for me and
-Stop, and Ask Claude, which leaves the person's question as a note the
+Stop, and Ask the agent, which leaves the person's question as a note the
 agent reads through Agent Link's notes. The lesson is the one in hand
 (live.py): the agent's tutor tool moves the same one, and the tab follows.
 
@@ -147,7 +147,7 @@ def buttons_on(engine):
 
 
 def question_note(text, status=None):
-    """The note left for the agent when the person presses Ask Claude."""
+    """The note left for the agent when the person presses Ask the agent."""
     t = " ".join(str(text or "").split())
     st = status or {}
     where = f" (lesson {st['lesson']}, step {st.get('step')})" if st.get("lesson") and st.get("step") not in (None, "done") else ""

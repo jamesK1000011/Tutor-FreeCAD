@@ -381,7 +381,7 @@ def detach(c):
 
 
 def badge(on):
-    """The visible sign that Claude is watching: a label in the status bar
+    """The visible sign that The agent is watching: a label in the status bar
     while watch mode is on."""
     import FreeCADGui
 

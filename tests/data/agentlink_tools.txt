@@ -323,6 +323,7 @@ scad_status
 scad_tidy
 section
 selection
+selftest_exit
 session_state
 shape_query
 sheet_cells

@@ -76,7 +76,7 @@ def _new(o, ty):
 
 
 def _ask(q):
-    observe.record("ask", q=q)  # the Tutor tab's Ask Claude, with watch mode on
+    observe.record("ask", q=q)  # the Tutor tab's Ask the agent, with watch mode on
 
 
 EFFECTS = {"sel": _sel, "cmd": _cmd, "wb": _wb, "edit": _edit, "done": _done, "new": _new, "ask": _ask}
