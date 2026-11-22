@@ -397,9 +397,9 @@ def badge(on):
             from PySide import QtGui
 
             QtW = getattr(__import__("PySide", fromlist=["QtWidgets"]), "QtWidgets", QtGui)
-            lab = QtW.QLabel("● Claude is watching (Tutor tab: turn it off)")
+            lab = QtW.QLabel("● The agent is watching (Tutor tab: turn it off)")
             lab.setObjectName("TutorWatchBadge")
-            lab.setAccessibleName("Claude is watching")
+            lab.setAccessibleName("The agent is watching")
             sb.addPermanentWidget(lab)
             _BADGE["label"] = lab
         lab.show()

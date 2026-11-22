@@ -56,11 +56,11 @@ CONTROLS = (
     ("do", "Do it for me", DO_TIP),
     ("stop", "Stop", "Stop the lesson. The document stays open."),
     ("explain", "Show explanations", "Show a short line under each step that says why. Off: only the steps show."),
-    ("watch", "Let Claude watch", "Let Claude follow what you do here (no lesson). A sign shows in the status bar. Off by default."),
+    ("watch", "Let the agent watch", "Let the agent follow what you do here (no lesson). A sign shows in the status bar. Off by default."),
     ("motion", "Reduce motion", "Keep the 3D view still between steps: the part is framed once, at the start, with no animation."),
     ("scale", "Text size", "Set the size of the words in this tab and in the callout. Unit: %."),
-    ("question", "Question for Claude", "Type a question about this step. Push Ask Claude to leave it as a note."),
-    ("ask", "Ask Claude", "Leave the question as a note. Claude reads it with the notes."),
+    ("question", "Question for the agent", "Type a question about this step. Push Ask the agent to leave it as a note."),
+    ("ask", "Ask the agent", "Leave the question as a note. The agent reads it with the notes."),
 )
 
 
@@ -103,7 +103,7 @@ def step_words(status):
     """(heading, say, hint) for the tab from the engine's compact state."""
     st = status or {}
     if "lesson" not in st:
-        return ("No lesson running.", "Select a lesson and push Start, or ask Claude to show you something.", "")
+        return ("No lesson running.", "Select a lesson and push Start, or ask the agent to show you something.", "")
     if st.get("step") == "done":
         skipped = st.get("skipped") or []
         return ("Lesson done.", "Well done." + (f" Skipped: {', '.join(skipped)}." if skipped else ""), "")
@@ -264,7 +264,7 @@ def _make():
             self.explain.setChecked(prefs.explainers())
             self.explain.toggled.connect(self._explain)
             lay.addWidget(self.explain)
-            self.watch = QtW.QCheckBox("Let Claude watch")
+            self.watch = QtW.QCheckBox("Let the agent watch")
             self.watch.setChecked(live.watching())
             self.watch.toggled.connect(lambda on: live.watch_mode(bool(on)))
             lay.addWidget(self.watch)
@@ -293,8 +293,8 @@ def _make():
             lay.addLayout(grid)
             ask = QtW.QHBoxLayout()
             self.question = QtW.QLineEdit()
-            self.question.setPlaceholderText("Ask Claude about this step…")
-            self.ask = QtW.QPushButton("Ask Claude")
+            self.question.setPlaceholderText("Ask the agent about this step…")
+            self.ask = QtW.QPushButton("Ask the agent")
             ask.addWidget(self.question, 1)
             ask.addWidget(self.ask)
             lay.addLayout(ask)
@@ -624,7 +624,7 @@ def _make():
 
                     observe.record("ask", q=text[:300])  # a waiting tutor_watch answers at once
                 self.question.clear()
-                self.line.setText("Left for Claude as a note (Notes tab).")
+                self.line.setText("Left for the agent as a note (Notes tab).")
                 refresh = getattr(self.panel, "refresh", None)
                 if callable(refresh):
                     refresh()

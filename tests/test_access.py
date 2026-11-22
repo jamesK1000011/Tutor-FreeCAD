@@ -270,7 +270,7 @@ class Words(unittest.TestCase):
         self.assertEqual(tab.tip("explain"), tab.control("explain")[1])
 
     def test_announcement(self):
-        self.assertEqual(tab.announcement(None), "No lesson running. Select a lesson and push Start, or ask Claude to show you something.")
+        self.assertEqual(tab.announcement(None), "No lesson running. Select a lesson and push Start, or ask the agent to show you something.")
         self.assertEqual(tab.announcement({"lesson": "x", "step": "1/3", "say": "Push Pad.", "check": "pass"}), "Step 1/3 · done. Push Pad.")
 
 

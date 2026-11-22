@@ -173,7 +173,7 @@ def _tutor(a, session, lib, progress=None):
 # ---- tutor_watch: the person's events, answered off the GUI thread ---------------------
 
 WATCH_CHARS = 1500
-OFF = ("Watch mode is off. The person turns it on in the Tutor tab (Let Claude watch), "
+OFF = ("Watch mode is off. The person turns it on in the Tutor tab (Let the agent watch), "
        "or ask them and use tutor {action: \"watch\", on: true}.")
 
 

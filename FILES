@@ -121,6 +121,7 @@ tests/test_draft_lesson.py
 tests/test_engine.py
 tests/test_files.py
 tests/test_general.py
+tests/test_gui_words_neutral.py
 tests/test_lessons.py
 tests/test_observe.py
 tests/test_panel_polish.py

@@ -127,10 +127,10 @@ A known wrong turn (Pocket for Pad) takes a short detour to put it right.
 A course goes chapter by chapter: a chapter starts where the one before
 ended, in the document in front when it holds that chapter's result, else
 in a new one where the chapters before are done for you first.
-Watch mode follows what you do without a lesson: turn on "Let Claude
-watch" in the Tutor tab (or ask Claude to), and a sign shows in the status
-bar while it is on. Claude then sees short events (a command used, an
-object made, a panel closed, your questions from Ask Claude) and can help
+Watch mode follows what you do without a lesson: turn on "Let the agent
+watch" in the Tutor tab (or ask the agent to), and a sign shows in the status
+bar while it is on. The agent then sees short events (a command used, an
+object made, a panel closed, your questions from Ask the agent) and can help
 as you work. In a lesson, a step can be checked on the command you used.
 
 ## Troubleshooting

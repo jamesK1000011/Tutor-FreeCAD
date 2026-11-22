@@ -7,6 +7,8 @@ All notable changes to Tutor for FreeCAD. The format follows
 
 ## [Unreleased]
 
+- Neutral words in the Tutor tab: "Let the agent watch", "Ask the agent", "Question for the agent", "● The agent is watching" and "Left for the agent as a note" (before: "Claude"). The person can use any MCP client. Test: tests/test_gui_words_neutral.py.
+
 ## [1.0.0] - 2026-11-19
 
 The first tagged release (V1). Tutor teaches FreeCAD in your own FreeCAD window, one lesson step at a time.
