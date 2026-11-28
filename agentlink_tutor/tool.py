@@ -122,7 +122,6 @@ def _tutor(a, session, lib, progress=None):
             out = {"lessons": shown}
             if len(rows) > len(shown):
                 out["more"] = len(rows) - len(shown)
-                out["say"] = "More lessons: list with a query (words of the title, id, course or a tag)."
             if c is not None and c.stepping:
                 out["running"] = f"{c.e.lesson['id']} step {c.e.position()}"
             return out
@@ -173,8 +172,6 @@ def _tutor(a, session, lib, progress=None):
 # ---- tutor_watch: the person's events, answered off the GUI thread ---------------------
 
 WATCH_CHARS = 1500
-OFF = ("Watch mode is off. The person turns it on in the Tutor tab (Let the agent watch), "
-       "or ask them and use tutor {action: \"watch\", on: true}.")
 
 
 def watch(a):
@@ -193,7 +190,7 @@ def watch(a):
     if until not in ("any", "milestone"):
         raise Refusal("invalid_input", "until: any (the first event ends the wait) or milestone (only something finished does)")
     if not live.watching():
-        return {"watching": False, "say": OFF}
+        return {"watching": False}
     evs = observe.BUF.wait(since, wait, until)
     out = {"watching": True}
     if since and observe.BUF.first() > since + 1:

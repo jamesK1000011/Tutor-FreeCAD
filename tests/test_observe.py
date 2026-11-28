@@ -183,7 +183,7 @@ class Watch(unittest.TestCase):
     def test_off_says_so(self):
         out = tool.watch({"wait": 0})
         self.assertFalse(out["watching"])
-        self.assertIn("turns it on in the Tutor tab", out["say"])
+        self.assertNotIn("say", out)
 
     def test_on_events_next_and_more(self):
         live.watch_mode(True)

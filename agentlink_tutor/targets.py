@@ -92,13 +92,119 @@ class Found:
         out = {"n": self.n, "kind": self.kind}
         if self.what:
             out["on"] = self.what
-        for k in ("note", "why", "text"):
+        for k in ("note", "why"):
             v = getattr(self, k)
             if v:
-                out[k] = v
+                out[k] = reason_of(v)
+        if self.text:
+            out["text"] = self.text
         if self.before:
             out["text"] = self.before + (f" {self.text}" if self.text else "")
         return out
+
+
+# What a target's note or why says, as a record: {"reason": code, ...}. The
+# producers keep their sentences (the callout and the logs read them); the
+# answer carries the record.
+_REASONS = (
+    (r"in the ▾ menu of this button$", "inButtonMenu", None),
+    (r"behind the toolbar's » button, in a ▾ menu$", "behindOverflowMenu", None),
+    (r"behind the toolbar's » button$", "behindOverflow", None),
+    (r"menu: native$", "menuNative", None),
+    (r"already active$", "alreadyActive", None),
+    (r"by its label$", "byLabel", None),
+    (r"not lit: (.+)$", "notLit", "items"),
+    (r"(?:inside )?the (.+?) tab(?:, which is not in front)?(?: is not in front)?: its tab is ringed$", "tabNotInFront", "tab"),
+    (r"inside (.+?), which is folded: its row is ringed$", "folded", "in"),
+    (r"could not be found \((.*)\)$", "notFound", "error"),
+    (r"no command (.+) in this FreeCAD$", "noCommand", "command"),
+    (r"toolbar hidden: (.+) is not the active workbench; call workbench activate first$", "toolbarHidden", "workbench"),
+    (r"its toolbar is hidden or covered$", "toolbarCovered", None),
+    (r"no toolbar button for it here$", "noToolbarButton", None),
+    (r"(.+?) is in no menu of this window(?: \(its menu comes with (.+?); call workbench activate first\))?$", "notInMenu", "command"),
+    (r"no menu item (.+?)(?: on the way to (.+?))?(?: \(its menu comes with its workbench; call workbench activate first\))?$", "noMenuItem", "item"),
+    (r"(.+): no such (face|edge)$", "noSuch", "ref"),
+    (r"the macOS menubar cannot be drawn over; the path is in the callout$", "macMenubar", None),
+    (r"(.+) is not installed in this FreeCAD$", "notInstalled", "workbench"),
+    (r"the workbench selector is (.+)$", "selector", "state"),
+    (r"no task dialog is open$", "noTaskDialog", None),
+    (r"not in the open task dialog$", "notInTaskDialog", None),
+    (r"no (.+) in the open task dialog$", "notInTaskDialog", "what"),
+    (r"in the task dialog but (.+)$", "inTaskDialog", "state"),
+    (r"the Tasks panel is not in this window$", "noTasksPanel", None),
+    (r"nothing is bound to (.+): name the object$", "unbound", "ref"),
+    (r"no object (.+) in the document$", "noObject", "ref"),
+    (r"not in the Model tab$", "notInModelTab", None),
+    (r"(.+) is not in the Model tree$", "notInTree", "object"),
+    (r"no Model tree in this window$", "noModelTree", None),
+    (r"its row is (.+)$", "rowState", "state"),
+    (r"no face matches.*$", "noFace", None),
+    (r"no edge matches.*$", "noEdge", None),
+    (r"no panel (.+)$", "noPanel", "panel"),
+    (r"views: 3d$", "view3dOnly", None),
+    (r"no 3D view open$", "no3dView", None),
+    (r"the 3D view is (.+)$", "view3d", "state"),
+    (r"no add-on here shows (.+)$", "noAddon", "ext"),
+    (r"nothing can be drawn: Agent Link's overlay is not here.*$", "noOverlay", None),
+    (r"it is (.+)$", "hidden", "state"),
+    (r"(.+) is (closed|hidden|covered)$", "panelState", "panel"),
+    (r"nothing lit$", "nothingLit", None),
+    (r"lit, but not seen: (.+)$", "litNotSeen", "unseen"),
+)
+
+
+def reason_of(text):
+    """{"reason": code, ...} for a note or why sentence of a target; a
+    sentence no code covers is {"reason": "other", "detail": text}."""
+    import re as _re
+
+    t = str(text).strip()
+    for pat, code, key in _REASONS:
+        m = _re.match(pat, t)
+        if m:
+            out = {"reason": code}
+            if key and m.group(1) is not None:
+                v = m.group(1)
+                out[key] = [x.strip() for x in v.split(",")] if key == "items" else v.strip("'")
+            if code == "notInMenu" and m.group(2):
+                out["workbench"] = m.group(2)
+            if code == "noMenuItem" and "call workbench activate first" in t:
+                out["needsWorkbench"] = True
+            if code == "noSuch":
+                out["what"] = m.group(2)
+            if code == "panelState":
+                out["state"] = m.group(2)
+            if code == "noMenuItem" and m.lastindex and m.lastindex > 1 and m.group(2):
+                out["path"] = m.group(2)
+            return out
+    return {"reason": "other", "detail": t}
+
+
+def prepared_of(text):
+    """What the tutor's hands did to show a step, as records: one
+    {"did": code, ...} for each part of the sentence the window gave."""
+    import re as _re
+
+    out = []
+    for part in str(text).split("; "):
+        t = part.strip()
+        for pat, code, key in (
+            (r"workbench (.+) activated$", "workbenchActivated", "workbench"),
+            (r"the (.+) tab brought to the front$", "tabFront", "tab"),
+            (r"(.+) scrolled into view in the tree$", "rowScrolled", "object"),
+            (r"(.+) row scrolled into view$", "rowScrolled", "object"),
+            (r"(.+) shown in the tree$", "rowShown", "object"),
+            (r"(.+) in front$", "panelFront", "panel"),
+            (r"not prepared: (.+)$", "notPrepared", "error"),
+        ):
+            m = _re.match(pat, t, _re.S)
+            if m:
+                out.append({"did": code, key: m.group(1)})
+                break
+        else:
+            m = _re.match(r"(.+) not shown in the tree: (.+)$", t, _re.S)
+            out.append({"did": "rowNotShown", "object": m.group(1), "reason": reason_of(m.group(2))} if m else {"did": "other", "detail": t})
+    return out
 
 
 def bind(value, bindings):

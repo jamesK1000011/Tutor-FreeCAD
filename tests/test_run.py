@@ -454,7 +454,7 @@ class State(unittest.TestCase):
 
         w, c = make(show=boom)
         st = c.start("guided")
-        self.assertEqual(st["targets"]["missing"], ["not drawn: no overlay"])
+        self.assertEqual(st["targets"]["missing"], [{"reason": "notDrawn", "error": "no overlay"}])
         self.assertEqual(c.act("next")["id"], "pick")
 
 

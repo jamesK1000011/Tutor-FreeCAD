@@ -63,7 +63,7 @@ def shower(session):
                           bubble=bubble, report=report)
         # The same dict the bubble's later self-check updates (callout: overlay).
         report.update(resolved=len(got.get("shown") or []),
-                      missing=[str(m.get("why") or "not shown")[:80] for m in got.get("missing") or []])
+                      missing=[str((m.get("why") or {}).get("reason") or "notShown") for m in got.get("missing") or []])
         return report
 
     return show

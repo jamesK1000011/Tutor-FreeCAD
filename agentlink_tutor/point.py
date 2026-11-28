@@ -249,8 +249,6 @@ def _answer(found, handle, ms, prepared=()):
         a.pop("why", None)
     out = {"shown": shown, "missing": missing}
     if prepared:
-        out["prepared"] = list(prepared)
-    out["until"] = f"{ms} ms" if ms else "the next tutor_point"
-    if not shown and missing:
-        out["note"] = "nothing ringed; any words for them are in the callout"
+        out["prepared"] = [r for x in prepared for r in targets.prepared_of(x)]
+    out["until"] = {"ms": ms} if ms else "nextPoint"
     return out

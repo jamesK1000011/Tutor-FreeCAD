@@ -399,7 +399,7 @@ class TreeTarget(unittest.TestCase):
         hooks = types.SimpleNamespace(service=lambda n: ov if n == "overlay" else None)
         w.win._hooks = hooks
         out = point.point({"targets": [{"tree": "PointBox"}]}, w.win, hooks=hooks)
-        self.assertEqual(out["prepared"], ["the Model tab brought to the front"])
+        self.assertEqual(out["prepared"], [{"did": "tabFront", "tab": "Model"}])
         self.assertEqual([a["kind"] for a in out["shown"]], ["tree"])
         self.assertNotIn("text", out["shown"][0])  # no "Open the Model tab."
 
@@ -473,17 +473,17 @@ class FaceSeen(unittest.TestCase):
         why = "off-screen: no point of Face6 is inside the 3D view (the view does not frame PointBox)"
         out, lit, _asked = self.run_point(why)
         self.assertEqual(out["shown"], [])
-        self.assertEqual(out["missing"][0]["why"], f"lit, but not seen: {why}")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "litNotSeen", "unseen": why})
         self.assertIn(("light", ["Face6"]), lit)  # still lit: turned into view, it shows
         say = [x[1] for x in lit if x[0] == "say"][0]
         self.assertIn("Push Fit all (V, F) to see the lit face ①.", say)
-        self.assertEqual(out["note"], "nothing ringed; any words for them are in the callout")
+        self.assertNotIn("note", out)
 
     def test_a_hidden_face_says_turn_the_view(self):
         out, lit, _ = self.run_point("hidden: something else is drawn over Face6 at all 3 of its points inside the 3D view")
         say = [x[1] for x in lit if x[0] == "say"][0]
         self.assertIn("Turn the 3D view to see the lit face ①.", say)
-        self.assertTrue(out["missing"][0]["why"].startswith("lit, but not seen: hidden"))
+        self.assertTrue(out["missing"][0]["why"]["unseen"].startswith("hidden"))
 
     def test_found_shown_counts_an_unseen_light_as_missing(self):
         f = targets.Found(1, "face")

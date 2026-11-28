@@ -940,11 +940,11 @@ class DocumentAndFinish(unittest.TestCase):
         e = Engine(copy.deepcopy(LESSON), call=w, doc=lambda: w.doc)
         c = run.Controller(e, ui=ui, show=lambda ctl: {"resolved": 1, "missing": []} if ctl else None)
         st = c.start("demo")
-        self.assertEqual(st["prepared"], ["workbench Part Design activated"])
+        self.assertEqual(st["prepared"], [{"did": "workbenchActivated", "workbench": "Part Design"}])
         st = c.act("next")  # make: done through the tools
         self.assertEqual(st["id"], "close")
         # Its check already holds: passed as it came up, nothing ringed or prepared.
-        self.assertEqual((st["check"], st["targets"]["note"]), ("pass", "already done: next goes on"))
+        self.assertEqual((st["check"], st["targets"]["doneBefore"]), ("pass", True))
         self.assertEqual(c.shown(), ([], None))
         self.assertEqual(ui.prepared, ["make"])
         self.assertNotIn(("recompute", {}), w.calls)

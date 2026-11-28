@@ -32,6 +32,7 @@ line Agent Link adds to the agent's answers while a lesson runs.
 """
 from . import engine as engine_mod
 from . import prefs as prefs_mod
+from . import targets
 
 DEBOUNCE_MS = 300
 ADVANCE_MS = 600
@@ -42,7 +43,7 @@ ACTIONS = ("next", "back", "hint", "skip", "stop", "status", "do", "explain")
 # The actions that first do the advance a pass left waiting (_flush_advance).
 # back and stop drop it; status and explain only read or set a preference.
 FLUSH_ACTIONS = ("next", "skip", "hint", "do")
-NO_WINDOW = "no window: nothing ringed"
+NO_WINDOW = {"reason": "noWindow"}
 
 
 EDIT_KEYS = ("feature", "object", "sketch")
@@ -144,9 +145,9 @@ class Controller:
             t = self.targets or {"resolved": 0, "missing": [NO_WINDOW]}
             st["targets"] = {"resolved": t.get("resolved", 0), "missing": list(t.get("missing") or [])[:3]}
             if self.done_before and self.e.passed and self.e.mode == "demo":
-                st["targets"]["note"] = "already done: next goes on"
+                st["targets"]["doneBefore"] = True
         if self.stepping and self.prepared:
-            st["prepared"] = list(self.prepared)[:3]
+            st["prepared"] = [r for x in list(self.prepared)[:3] for r in targets.prepared_of(x)]
         if self.stepping and self.targets and self.targets.get("callout"):
             # Where the person reads the step: bubble (over the 3D view),
             # overlay (Agent Link's callout) or none; why when not the bubble.
@@ -287,7 +288,7 @@ class Controller:
                 else:
                     self.show(None)
             except Exception as err:  # noqa: BLE001  (pointing is a nicety; the lesson goes on)
-                self.targets = {"resolved": 0, "missing": [f"not drawn: {err}"[:80]]}
+                self.targets = {"resolved": 0, "missing": [{"reason": "notDrawn", "error": str(err)[:80]}]}
         for fn in list(self.listeners):
             try:
                 fn(self)

@@ -207,29 +207,29 @@ class Commands(unittest.TestCase):
         # the instruction's own), with the workbench selector ringed.
         out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Select the sketch. Press Pad."})
         m = out["shown"][0]
-        self.assertEqual(m["note"], "toolbar hidden: Part Design is not the active workbench; call workbench activate first")
+        self.assertEqual(m["note"], {"reason": "toolbarHidden", "workbench": "Part Design"})
         self.assertEqual(ov.shows[0]["specs"], [{"widget": "wb-tabs", "badge": 1}])
         self.assertEqual(ov.shows[0]["say"], "1. Select the sketch.\n2. Switch to the Part Design workbench ①.\n3. Press Pad.")
         # No selector to ring: missing, with the menu path in the words.
         out, ov, _ = run({"targets": [{"cmd": "PartDesign_Pad"}], "say": "Press Pad."}, Win(selector=None))
         m = out["missing"][0]
-        self.assertEqual(m["why"], "toolbar hidden: Part Design is not the active workbench; call workbench activate first")
+        self.assertEqual(m["why"], {"reason": "toolbarHidden", "workbench": "Part Design"})
         self.assertEqual(ov.shows[0]["say"], "1. Switch to the Part Design workbench (View › Workbench › Part Design).\n2. Press Pad.")
-        self.assertEqual(out["note"], "nothing ringed; any words for them are in the callout")
+        self.assertNotIn("note", out)
 
     def test_unknown_command(self):
         out, _, _ = run({"targets": [{"cmd": "Nope_Cmd"}]})
-        self.assertEqual(out["missing"][0]["why"], "no command Nope_Cmd in this FreeCAD")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "noCommand", "command": "Nope_Cmd"})
 
     def test_button_on_toolbar_of_active_bench_but_hidden(self):
         w = Win(active="PartDesignWorkbench", commands={"PartDesign_Pad": [("pad-btn", "hidden")]})
         out, _, _ = run({"targets": [{"cmd": "PartDesign_Pad"}]}, w)
-        self.assertEqual(out["missing"][0]["why"], "its toolbar is hidden or covered")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "toolbarCovered"})
 
     def test_overlay_finds_it_covered(self):
         w = Win(commands={"Std_Undo": [("undo-btn", None)]})
         out, _, _ = run({"targets": [{"cmd": "Std_Undo"}]}, w, ov=Overlay(hidden={"undo-btn": "covered"}))
-        self.assertEqual(out["missing"][0]["why"], "it is covered")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "hidden", "state": "covered"})
 
 
 class Menus(unittest.TestCase):
@@ -246,7 +246,7 @@ class Menus(unittest.TestCase):
         w = Win(native=True, menus={("Edit", "Undo"): "Std_Undo"})
         out, ov, _ = run({"targets": [{"menu": ["Edit", "Undo"]}], "say": "Undo."}, w)
         got = out["shown"][0]
-        self.assertEqual(got["note"], "menu: native")
+        self.assertEqual(got["note"], {"reason": "menuNative"})
         self.assertEqual(got["text"], "Menu: Edit › Undo (Ctrl+Z), or the ringed toolbar button ①")
         self.assertEqual(ov.menus, [])  # never drawn over the system menubar
         self.assertEqual(ov.shows[0]["specs"], [{"widget": "undo-btn", "badge": 1}])
@@ -256,7 +256,7 @@ class Menus(unittest.TestCase):
         w = Win(native=True, menus={tuple(self.PATH): "PartDesign_Pad"})
         out, _, _ = run({"targets": [{"menu": self.PATH}]}, w)
         m = out["missing"][0]
-        self.assertIn("cannot be drawn over", m["why"])
+        self.assertEqual(m["why"], {"reason": "macMenubar"})
         self.assertEqual(m["text"], "Menu: Part Design › Create an additive feature › Pad")
 
     def test_menu_by_command_reads_this_windows_path(self):
@@ -266,8 +266,7 @@ class Menus(unittest.TestCase):
         self.assertEqual(ov.menus, [(path, 1, 7)])
         out, _, _ = run({"targets": [{"menu": "PartDesign_Pad"}]}, Win(active="SketcherWorkbench"))
         why = out["missing"][0]["why"]
-        self.assertIn("Pad is in no menu of this window", why)
-        self.assertIn("comes with Part Design", why)
+        self.assertEqual(why, {"reason": "notInMenu", "command": "Pad", "workbench": "Part Design"})
 
     def test_path_to_walks_submenus(self):
         class A:
@@ -302,8 +301,7 @@ class Menus(unittest.TestCase):
 
     def test_missing_title_names_the_workbench_menu(self):
         out, _, _ = run({"targets": [{"menu": self.PATH}]})
-        self.assertIn("no menu item 'Pad'", out["missing"][0]["why"])
-        self.assertIn("call workbench activate first", out["missing"][0]["why"])
+        self.assertEqual((out["missing"][0]["why"]["reason"], out["missing"][0]["why"]["item"], out["missing"][0]["why"]["needsWorkbench"]), ("noMenuItem", "Pad", True))
 
 
 class Dropdowns(unittest.TestCase):
@@ -317,7 +315,7 @@ class Dropdowns(unittest.TestCase):
                 w = Win(commands={cmd: [("hidden-sketcher-btn", "hidden")]}, groups={cmd: [(btn, None, f"{btn}-menu", f"{cmd}-act")]})
                 out, ov, _ = run({"targets": [{"cmd": cmd}], "say": "Draw it."}, w)
                 got = out["shown"][0]
-                self.assertEqual((got["kind"], got["note"]), ("cmd", "in the ▾ menu of this button"))
+                self.assertEqual((got["kind"], got["note"]), ("cmd", {"reason": "inButtonMenu"}))
                 self.assertEqual(ov.shows[0]["specs"], [{"widget": btn, "badge": 1}])
                 self.assertEqual(ov.watched, [(f"{btn}-menu", f"{cmd}-act", "tutor", 7, 1)])
                 self.assertIn("\n2. Open the ▾ menu of the ringed button ①.\n3. Select ", ov.shows[0]["say"])
@@ -329,7 +327,7 @@ class Dropdowns(unittest.TestCase):
         self.assertEqual(ov.watched, [])
         w = Win(active="PartDesignWorkbench", commands={"Sketcher_CreateRectangle": []}, groups={"Sketcher_CreateRectangle": [("b", "hidden", "m", "a")]})
         out, _, _ = run({"targets": [{"cmd": "Sketcher_CreateRectangle"}]}, w)
-        self.assertEqual(out["missing"][0]["why"], "its toolbar is hidden or covered")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "toolbarCovered"})
 
 
 class Benches(unittest.TestCase):
@@ -340,11 +338,11 @@ class Benches(unittest.TestCase):
 
     def test_already_active(self):
         out, _, _ = run({"targets": [{"wb": "PartWorkbench"}]})
-        self.assertEqual(out["shown"][0]["note"], "already active")
+        self.assertEqual(out["shown"][0]["note"], {"reason": "alreadyActive"})
 
     def test_not_installed_and_selector_hidden(self):
         out, _, _ = run({"targets": [{"wb": "MineWorkbench"}]})
-        self.assertEqual(out["missing"][0]["why"], "MineWorkbench is not installed in this FreeCAD")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "notInstalled", "workbench": "MineWorkbench"})
         out, _, _ = run({"targets": [{"wb": "SketcherWorkbench"}]}, Win(selector=None))
         self.assertEqual(out["missing"][0]["text"], "View › Workbench › Sketcher")
 
@@ -352,24 +350,24 @@ class Benches(unittest.TestCase):
 class Tasks(unittest.TestCase):
     def test_no_dialog(self):
         out, _, _ = run({"targets": [{"task": "Length"}]})
-        self.assertEqual(out["missing"][0]["why"], "no task dialog is open")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "noTaskDialog"})
 
     def test_by_name_then_label_then_button(self):
         w = Win(task={"lengthEdit": ({"widget": "length"}, None), "Length": ({"widget": "length"}, "by its label"),
                       "ok": ({"widget": "ok"}, None)})
         out, ov, _ = run({"targets": [{"task": {"name": "lengthEdit", "label": "Length"}}, {"task": "Length"}, {"task": {"button": "ok"}}]}, w)
         self.assertEqual([a["n"] for a in out["shown"]], [1, 2, 3])
-        self.assertEqual(by_n(out)[2]["note"], "by its label")
+        self.assertEqual(by_n(out)[2]["note"], {"reason": "byLabel"})
         self.assertEqual([s["widget"] for s in ov.shows[0]["specs"]], ["length", "length", "ok"])
 
     def test_tasks_tab_header(self):
         w = Win(task={"Length": ({"widget": "tasks-tab"}, "the Tasks tab is not in front: its tab is ringed")})
         out, _, _ = run({"targets": [{"task": "Length"}]}, w)
-        self.assertEqual(out["shown"][0]["note"], "the Tasks tab is not in front: its tab is ringed")
+        self.assertEqual(out["shown"][0]["note"], {"reason": "tabNotInFront", "tab": "Tasks"})
 
     def test_not_in_dialog(self):
         out, _, _ = run({"targets": [{"task": "Angle"}]}, Win(task={}))
-        self.assertEqual(out["missing"][0]["why"], "no 'Angle' in the open task dialog")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "notInTaskDialog", "what": "Angle"})
 
 
 class Tree(unittest.TestCase):
@@ -377,14 +375,14 @@ class Tree(unittest.TestCase):
         w = Win(objs=[Obj("Sketch001", "Sketch")], rows={"Sketch001": ({"widget": "tree", "rect": None}, "inside Body, which is folded: its row is ringed")})
         out, _, _ = run({"targets": [{"tree": "$sketch"}]}, w, bindings={"sketch": "Sketch001"})
         self.assertEqual(out["shown"][0]["on"], "tree Sketch")
-        self.assertIn("folded", out["shown"][0]["note"])
+        self.assertEqual(out["shown"][0]["note"]["reason"], "folded")
 
     def test_unbound_and_missing(self):
         out, _, _ = run({"targets": [{"tree": "$sketch"}, {"tree": "Ghost"}, {"tree": "Pad"}]})
         n = by_n(out)
-        self.assertEqual(n[1]["why"], "nothing is bound to $sketch: name the object")
-        self.assertEqual(n[2]["why"], "no object Ghost in the document")
-        self.assertEqual(n[3]["why"], "Pad is not in the Model tree")
+        self.assertEqual(n[1]["why"], {"reason": "unbound", "ref": "$sketch"})
+        self.assertEqual(n[2]["why"], {"reason": "noObject", "ref": "Ghost"})
+        self.assertEqual(n[3]["why"], {"reason": "notInTree", "object": "Pad"})
 
 
 class ThreeD(unittest.TestCase):
@@ -399,8 +397,8 @@ class ThreeD(unittest.TestCase):
                                        {"face": {"normal": [1, 0, 0]}, "of": "Ghost"}]}, Win())
         n = by_n(out)
         self.assertEqual(n[1]["on"], "Edge3 of Pad")
-        self.assertEqual(n[2]["why"], "Face9: no such face")
-        self.assertEqual(n[3]["why"], "no object Ghost in the document")
+        self.assertEqual(n[2]["why"], {"reason": "noSuch", "ref": "Face9", "what": "face"})
+        self.assertEqual(n[3]["why"], {"reason": "noObject", "ref": "Ghost"})
         self.assertEqual(ann.clears, ["tutor"])
 
     def test_badge_number_in_the_view(self):
@@ -427,7 +425,7 @@ class ThreeD(unittest.TestCase):
 
     def test_no_face_matches(self):
         out, _, _ = run({"targets": [{"face": {"normal": [1, 0, 0]}, "of": "Pad"}]}, Win(faces=[]))
-        self.assertEqual(out["missing"][0]["why"], "no face matches the query")
+        self.assertEqual(out["missing"][0]["why"], {"reason": "noFace"})
 
 
 class DocksViewsExt(unittest.TestCase):
@@ -435,20 +433,20 @@ class DocksViewsExt(unittest.TestCase):
         w = Win(docks={"Report view": {"widget": "report"}}, hidden={"report": "hidden"})
         out, _, _ = run({"targets": [{"dock": "Report view"}, {"dock": "Nope"}]}, w)
         n = by_n(out)
-        self.assertEqual(n[1]["why"], "Report view is closed")
+        self.assertEqual(n[1]["why"], {"reason": "panelState", "panel": "Report view", "state": "closed"})
         self.assertEqual(n[1]["text"], "View › Panels › Report view")
-        self.assertEqual(n[2]["why"], "no panel Nope")
+        self.assertEqual(n[2]["why"], {"reason": "noPanel", "panel": "Nope"})
 
     def test_view(self):
         out, _, _ = run({"targets": [{"view": "3d"}, {"view": "page"}]})
         self.assertEqual([a["n"] for a in out["shown"]], [1])
-        self.assertEqual(by_n(out)[2]["why"], "views: 3d")
+        self.assertEqual(by_n(out)[2]["why"], {"reason": "view3dOnly"})
 
     def test_ext(self):
         w = Win(exts={"snap": {"marks": [{"widget": "snap-btn"}], "on": "Snapshot button"}})
         out, _, _ = run({"targets": [{"ext": "snap"}, {"ext": "other"}]}, w)
         self.assertEqual(out["shown"][0]["on"], "Snapshot button")
-        self.assertEqual(by_n(out)[2]["why"], "no add-on here shows other")
+        self.assertEqual(by_n(out)[2]["why"], {"reason": "noAddon", "ext": "other"})
 
 
 class Surface(unittest.TestCase):
@@ -470,20 +468,20 @@ class Surface(unittest.TestCase):
 
     def test_no_overlay(self):
         out, _, _ = point.point({"targets": [{"cmd": "Std_Undo"}]}, Win(), hooks=Hooks(None, None)), None, None
-        self.assertIn("overlay is not here", out["missing"][0]["why"])
+        self.assertEqual(out["missing"][0]["why"], {"reason": "noOverlay"})
 
     def test_answer_stays_small(self):
         tg = [{"cmd": "PartDesign_Pad"}, {"menu": ["Part Design", "Pad"]}, {"task": "Length"}, {"tree": "$x"},
               {"dock": "Report view"}, {"view": "3d"}]
         out, _, _ = run({"targets": tg, "say": "x" * 300, "ms": 9000})
         self.assertLess(len(json.dumps(out, ensure_ascii=False)), 1400)
-        self.assertEqual(out["until"], "9000 ms")
+        self.assertEqual(out["until"], {"ms": 9000})
 
     def test_a_broken_target_is_a_target_missed(self):
         w = Win()
         w.dock = lambda title: 1 / 0
         out, _, _ = run({"targets": [{"dock": "Report view"}]}, w)
-        self.assertIn("could not be found", out["missing"][0]["why"])
+        self.assertEqual(out["missing"][0]["why"]["reason"], "notFound")
 
     def test_callout_words(self):
         f1, f2 = targets.Found(1, "cmd"), targets.Found(2, "menu")
